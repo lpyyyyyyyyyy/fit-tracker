@@ -45,10 +45,10 @@
   /* 语义 */
   --bg:var(--n-1000);
   --bg-elev:var(--n-950);
-  --surface:rgba(200,215,235,.028);
-  --surface-hi:rgba(200,215,235,.052);
+  --surface:var(--n-800);          /* 实色卡片背景 —— 对比度按参考项目定：卡片要比底色明显亮一档 */
+  --surface-hi:var(--n-700);
   --surface-solid:#0f141d;
-  --line:rgba(200,215,235,.042);
+  --line:rgba(200,215,235,.05);
   --line-hi:rgba(200,215,235,.1);
   --text:var(--n-050);
   --text-2:var(--n-100);
@@ -138,8 +138,8 @@ button{cursor:pointer}
 /* ════════════ 容器响应式（窄屏自动收紧，避免挤压）════════════ */
 @media (max-width:400px){
   #app{padding-left:var(--s3);padding-right:var(--s3)}
-  .top{margin-left:calc(var(--s3) * -1);margin-right:calc(var(--s3) * -1);
-       padding-left:var(--s3);padding-right:var(--s3)}
+  /* 顶栏的「铺满全宽」规则保持不变，只把左右内边距收到 --s3。
+     ⚠️ 不要在这里写 margin-left:calc(...-1) —— 那会把刚修好的全宽又改回去。 */
   .card{padding:var(--s4) var(--s3)}
   .tile{padding:14px}
   .guardNum{font-size:38px}
@@ -198,12 +198,20 @@ button{cursor:pointer}
   position:sticky;top:0;z-index:30;
   display:flex;align-items:center;justify-content:space-between;gap:var(--s4);
   padding:calc(env(safe-area-inset-top) + var(--s4)) 0 var(--s3);
-  margin:0 calc(var(--s4) * -1) var(--s3);
-  padding-left:var(--s4);padding-right:var(--s4);
+  /* ⚠️ 原来只往外扩了 #app 的内边距，在宽屏/横屏时右边会露出一条缝，
+     看着像「黑色没遮住」。现在用 50% 视口的方式真正铺满整屏宽度。 */
+  margin-left:calc(50% - 50vw);
+  margin-right:calc(50% - 50vw);
+  margin-bottom:var(--s3);
+  padding-left:calc(50vw - 50%);
+  padding-right:calc(50vw - 50%);
   background:linear-gradient(180deg,rgba(7,10,16,.94) 62%,rgba(7,10,16,.72) 100%);
   backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);
-  transition:padding var(--d2) var(--e-out),background var(--d2) var(--e-out);
+  transition:padding-top var(--d2) var(--e-out),padding-bottom var(--d2) var(--e-out),background var(--d2) var(--e-out);
 }
+/* 顶栏内部内容仍然要对齐到 #app 的内容宽度，不能贴着屏幕边 */
+.top > *{max-width:min(600px,100%);}
+.top .h1,.top .kicker{overflow-wrap:anywhere}
 /* 滚下去之后收窄，把空间还给内容 */
 .top.shrink{padding-top:calc(env(safe-area-inset-top) + var(--s2));padding-bottom:var(--s2)}
 .top .kicker{transition:opacity var(--d2),max-height var(--d2) var(--e-out);
@@ -254,7 +262,7 @@ button{cursor:pointer}
 .ring svg{transform:rotate(-90deg);display:block;overflow:visible}
 .ring .mid{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
   width:86px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:0}
-.ring .big{font-size:24px;font-weight:600;letter-spacing:-.04em;line-height:1;
+.ring .big{font-size:24px;font-weight:700;letter-spacing:-.04em;line-height:1;
   font-variant-numeric:tabular-nums}
 .ring .lbl{font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:var(--dim);margin-top:1px}
 .ring .glow{position:absolute;inset:8%;border-radius:50%;pointer-events:none;
@@ -426,7 +434,7 @@ button{cursor:pointer}
 .tile .k{display:flex;align-items:center;gap:5px;
   font-size:var(--f-3xs);letter-spacing:.16em;text-transform:uppercase;color:var(--dim)}
 .tile .k .i{font-size:12px;flex:none}
-.tile .v{font-size:var(--f-xl);font-weight:600;letter-spacing:-.03em;font-variant-numeric:tabular-nums;
+.tile .v{font-size:var(--f-xl);font-weight:700;letter-spacing:-.03em;font-variant-numeric:tabular-nums;
   margin-top:6px;line-height:1.1}
 .tile .v sub{font-size:var(--f-2xs);font-weight:500;color:var(--dim);margin-left:3px;letter-spacing:0}
 .tile .d{font-size:var(--f-3xs);color:var(--dim);margin-top:4px}
@@ -518,7 +526,7 @@ canvas{display:block;width:100%;height:100%}
 .stepRow .sr-go{font-size:var(--f-2xs);color:var(--dim);flex:none}
 
 /* ════════════ 弹层里的「做法」区块 ════════════ */
-.howto{background:rgba(200,215,235,.045);border-radius:var(--r2);
+.howto{background:var(--n-900);border-radius:var(--r2);
   padding:var(--s4);margin:0 0 var(--s3)}
 .howto:last-child{margin-bottom:0}
 .howto .ht{font-size:var(--f-sm);font-weight:650;color:var(--text);margin-bottom:var(--s2)}
@@ -581,7 +589,7 @@ details .body b{color:var(--text);font-weight:650}
 
 /* ════════════ 肌肉守护卡 ════════════ */
 .guardTop{display:grid;grid-template-columns:auto minmax(0,1fr);gap:var(--s4);align-items:baseline}
-.guardNum{font-size:var(--f-display);font-weight:500;letter-spacing:-.05em;line-height:1;
+.guardNum{font-size:var(--f-display);font-weight:700;letter-spacing:-.05em;line-height:1;
   font-family:var(--mono);font-variant-numeric:tabular-nums}
 .guardNum sub{font-size:var(--f-sm);font-weight:500;color:var(--dim);margin-left:2px;letter-spacing:0}
 .factors{display:flex;flex-direction:column;gap:var(--s4);margin-top:var(--s5)}
@@ -1119,7 +1127,7 @@ details .body b{color:var(--text);font-weight:650}
    1 · 常量与工具
    ════════════════════════════════════════════════════════════════ */
 /* App 版本 —— 每次改完内容把它 +1，设置页会显示，用来确认看到的是不是最新版 */
-const APP_VER = '2026.09.17-10';
+const APP_VER = '2026.09.17-11';
 
 const JIN = 2;
 const DAY = 86400000;
