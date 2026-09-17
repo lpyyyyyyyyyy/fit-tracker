@@ -60,7 +60,7 @@
   --accent-deep:var(--a-600);
   --gold:var(--b-400);
   --ok:var(--ok-400); --warn:var(--warn-400); --bad:var(--bad-400);
-  --track:rgba(200,215,235,.07);
+  --track:rgba(0,0,0,.22);      /* 内凹轨道（别太深，否则 0 分的条看着像黑框）*/
 
   --grad-accent:linear-gradient(135deg,var(--a-400) 0%,var(--a-600) 100%);
   --grad-warm:linear-gradient(135deg,var(--b-400) 0%,var(--b-600) 100%);
@@ -443,12 +443,20 @@ button{cursor:pointer}
 .btn.wide{width:100%}
 
 /* ════════════ 进度条 ════════════ */
-.bar{display:block;height:6px;border-radius:var(--rf);background:var(--track);overflow:hidden}
+/* ════════════ 进度条 ════════════
+   ⚠️ 「蛋白吃够」那条被反馈成一个「黑框」。原因是两条叠加：
+     ① 满分（100）时填充铺满整条，把轨道盖得只剩边缘一圈 → 像一个空框
+     ② 轨道是 7% 白，在实色卡片上比底色更亮，读起来像个独立的灰块
+   修法：轨道改成贴合卡片的内凹槽 + 满分时给整条加发光，让「满了」看得出是完成 */
+.bar{display:block;height:7px;border-radius:var(--rf);background:var(--track);
+  box-shadow:inset 0 1px 3px rgba(0,0,0,.4);overflow:hidden}
 .bar i{display:block;height:100%;border-radius:inherit;width:0;background:var(--grad-accent);
   transition:width 1.1s var(--e-out)}
 .bar.gold i{background:var(--grad-warm)}
 .bar.ink i{background:var(--grad-cool)}
-.bar.thin{height:4px}
+.bar.thin{height:5px}
+/* 满分：整条发光，一眼看出「这项满了」而不是「这里有个空框」 */
+.bar.full i{box-shadow:0 0 10px rgba(79,214,196,.45)}
 
 /* ════════════ 数据格 ════════════ */
 .tiles{display:grid;gap:var(--s4)}
@@ -1148,7 +1156,7 @@ details .body b{color:var(--text);font-weight:650}
    1 · 常量与工具
    ════════════════════════════════════════════════════════════════ */
 /* App 版本 —— 每次改完内容把它 +1，设置页会显示，用来确认看到的是不是最新版 */
-const APP_VER = '2026.09.17-12';
+const APP_VER = '2026.09.17-14';
 
 const JIN = 2;
 const DAY = 86400000;
@@ -2090,8 +2098,11 @@ const MuscleModel = {
         why:'这是保肌的第一变量 —— 单独它就能决定你掉的一半是脂肪还是肌肉。' },
       { key:'protein', name:'蛋白吃够', weight:.22, score:ps, value:`达标 ${Math.round(pr * 100)}%`,
         why:'150g 蛋白 / 天（约 1.9g/kg）是保肌区间，少一天就少一层保护。' },
-      { key:'deficit', name:'热量缺口', weight:.18, score:ds, value: deficit > 0 ? `约 ${Math.round(deficit)} kcal` : '暂无数据',
-        why:'研究给出约 500 kcal/日 是保肌阈值，超过越多，肌肉流失越快 —— 这一项比蛋白更重要。' },
+      { key:'deficit', name:'缺口不超标', weight:.18, score:ds, value: deficit > 0 ? `约 ${Math.round(deficit)} kcal` : '暂无数据',
+        why: deficit > 500
+          ? `<b>这一项正在扣分。</b>你现在缺口约 ${Math.round(deficit)} kcal，是保肌阈值（500）的 <b>${(deficit / 500).toFixed(1)} 倍</b>。
+             超得越多肌肉流失越快 —— 想拿回这一项的分，<b>反而是要「多吃一点」，不是少吃</b>。`
+          : '研究给出约 500 kcal/日 是保肌阈值，缺口在这个范围内就算达标。' },
       { key:'sleep',   name:'睡眠',     weight:.13, score:ss, value:`约 ${this.sleepHoursToday()} 小时`,
         why:'睡不够 6 小时，皮质醇升、生长激素降 —— 同样赤字下肌肉流失接近翻倍。' },
       { key:'steps',   name:'日常活动', weight:.07, score:sts, value: steps.length ? `均 ${Math.round(avgSteps)} 步` : '暂无',
@@ -3134,7 +3145,7 @@ const App = {
     $('#gFactors').innerHTML = MuscleModel.detail().map(f => `
       <div class="factor ${f.key === bn.key ? 'low' : f.key === st.key ? 'top' : ''}">
         <span class="fn">${f.name}</span>
-        <span class="bar thin"><i style="width:${f.score}%;background:${f.key === bn.key ? 'var(--grad-warm)' : 'var(--grad-accent)'}"></i></span>
+        <span class="bar thin${f.score >= 100 ? ' full' : ''}"><i style="width:${f.score}%;background:${f.key === bn.key ? 'var(--grad-warm)' : 'var(--grad-accent)'}"></i></span>
         <span class="fv">${f.score}</span>
       </div>`).join('');
 
