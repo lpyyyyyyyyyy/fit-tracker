@@ -1013,7 +1013,7 @@ const MEAL_TEMPLATE = [
 ];
 const MISC_TEMPLATE = [
   { id:'coffee1', name:'第一杯咖啡' }, { id:'coffee2', name:'第二杯咖啡' },
-  { id:'nap', name:'午睡 60 分钟' }, { id:'chia', name:'核桃 10g' },
+  { id:'nap', name:'午睡 60 分钟' }, { id:'chia', name:'菜籽油 10g' },
   { id:'spinach', name:'菠菜 300g' },
 ];
 /* 蛋白只在鸡胸和虾之间隔天换 */
@@ -1025,7 +1025,7 @@ const PORTION_GUIDE = [
   { q:'半碗米饭是多少？', a:'100g 熟重。普通饭碗装满约 200g，吃一半。<br>更准：煮一锅分成 7 份冷冻，每天拿一盒。' },
   { q:'菠菜 300g 怎么凑？', a:'煮熟装满一个普通饭碗约 150g。中午一碗 + 晚上一碗 = 300g。<br>技巧：早上蛋白粉里加一把冷冻菠菜打匀，完全尝不出来。' },
   { q:'不吃镁片行吗？', a:'行，但菠菜必须吃满。你这套饮食镁的缺口大约一半，<b>300g 熟菠菜能补回约 240mg，刚好够</b>，还顺带 1600mg 钾。<br>缺镁的表现：半夜腿抽筋、眼皮跳、入睡难、便秘 —— 出现就说明菠菜没吃够。' },
-  { q:'不吃鱼油怎么办？Omega-3 从哪来？', a:'靠早餐那一项：<b>核桃 10g（约 1 个完整的）</b>。<br>鸡胸和虾几乎不含 Omega-3，这是你这套饮食唯一的营养缺口。<br><br>核桃换算：10g ≈ 0.9g ALA / 65 kcal；<b>20g（2 个）≈ 1.8g ALA / 130 kcal</b>。<br>买得到的话，<b>奇亚籽或亚麻籽粉 10g 也约 1.8g ALA，只要 49 kcal</b> —— 热量省一半多。<br><br>⚠ 植物 ALA 转化成 EPA/DHA 的效率只有 5~10%，不如鱼油直接 —— 但比不吃好得多，而且超市就能买到。' },
+  { q:'不吃鱼油、家里也没核桃怎么办？', a:'用<b>菜籽油</b>，就是炒菜那点油换成菜籽油，10g ≈ 1 瓷勺。<br>鸡胸和虾几乎不含 Omega-3，这是你这套饮食唯一的营养缺口，必须补上。<br><br>四种补法挑你能买到的：<br>· <b>菜籽油 10g</b> ≈ 0.9g ALA / 88 kcal ← 最日常，炒菜顺手<br>· 亚麻籽油 5g ≈ 1.1g ALA / 44 kcal（凉拌，不能加热）<br>· 奇亚籽或亚麻籽粉 10g ≈ 1.8g ALA / 49 kcal ← 热量最省<br>· 核桃 20g ≈ 1.8g ALA / 130 kcal<br><br>⚠ 菜籽油也是油，<b>全天所有用油加起来别超过这 10g</b>。' },
   { q:'虾怎么选？', a:'优先<b>冷冻生虾或鲜虾</b>，别买泡发的「虾仁」—— 那种用磷酸盐保水，钠极高，吃了第二天脸和眼皮就肿，秤上也会虚涨。' },
   { q:'没秤怎么估？', a:'鸡胸/虾：一个手掌 + 2 指厚 ≈ 200~250g。米饭：一个拳头 ≈ 半碗。油：一个拇指尖 ≈ 5g。' },
   { q:'估错 20% 会怎样？', a:'基本没事。多吃 100g 鸡胸 = 多 130 kcal。<br>真正毁掉一天的是一碗面（600 kcal）或一次火锅（2000+ kcal）。方向对就行。' },
@@ -1180,8 +1180,8 @@ const DB = {
       name:'早餐', sub:'蛋白粉 + 豆浆 · 水煮蛋 2 个',
       tip:'蛋白粉 1 勺 + 无糖豆浆 400ml；水煮蛋 2 个；复合维生素 1 片。<br>再加下面那一项奇亚籽 —— 泡进豆浆里就行。' });
     L.push({ id:'chia', time:'08:30', ic:'leaf', kind:'check', group:'misc',
-      name:'核桃 10g', sub:'约 1 个 · 补 Omega-3',
-      tip:'<b>核桃 10g ≈ 1 个完整的核桃仁（掰开是两瓣）。</b>早餐时吃掉，最省事。<br><br><b>为什么必须吃这一项</b>：你不吃鱼油，而鸡胸和虾几乎不含 Omega-3 —— 这是你这套饮食唯一的营养缺口。核桃是最日常、超市随便买的补法。<br><br>换算：<br>· 核桃 10g ≈ 0.9g ALA，65 kcal<br>· 核桃 20g（约 2 个）≈ 1.8g ALA，130 kcal ← 想补足就吃 2 个<br>· 奇亚籽 / 亚麻籽粉 10g 也约 1.8g ALA，只花 49 kcal（买得到就用这个，热量省一半）<br><br>⚠ 植物 ALA 转化成 EPA/DHA 的效率只有 5~10%，不如鱼油直接 —— 但比不吃好得多。' });
+      name:'菜籽油 10g', sub:'约 1 瓷勺 · 补 Omega-3',
+      tip:'<b>炒菜时用菜籽油，10g ≈ 1 瓷勺（约 1 汤勺的三分之二）。</b>不要另外倒，就是把当天炒菜那点油换成菜籽油。<br><br><b>为什么必须吃这一项</b>：你不吃鱼油，而鸡胸和虾几乎不含 Omega-3 —— 这是你这套饮食唯一的营养缺口。<br><br>各种补法换个算（挑你买得到的）：<br>· <b>菜籽油 10g ≈ 0.9g ALA，88 kcal</b>（最日常，炒菜顺手就吃了）<br>· 亚麻籽油 5g ≈ 1.1g ALA，44 kcal（不能加热，凉拌）<br>· 奇亚籽 / 亚麻籽粉 10g ≈ 1.8g ALA，49 kcal（热量最省，但要网购）<br>· 核桃 20g ≈ 1.8g ALA，130 kcal<br><br>⚠ 植物 ALA 转化成 EPA/DHA 的效率只有 5~10%，不如鱼油直接 —— 但比不吃好得多。<br>⚠ 菜籽油依然是油，<b>全天所有用油加起来不要超过这 10g</b>，超了就是纯加热量。' });
     L.push({ id:'coffee1', time:s.coffee1, ic:'coffee', kind:'check', group:'misc',
       name:'第一杯咖啡', sub:'黑咖啡 · 补 200ml 水',
       tip:'只喝黑咖啡 / 美式。拿铁、卡布、加了奶糖的一杯 150~250 kcal，等于吃掉半顿饭。<br>每喝一杯咖啡额外补 200ml 水 —— 咖啡利尿，不补会头晕。' });
@@ -1707,14 +1707,32 @@ const Notification_ = {
   },
   send(title, body) {
     if (!this.granted()) return false;
+    let ok = false;
+    /* 通道 1：Service Worker —— 切后台/锁屏时更可靠，还能带震动 */
     try {
-      const n = new Notification(title, { body, tag:'ran-fit', renotify:true,
-        icon:"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%23070a10'/%3E%3Ccircle cx='32' cy='32' r='17' fill='none' stroke='%234fd6c4' stroke-width='4'/%3E%3C/svg%3E" });
+      if (navigator.serviceWorker && navigator.serviceWorker.controller) {
+        navigator.serviceWorker.controller.postMessage({ type:'notify', title, body, icon: this.ICON });
+        ok = true;
+      }
+    } catch (e) {}
+    /* 通道 2：直接 new Notification（SW 没接管时的兜底）*/
+    try {
+      const n = new Notification(title, { body, tag:'ran-fit', renotify:true, icon:this.ICON });
       n.onclick = () => { try { window.focus(); } catch (e) {} n.close(); };
-      return true;
-    } catch (e) { return false; }
+      ok = true;
+    } catch (e) {}
+    return ok;
   },
+  ICON: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%23070a10'/%3E%3Ccircle cx='32' cy='32' r='17' fill='none' stroke='%234fd6c4' stroke-width='4'/%3E%3C/svg%3E",
 };
+
+/* 注册 Service Worker：拿到离线缓存 + 更可靠的通知通道。
+   ⚠️ 只在 https 或 localhost 下会成功；http 局域网地址下浏览器直接拒绝，静默忽略。 */
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(() => { /* 非安全上下文，正常 */ });
+  });
+}
 
 const Reminder = {
   timers: {},
