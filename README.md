@@ -136,3 +136,52 @@ node _test.js          # 閫昏緫娴嬭瘯 203 椤?node _static_test.js   # 闈
 
 **达成主目标后自动解锁**，并按新目标重新排方案。
 想重新开始，把「开始日期」改到未来即可（那是准备阶段，允许改）。
+
+---
+
+## 工具（Python）
+
+**为什么用 Python 而不是 PowerShell**：这个项目全是中文和大量字符串处理。
+PowerShell 的转义规则特殊（反引号是转义符、`$` 会插值、单双引号规则不同），
+把这类代码内联进命令行极容易炸 —— 中途就因此弄坏过一次文件语法。
+Python 的三引号、UTF-8、异常栈都更直接。
+
+```
+python tools.py backup          同步数据到 GitHub
+python tools.py backup --dry    只看会做什么，不真上传
+python tools.py test            跑全部测试
+python tools.py check           语法检查 + 测试
+python tools.py bump            版本号 +1（同时改 sw.js 缓存版本）
+python tools.py serve           起本地服务器（HTTP 8080 + HTTPS 8443）
+python tools.py task status     看每天 2:00 的定时任务
+python tools.py task install    注册定时任务（需管理员）
+python tools.py task run        立刻跑一次备份
+```
+
+底层脚本 `_backup.py` 也可以单独跑：
+
+```
+python _backup.py          正常备份
+python _backup.py --dry    干跑
+```
+
+**依赖**：`requests`（已装）。浏览器自动化那几个脚本（`_seed.js` / `_shoot.js`）
+仍用 Node，因为要连 Edge 的 DevTools 协议。
+
+---
+
+## 目录结构
+
+| 文件 | 作用 | 进仓库 |
+|---|---|---|
+| `index.html` | 整个 App（HTML+CSS+JS 单文件） | ✅ |
+| `sw.js` | Service Worker（离线 + 通知） | ✅ |
+| `manifest.json` | PWA 清单 | ✅ |
+| `tools.py` | Python 工具集 | ✅ |
+| `_backup.py` | 每天 2:00 备份（定时任务调它） | ✅ |
+| `README.md` | 说明 | ✅ |
+| `data.json` | 打卡数据（自动上传） | ✅ |
+| `_test.js` | 255 项逻辑测试 | ❌ 本地 |
+| `_static_test.js` | 55 项静态/结构/规范测试 | ❌ 本地 |
+| `_serve.js` | Node 版本地服务器（Python 版已内置） | ❌ 本地 |
+| `_seed.js` | 造测试数据 + 截图 | ❌ 本地 |
