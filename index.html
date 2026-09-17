@@ -123,7 +123,18 @@ button{cursor:pointer}
 #env .vig{position:absolute;inset:0;
   background:radial-gradient(120% 78% at 50% 0%,transparent 42%,rgba(0,0,0,.55) 100%)}
 
-#app{position:relative;z-index:1;max-width:600px;margin:0 auto;padding:0 var(--s4) 92px}
+/* ════════════ 布局骨架 ════════════
+   ⚠️ 顶栏全宽这件事踩了三次坑，最后定成这个结构，别再改：
+      #app        —— 占满宽度，只负责左右内边距。
+      .view       —— 没有内边距（所以它天然全宽）。
+      .view > .card 等 —— 自己带左右内边距（靠 .view 的 padding 拿不到，见下）。
+      .top        —— 不带任何负边距，直接吃 #app 的 padding，天然全宽。
+
+   为什么不在 .view 上加左右内边距再让 .top 用负边距抵消：
+      窄屏媒体查询里 #app 的 padding 会从 --s4 变成 --s3，
+      而 .top 的负边距写死在 --s4 上，两者一打架右边就露出 14px。
+      现在 .top 不抵消任何东西，就不可能算错。 */
+#app{position:relative;z-index:1;max-width:none;margin:0;padding:0 var(--s4) 92px}
 
 /* ════════════ 图标（内联 SVG，不用 emoji） ════════════
    ⚠️ 这个选择器必须覆盖图标里用到的**所有**形状标签。
@@ -180,6 +191,8 @@ button{cursor:pointer}
 /* ════════════ 视图切换 ════════════ */
 .view{display:none}
 .view.on{display:block}
+/* 除顶栏外，内容都居中限制在 600px（宽屏不至于拉太开） */
+.view > *:not(.top){margin-left:auto;margin-right:auto;max-width:600px;width:100%}
 .view.on>*{animation:rise var(--d3) var(--e-out) both}
 .view.on>*:nth-child(1){animation-delay:0s}
 .view.on>*:nth-child(2){animation-delay:.045s}
@@ -193,25 +206,37 @@ button{cursor:pointer}
 /* 视图入场：只做透明度和轻微位移，不做缩放 —— 缩放会让用户觉得字体在变大变小 */
 @keyframes rise{from{opacity:0;transform:translate3d(0,10px,0)}to{opacity:1;transform:none}}
 
-/* ════════════ 顶栏：锁死在屏幕顶部，滚动时不走 ════════════ */
+/* ════════════ 顶栏：锁死在屏幕顶部，滚动时不走 ════════════
+   ⚠️ 顶栏「铺满整屏」这件事踩了三次坑，最后用固定定位伪元素解决，别再改：
+
+   为什么前面几种做法都不行：
+   1) calc(50% - 50vw) —— vw 含滚动条、百分比不含，两边对不上，右边露底。
+   2) 负边距抵消 —— 窄屏媒体查询改了 #app 的 padding，负边距写死在别的值上，又露底。
+   3) 直接靠元素自身宽度 —— 会被 #app *{max-width:100%} 限制住，量出来还是差几十像素。
+
+   现在：顶栏自己不管背景，交给一个 position:fixed 的 ::before 去铺满视口。
+   fixed 定位的包含块是视口，所以它天然就是全宽 —— 不受任何祖先约束。 */
 .top{
   position:sticky;top:0;z-index:30;
   display:flex;align-items:center;justify-content:space-between;gap:var(--s4);
   padding:calc(env(safe-area-inset-top) + var(--s4)) 0 var(--s3);
-  /* ⚠️ 原来只往外扩了 #app 的内边距，在宽屏/横屏时右边会露出一条缝，
-     看着像「黑色没遮住」。现在用 50% 视口的方式真正铺满整屏宽度。 */
-  margin-left:calc(50% - 50vw);
-  margin-right:calc(50% - 50vw);
-  margin-bottom:var(--s3);
-  padding-left:calc(50vw - 50%);
-  padding-right:calc(50vw - 50%);
-  background:linear-gradient(180deg,rgba(7,10,16,.94) 62%,rgba(7,10,16,.72) 100%);
-  backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);
-  transition:padding-top var(--d2) var(--e-out),padding-bottom var(--d2) var(--e-out),background var(--d2) var(--e-out);
+  margin:0 0 var(--s3);
+  background:transparent;              /* 背景交给 ::before */
+  transition:padding-top var(--d2) var(--e-out),padding-bottom var(--d2) var(--e-out);
 }
-/* 顶栏内部内容仍然要对齐到 #app 的内容宽度，不能贴着屏幕边 */
-.top > *{max-width:min(600px,100%);}
-.top .h1,.top .kicker{overflow-wrap:anywhere}
+/* 铺满整个视口宽度的背景层（fixed 定位 → 不受父级宽度/内边距影响） */
+.top::before{content:"";position:fixed;left:0;right:0;top:0;
+  height:100%;max-height:200px;         /* 只覆盖顶栏自身的高度范围，不影响下面 */
+  z-index:-1;pointer-events:none;
+  background:var(--bg)}
+/* 顶栏下缘一条渐隐：让滚上来的内容「淡出」，而不是被硬切一刀 */
+.top::after{content:"";position:fixed;left:0;right:0;height:20px;
+  z-index:-1;pointer-events:none;
+  background:linear-gradient(180deg,var(--bg) 0%,rgba(7,10,16,.5) 55%,rgba(7,10,16,0) 100%)}
+/* 桌面/平板：顶栏内容也跟着对齐到 600px 中间 */
+@media (min-width:640px){
+  .top{padding-left:max(var(--s4), calc(50% - 300px + var(--s4)));padding-right:max(var(--s4), calc(50% - 300px + var(--s4)))}
+}
 /* 滚下去之后收窄，把空间还给内容 */
 .top.shrink{padding-top:calc(env(safe-area-inset-top) + var(--s2));padding-bottom:var(--s2)}
 .top .kicker{transition:opacity var(--d2),max-height var(--d2) var(--e-out);
@@ -708,12 +733,8 @@ details .body b{color:var(--text);font-weight:650}
         <span class="sr-go" id="stepGo">记录 ›</span>
       </button>
       <div id="stepPanel" style="display:none">
-        <div class="row2 mt3">
-          <button class="btn primary" id="pedoBtn" onclick="App.togglePedo()">自动计步</button>
-          <button class="btn ghost" onclick="App.pickSteps()">手动填</button>
-        </div>
-        <div class="hint mt3" id="pedoState">自动计步只有页面开着才计数（浏览器的限制）。</div>
-        <input id="stepsInput" type="number" inputmode="numeric" placeholder="今天走了多少步" class="plainIn mt3">
+        <input id="stepsInput" type="number" inputmode="numeric" placeholder="今天走了多少步" class="plainIn">
+        <div class="hint mt3">填完自动存。iPhone 上看步数：<b>「健康」App → 浏览 → 活动 → 步数</b>。</div>
       </div>
     </div>
 
@@ -1127,7 +1148,7 @@ details .body b{color:var(--text);font-weight:650}
    1 · 常量与工具
    ════════════════════════════════════════════════════════════════ */
 /* App 版本 —— 每次改完内容把它 +1，设置页会显示，用来确认看到的是不是最新版 */
-const APP_VER = '2026.09.17-11';
+const APP_VER = '2026.09.17-12';
 
 const JIN = 2;
 const DAY = 86400000;
@@ -2484,8 +2505,7 @@ const App = {
       const y = window.scrollY;
       if (Math.abs(y - _lastY) < 6) return;
       _lastY = y;
-      $$('.top').forEach(t => t.classList.toggle('shrink', y > 28));
-    }, { passive: true });
+      $$('.top').forEach(t => t.classList.toggle('shrink', y > 28));    }, { passive: true });
 
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'visible') { this.renderAll(); Reminder.schedule(); Sky.play(); }
@@ -2701,9 +2721,6 @@ const App = {
     const el = $('#stepsInput');
     if (el) { el.focus(); try { el.scrollIntoView({ block:'center', behavior:'smooth' }); } catch (e) {} }
   },
-  togglePedo() {
-    if (Pedometer.running) Pedometer.stop(); else Pedometer.start();
-  },
 
   renderSteps() {
     const s = DB.data.settings, r = DB.rec();
@@ -2714,14 +2731,6 @@ const App = {
       inline.textContent = v ? `${v} 步` : '还没记录';
       inline.style.color = done ? 'var(--accent)' : (v ? 'var(--text)' : 'var(--dim)');
     }
-    const pb = $('#pedoBtn'), ps = $('#pedoState');
-    if (pb) {
-      pb.textContent = Pedometer.running ? `计步中 · ${Pedometer.steps} 步` : '自动计步';
-      pb.className = 'btn ' + (Pedometer.running ? '' : 'primary');
-    }
-    if (ps) ps.textContent = Pedometer.running
-      ? '正在读手机传感器 —— 页面开着才计数，切走或锁屏就停。'
-      : '自动计步只有页面开着才计数（浏览器的限制）。也可以直接手填。';
   },
 
   /* 副标题显示/隐藏（默认隐藏，点时间轴右上角那个标签切换）*/
@@ -3716,84 +3725,7 @@ const Sky = {
      · iOS 必须先点一下授权，且要 https
      · 是估算值，不如系统计步准，但「原地踏步」这类完全够用
    ════════════════════════════════════════════════════════════════ */
-const Pedometer = {
-  running: false, base: 0, last: 0, lastPeak: 0, buf: [], zero: 0, steps: 0,
 
-  supported() {
-    return typeof DeviceMotionEvent !== 'undefined';
-  },
-  /* iOS 13+ 要显式请求权限，而且必须在用户点击里调用 */
-  async ask() {
-    if (!this.supported()) return false;
-    const D = DeviceMotionEvent;
-    if (typeof D.requestPermission === 'function') {
-      try { return (await D.requestPermission()) === 'granted'; }
-      catch (e) { return false; }
-    }
-    return true;                 // Android / 桌面不用请求
-  },
-
-  async start() {
-    if (this.running) return;
-    const ok = await this.ask();
-    if (!ok) { App.toast('没拿到传感器权限，改成手填吧'); return; }
-    const r = DB.rec();
-    this.base = r.steps || 0;
-    this.steps = 0;
-    this.buf = [];
-    this.lastPeak = 0;
-    this.zero = performance.now();
-    this.running = true;
-    window.addEventListener('devicemotion', this.onMotion);
-    App.renderSteps();
-    App.toast('开始计步 —— 手机放口袋里走就行');
-  },
-
-  stop() {
-    if (!this.running) return;
-    this.running = false;
-    window.removeEventListener('devicemotion', this.onMotion);
-    App.renderSteps();
-    App.toast('停止计步');
-  },
-
-  /* 峰值检测：加速度模长超过阈值算一步，带最小间隔防抖 */
-  onMotion(e) {
-    const P = Pedometer;
-    const a = e.accelerationIncludingGravity;
-    if (!a) return;
-    const mag = Math.sqrt((a.x || 0) ** 2 + (a.y || 0) ** 2 + (a.z || 0) ** 2);
-    const now = performance.now();
-    /* 每 30 帧算一次动态阈值，适应不同手机的灵敏度和握持方式 */
-    P.buf.push(mag);
-    if (P.buf.length > 30) P.buf.shift();
-    const avg = P.buf.reduce((s, v) => s + v, 0) / P.buf.length;
-    const thr = avg + 1.3;
-
-    if (mag > thr && now - P.lastPeak > 280) {
-      P.lastPeak = now;
-      P.steps++;
-      /* 每 10 步写一次盘并刷新界面，别每一步都写 */
-      if (P.steps % 10 === 0) {
-        const r = DB.rec();
-        r.steps = P.base + P.steps;
-        DB.save(true);
-        App.renderSteps();
-        App.renderHero();
-      }
-    }
-  },
-
-  /* 收尾：把没写盘的步数补上 */
-  flush() {
-    if (!this.running) return;
-    const r = DB.rec();
-    r.steps = this.base + this.steps;
-    DB.save(true);
-  },
-};
-window.addEventListener('beforeunload', () => Pedometer.flush());
-document.addEventListener('visibilitychange', () => { if (document.hidden) Pedometer.flush(); });
 
 
 /* ════════════════════════════════════════════════════════════════
