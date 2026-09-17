@@ -225,22 +225,24 @@ button{cursor:pointer}
 .tlBlock{padding:var(--s6) 0 var(--s2) 58px;
   font-size:var(--f-3xs);letter-spacing:.22em;text-transform:uppercase;color:var(--dim);font-weight:650}
 .tlBlock:first-child{padding-top:var(--s1)}
-/* 每个时段右侧的水分点阵 —— 点一下加一杯；咖啡和牛奶也算进总液体量 */
-.tlBlock .water{display:flex;align-items:center;gap:5px;margin-left:auto;padding-right:var(--s3)}
-.tlBlock .wcup{width:9px;height:9px;border-radius:50%;border:1.3px solid rgba(124,192,255,.45);
-  background:transparent;padding:0;flex:none;transition:all var(--d2) var(--e-out)}
+/* 每个时段标题后面的水分点阵 —— 紧跟着标题文字（不要推到最右，那样和时段脱钩） */
+.tlBlock .water{display:inline-flex;align-items:center;gap:5px;margin-left:9px}
+.tlBlock .wcup{width:9px;height:9px;border-radius:50%;border:1.3px solid rgba(124,192,255,.5);
+  background:transparent;padding:0;flex:none;
+  transition:background var(--d2) var(--e-out),border-color var(--d2) var(--e-out)}
 .tlBlock .wcup.full{background:var(--ink-400);border-color:transparent}
 .tlBlock .wcup:active{opacity:.6}
 .tlBlock .wlabel{font-size:8.5px;color:var(--dim);letter-spacing:.04em;text-transform:none;margin-left:2px}
 .tlRow{display:grid;grid-template-columns:44px minmax(0,1fr);
   column-gap:12px;align-items:baseline;
-  padding:12px var(--s3);width:100%;text-align:left;
+  padding:13px var(--s3);width:100%;text-align:left;
   background:none;border:none;border-radius:var(--r1);color:var(--text);
   position:relative;overflow:hidden;
-  transition:background var(--d1) var(--e-out)}
+  transition:background var(--d1) var(--e-out),padding var(--d2) var(--e-out),min-height var(--d2) var(--e-out)}
+.tlRow{min-height:56px}
 .tlRow:active{background:rgba(200,215,235,.055)}
-.tlRow.done{padding-top:7px;padding-bottom:7px}
-.tlRow.done .tlSub{display:none}
+.tlRow.done{}
+/* 刻意不做「已完成就变矮」：那会让整页高度突然跳动，用户感觉是页面缩小了 */
 .tlTime{font-family:var(--mono);font-size:var(--f-2xs);opacity:.78;color:var(--faint);
   font-weight:500;letter-spacing:0;white-space:nowrap}
 .tlBody{min-width:0;overflow:hidden;display:block;padding-right:58px}
@@ -295,11 +297,11 @@ button{cursor:pointer}
    所以给那一行加 .keep，副标题永远显示。 */
 .tl.hideSub .tlSub{display:none}
 .tl.hideSub .tlRow.keep .tlSub{display:block}
-.tl.hideSub .tlRow{padding-top:11px;padding-bottom:11px}
-.tl.hideSub .tlRow.done{padding-top:7px;padding-bottom:7px}
+.tl.hideSub .tlRow{padding-top:13px;padding-bottom:13px}
 .tl.hideSub .tlRow.keep{padding-top:13px;padding-bottom:13px}
 /* ════════════ 水杯：改成小圆点阵，视觉重量降到最低 ════════════ */
-.cups{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+/* ════════════ 水杯（已废弃：补水改成时间轴里的点阵了，这里保留类名兼容） ════════════ */
+.cups{display:none}
 .cup{width:26px;height:26px;border-radius:50%;flex:none;position:relative;overflow:hidden;
   border:1.2px solid rgba(200,215,235,.13);background:rgba(200,215,235,.015);
   transition:transform var(--d1) var(--e-spring),border-color var(--d2),background var(--d2)}
@@ -684,26 +686,21 @@ details .body b{color:var(--text);font-weight:650}
       <div><div class="kicker">目标追踪</div><h1 class="h1">离目标还有多远</h1></div>
     </header>
 
+    <!-- 只留三层：还差多少 / 一条进度条 / 三个关键数。其余全部折叠。 -->
     <div class="card">
-      <div class="chead">
-        <div class="ctitle">主目标</div>
-        <span class="tag ok" id="goalPill">—</span>
-      </div>
-      <div style="display:flex;align-items:baseline;gap:var(--s2)">
+      <div style="display:flex;align-items:baseline;gap:var(--s3);flex-wrap:wrap">
         <span class="guardNum" id="pLost" style="background:var(--grad-accent);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent">0</span>
-        <span style="color:var(--muted);font-size:var(--f-sm)">斤已减 / 共 <b id="pTarget">0</b> 斤</span>
+        <span style="color:var(--muted);font-size:var(--f-sm)">／ 共 <b id="pTarget">0</b> 斤</span>
+        <span class="tag ok" id="goalPill" style="margin-left:auto">—</span>
       </div>
       <div class="bar mt4"><i id="pBar"></i></div>
       <div class="hint mt3" id="pRemain">—</div>
     </div>
 
-    <div class="tiles c2">
-      <div class="tile"><div class="k"><span class="i" data-i="orbit"></span>已进行</div><div class="v" id="pDays">0<sub>天</sub></div></div>
-      <div class="tile"><div class="k"><span class="i" data-i="clock"></span>剩余</div><div class="v" id="pLeft">0<sub>天</sub></div></div>
-    </div>
-    <div class="tiles c2 mt3">
-      <div class="tile"><div class="k">当前速度</div><div class="v" id="pRate">—</div></div>
-      <div class="tile"><div class="k">按此速度达标</div><div class="v" id="pEta">—</div></div>
+    <div class="tiles c3">
+      <div class="tile"><div class="k">第几天</div><div class="v" id="pDays">0</div></div>
+      <div class="tile"><div class="k">速度</div><div class="v" id="pRate">—</div></div>
+      <div class="tile"><div class="k">预计达标</div><div class="v" id="pEta">—</div></div>
     </div>
 
     <div class="sec">肌肉守护</div>
@@ -718,21 +715,19 @@ details .body b{color:var(--text);font-weight:650}
         </div>
       </div>
       <div class="factors" id="gFactors"></div>
-      <div class="hr"></div>
-      <div id="gNotes"></div>
-    </div>
-
-    <div class="card">
-      <div class="chead">
-        <div class="ctitle">掉秤成分</div>
-        <span class="tag gold" id="gSplit">—</span>
-      </div>
-      <div class="tiles c3" style="padding:0;background:none;border:none">
-        <div class="tile"><div class="k">脂肪</div><div class="v" id="cFat">—</div></div>
-        <div class="tile"><div class="k">肌肉</div><div class="v" id="cMuscle">—</div></div>
-        <div class="tile"><div class="k">水 + 糖原</div><div class="v" id="cWater">—</div></div>
-      </div>
-      <div class="hint mt4">水分恢复碳水后 2~3 天会回来 2~3 斤 —— <b>那不是反弹，是生理必然</b>。肌肉那一栏才是你真正要盯的。</div>
+      <details class="mt4">
+        <summary>拖后腿的是哪一项 · 怎么改</summary>
+        <div class="body" id="gNotes"></div>
+      </details>
+      <details class="mt3">
+        <summary>掉的斤数里，脂肪 / 肌肉 / 水各占多少</summary>
+        <div class="body">
+          <div class="kv"><span class="k">脂肪</span><span class="v" id="cFat">—</span></div>
+          <div class="kv"><span class="k">肌肉</span><span class="v" id="cMuscle">—</span></div>
+          <div class="kv"><span class="k">水 + 糖原</span><span class="v" id="cWater">—</span></div>
+          <div class="hint mt3">水分恢复碳水后 2~3 天会回来 2~3 斤 —— <b>那不是反弹，是生理必然</b>。</div>
+        </div>
+      </details>
     </div>
 
     <div class="card tap" onclick="App.go('calendar')">
@@ -740,7 +735,6 @@ details .body b{color:var(--text);font-weight:650}
         <div class="ctitle"><span class="badge dim"><span class="i" data-i="cal"></span></span>30 天打卡日历</div>
         <span class="tag" id="calEntryPill">—</span>
       </div>
-      <div class="hint">哪天满勤、哪天断签、连续多少天 —— 点这里进日历</div>
     </div>
   </section>
 
@@ -811,18 +805,14 @@ details .body b{color:var(--text);font-weight:650}
     </div>
 
     <div class="card">
-      <div class="chead">
-        <div class="ctitle"><span class="badge gold"><span class="i" data-i="alert"></span></span>今天如果不做</div>
-        <span class="tag">按当前设置推算 30 天</span>
-      </div>
-      <div id="impactList"></div>
-    </div>
-
-    <div class="card">
-      <div class="chead">
-        <div class="ctitle"><span class="badge ink"><span class="i" data-i="chart"></span></span>过去两周实际 vs 满分</div>
-      </div>
-      <div id="accumBlock"></div>
+      <details>
+        <summary>今天如果不做，后果是什么</summary>
+        <div class="body" id="impactList"></div>
+      </details>
+      <details class="mt3">
+        <summary>过去两周：你的实际水平 vs 满分计划</summary>
+        <div class="body" id="accumBlock"></div>
+      </details>
     </div>
 
     <div class="card">
@@ -895,6 +885,7 @@ details .body b{color:var(--text);font-weight:650}
 
     <div class="sec">目标</div>
     <div class="card">
+      <div id="goalLockNote" class="hint" style="display:none;line-height:1.85"></div>
       <div class="kv"><span class="k">开始日期</span><span class="v"><input id="setStartDate" type="date"></span></div>
       <div class="kv"><span class="k">计划天数</span><span class="v"><input id="setDays" type="number">天</span></div>
       <div class="kv"><span class="k">起始体重</span><span class="v"><input id="setStart" type="number" step="0.1">kg</span></div>
@@ -913,8 +904,8 @@ details .body b{color:var(--text);font-weight:650}
             </select></span></div>
         </div>
       </details>
-      <button class="btn primary wide mt5" onclick="App.saveSettings()">保存</button>
-      <div class="hint mt3">改这些不会动到任何历史记录。</div>
+      <button class="btn primary wide mt5" onclick="App.saveSettings()" id="goalSaveBtn">保存</button>
+      <div class="hint mt3" id="goalSaveHint">改这些不会动到任何历史记录。</div>
     </div>
 
     <div class="sec">到点提醒</div>
@@ -946,6 +937,31 @@ details .body b{color:var(--text);font-weight:650}
           <div class="kv"><span class="k">就寝</span><span class="v"><input id="setSleep" type="time"></span></div>
         </div>
       </details>
+    </div>
+
+    <div class="sec">自动备份</div>
+    <div class="card">
+      <div class="kv"><span class="k">状态</span><span class="v" id="bkState" style="font-size:var(--f-xs)">—</span></div>
+      <div class="kv"><span class="k">上次上传</span><span class="v" id="bkLast" style="font-size:var(--f-xs)">—</span></div>
+      <div class="hint mt3" id="bkHint">开启后每次打卡都会自动把数据推到你的 GitHub 仓库，不用你管。</div>
+      <details class="mt3">
+        <summary>开启云端自动备份（需要一次授权）</summary>
+        <div class="body">
+          <div class="field mt3"><input id="bkToken" type="password" placeholder="GitHub Token（ghp_...）"></div>
+          <div class="field mt2"><input id="bkRepo" placeholder="仓库名，如 lpyyyyyyyyyy/fit-tracker"></div>
+          <div class="field mt2"><input id="bkPath" placeholder="文件路径（默认 data.json）"></div>
+          <button class="btn primary wide mt3" onclick="App.saveBackupCfg()">保存并测试</button>
+          <div class="hint mt3">
+            <b>怎么拿 Token</b>：GitHub → Settings → Developer settings → Personal access tokens →
+            <b>Fine-grained tokens</b> → 只勾选 <b>这一个仓库</b> → 权限只给 <b>Contents: Read and write</b>。
+            <br><br>⚠️ Token 存在这台设备的浏览器里。权限只到单仓库的 Contents，最坏情况也只影响那一个仓库。
+          </div>
+        </div>
+      </details>
+      <div class="row2 mt4">
+        <button class="btn" onclick="App.syncNow()">立即备份一次</button>
+        <button class="btn" onclick="App.exportJSON()">导出到文件</button>
+      </div>
     </div>
 
     <div class="sec">数据</div>
@@ -1016,7 +1032,7 @@ details .body b{color:var(--text);font-weight:650}
    1 · 常量与工具
    ════════════════════════════════════════════════════════════════ */
 /* App 版本 —— 每次改完内容把它 +1，设置页会显示，用来确认看到的是不是最新版 */
-const APP_VER = '2026.09.17-3';
+const APP_VER = '2026.09.17-4';
 
 const JIN = 2;
 const DAY = 86400000;
@@ -1076,6 +1092,61 @@ function paintIcons(root) {
 }
 
 /* ════════════════════════════════════════════════════════════════
+   云端自动备份 —— 每次打卡后把 data.json 推到 GitHub 仓库
+   ════════════════════════════════════════════════════════════════ */
+const Backup = {
+  _t: null, _busy: false,
+
+  cfg() { return (DB.data.settings.backup = DB.data.settings.backup || { token:'', repo:'', path:'data.json' }); },
+  enabled() { const c = this.cfg(); return !!(c.token && c.repo); },
+
+  /* 打卡后调用：防抖 20 秒，避免连续点击狂发请求 */
+  auto() {
+    if (!this.enabled()) return;
+    clearTimeout(this._t);
+    this._t = setTimeout(() => this.push(true), 20000);
+  },
+
+  async push(silent) {
+    const c = this.cfg();
+    if (!c.token || !c.repo) {
+      if (!silent) App.toast('还没配置云端备份');
+      return false;
+    }
+    if (this._busy) return false;
+    this._busy = true;
+    try {
+      const url = `https://api.github.com/repos/${c.repo}/contents/${c.path || 'data.json'}`;
+      const H = { 'Authorization':'Bearer ' + c.token, 'Accept':'application/vnd.github+json', 'Content-Type':'application/json' };
+      let sha = null;
+      const head = await fetch(url + '?t=' + Date.now(), { headers: H });
+      if (head.ok) { const j = await head.json(); sha = j.sha; }
+      const payload = {
+        message: `打卡数据 ${todayKey()}`,
+        content: btoa(unescape(encodeURIComponent(JSON.stringify(DB.data, null, 2)))),
+      };
+      if (sha) payload.sha = sha;
+      const r = await fetch(url, { method:'PUT', headers: H, body: JSON.stringify(payload) });
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      try { localStorage.setItem('ran_fit_lastbackup', new Date().toISOString()); } catch (e) {}
+      if (!silent) App.toast('已备份到 GitHub');
+      App.renderSettings();
+      return true;
+    } catch (e) {
+      if (!silent) App.toast('备份失败：' + e.message);
+      return false;
+    } finally { this._busy = false; }
+  },
+
+  state() {
+    if (!this.enabled()) return { txt:'未开启', cls:'dim' };
+    const last = localStorage.getItem('ran_fit_lastbackup');
+    return { txt: last ? '已开启' : '已开启（还没传过）', cls:'ok', last };
+  },
+};
+
+
+/* ════════════════════════════════════════════════════════════════
    2 · 内容常量
    ════════════════════════════════════════════════════════════════ */
 const EXERCISES = [
@@ -1095,8 +1166,8 @@ const MISC_TEMPLATE = [
   { id:'nap', name:'午睡 60 分钟' }, { id:'corn', name:'玉米 1 根' },
   { id:'spinach', name:'菠菜 300g' },
 ];
-/* 蛋白只在鸡胸和虾之间隔天换 */
-const PROTEIN_ROTATION = ['鸡胸 250g','虾 250g','鸡胸 250g','虾 250g','鸡胸 250g','虾 250g','鸡胸 250g'];
+/* 蛋白只在虾和牛肉之间隔天换（用户不吃鸡胸） */
+const PROTEIN_ROTATION = ['虾 250g','牛肉 250g','虾 250g','牛肉 250g','虾 250g','牛肉 250g','虾 250g'];
 
 /* ════════════════════════════════════════════════════════════════
    做法说明 —— 点「午餐」时直接展开，不用去别处找。
@@ -1104,6 +1175,31 @@ const PROTEIN_ROTATION = ['鸡胸 250g','虾 250g','鸡胸 250g','虾 250g','鸡
    因为它们是隔天轮换的，用户总要看第二次。
    ════════════════════════════════════════════════════════════════ */
 const HOWTO = {
+  /* 按当天轮换到的那一样给做法 */
+  beef: `<div class="ht">🥩 牛肉怎么做（250g ≈ 一个巴掌大）</div>
+    <div class="hs">⚠️ <b>部位决定成败</b>。只能买这三个瘦部位，别的都不行：</div>
+    <ol class="hl">
+      <li><b>牛霖（首选）</b>—— 最瘦最好买，蛋白 22g/100g、脂肪只有 4g，跟鸡胸差不多</li>
+      <li><b>牛腱子</b>—— 更便宜，但要炖 1.5 小时才软，嫌麻烦别买</li>
+      <li><b>牛里脊</b>—— 最嫩，但贵一些</li>
+    </ol>
+    <div class="hw">❌ <b>绝对不买肥牛、雪花牛肉、牛腩</b>—— 脂肪是鸡胸的 10~15 倍，250g 直接比你计划多吃 700 kcal。</div>
+    <div class="hsub">做法 A · 不粘锅干煎（最快，10 分钟）</div>
+    <ol class="hl">
+      <li>牛肉<b>逆着纹理切成薄片</b>（切厚了嚼不动）</li>
+      <li>撒盐 + 黑胡椒 + 一点生抽，<b>腌 10 分钟</b></li>
+      <li>不粘锅烧到<b>很热</b>，<b>不放油</b>，肉片平铺下去</li>
+      <li><b>每面 1~1.5 分钟</b>，变色立刻出锅 —— 牛肉比鸡胸容易老，宁可生一点</li>
+    </ol>
+    <div class="hsub">做法 B · 水煮（最嫩，零技术）</div>
+    <ol class="hl">
+      <li>冷水下锅，放 2 片姜 + 一点盐</li>
+      <li>水开后<b>撇掉浮沫</b>，转小火煮 <b>8~10 分钟</b></li>
+      <li>捞出来放凉切片，蘸醋 + 辣椒面 + 蒜末</li>
+    </ol>
+    <div class="hw">判断熟了没：切开中间是浅褐色就熟了，<b>粉红色还能再煮 1 分钟</b>。<br>
+    剩下的汤别浪费 —— 是牛肉汤，可以喝（有味道，还能补电解质）。</div>`,
+
   chicken: `<div class="ht">🐔 鸡胸怎么做（250g ≈ 一块巴掌大）</div>
     <div class="hs">两种做法挑一个，<b>做法 A 最不容易柴，新手先用 A</b></div>
     <div class="hsub">A · 水煮撕丝（最嫩）</div>
@@ -1164,25 +1260,46 @@ const HOWTO = {
     ❌ 老干妈、豆瓣酱、甜面酱（含油含糖）</div>
     <div class="hsub">各道菜配什么</div>
     <div class="hw">
-    · <b>鸡胸</b>：盐 + 辣椒面 + 花椒粉 + 黑胡椒（腌 10 分钟）<br>
-    · <b>虾</b>：水里放姜片 + 花椒 + 一点盐；蘸醋 + 辣椒面 + 蒜末<br>
+    · <b>虾</b>：水里放姜片 + 花椒 + 一点盐；蘸醋 + 辣椒面 + 蒜末 + 黑胡椒<br>
+    · <b>牛肉</b>：盐 + 黑胡椒 + 一点生抽（腌 10 分钟）<br>
     · <b>菠菜</b>：一小撮盐；或者只蘸醋（醋能提味又不加热量）<br>
     · <b>玉米</b>：什么都不用放，直接啃</div>`,
 
+  /* 份量换算 —— 直接放进需要它的那一餐里，不用去设置页找 */
+  portion(kind) {
+    const M = {
+      protein: `<div class="ht">📏 250g 到底是多少（没秤也能估）</div>
+        <div class="hw">
+        · <b>虾 250g</b> ＝ <b>12~15 只</b>中等大小的虾；冷冻虾 500g 一袋，<b>半袋就是 250g</b><br>
+        · <b>牛肉 250g</b> ＝ <b>一个手掌大（不含手指）、厚约 2 指</b><br>
+        · 有秤的话：买回来直接<b>分装成 250g 一袋冷冻</b>，之后拿一袋就行，永远不用再算</div>`,
+      carb: `<div class="ht">📏 玉米 / 米饭是多少</div>
+        <div class="hw">
+        · <b>玉米 1 小根</b> ≈ 整根煮的中等玉米一根（约 150g）；买不到就用 <b>南瓜 200g</b> 或 <b>红薯 100g</b><br>
+        · <b>米饭半碗</b> ＝ 100g 熟重（普通饭碗装满约 200g，吃一半）。更省事：<b>煮一锅分成 7 份冷冻</b><br>
+        · 不想吃米饭就全靠玉米，或干脆去掉碳水（代价是更容易饿）</div>`,
+      spinach: `<div class="ht">📏 菠菜 150g 是多少</div>
+        <div class="hw">煮熟<b>装满一个普通饭碗</b>约 150g。中午一碗 + 晚上一碗 = 全天 300g。<br>
+        买冷冻菠菜最省事，不用洗不用切。<br>
+        <span style="color:var(--warn)">⚠️ 这 300g 是你唯一的镁和钾来源，两碗都要吃满。生菜、黄瓜不能替代（镁含量差 3~5 倍）。</span></div>`,
+    };
+    return M[kind] || '';
+  },
+
   /* 午餐整体：今天那个展开，另一个折起来 */
   lunch(today) {
-    const isShrimp = /虾/.test(today);
-    const primary = isShrimp ? HOWTO.shrimp : HOWTO.chicken;
-    const secondary = isShrimp ? HOWTO.chicken : HOWTO.shrimp;
-    const otherName = isShrimp ? '鸡胸' : '虾';
-    const todayName = isShrimp ? '虾' : '鸡胸';
+    const isBeef = /牛/.test(today);
+    const primary = isBeef ? HOWTO.beef : HOWTO.shrimp;
+    const secondary = isBeef ? HOWTO.shrimp : HOWTO.beef;
+    const otherName = isBeef ? '虾' : '牛肉';
     return `<p>今天吃：<b>${today}</b> ＋ <b>玉米 1 小根</b> ＋ <b>菠菜 150g</b>。三样怎么做都在下面。</p>`
       + `<div class="howto">${primary}</div>`
       + `<details class="howto"><summary>明天轮到${otherName} · 做法先看一遍</summary>
            <div class="body">${secondary}</div>
          </details>`
-      + `<div class="howto">${HOWTO.corn}</div>`
-      + `<div class="howto">${HOWTO.spinach}</div>`
+      + `<div class="howto">${HOWTO.corn}${HOWTO.portion('carb')}</div>`
+      + `<div class="howto">${HOWTO.spinach}${HOWTO.portion('spinach')}</div>`
+      + `<div class="howto">${HOWTO.portion('protein')}</div>`
       + `<div class="howto">${HOWTO.season}</div>`;
   },
 };
@@ -2229,12 +2346,7 @@ const App = {
       const r = DB.rec(); const v = e.target.value === '' ? null : Number(e.target.value);
       if (r.steps !== v) { r.steps = v; DB.save(true); this.renderHero(); this.renderSteps(); }
     });
-    $('#wInput').addEventListener('input', e => {
-      const v = Number(e.target.value);
-      $('#wConvert').textContent = v > 0
-        ? `= ${fmt(kg2jin(v), 1)} 斤　·　比起始 ${v - DB.data.settings.startWeight >= 0 ? '+' : ''}${fmt(kg2jin(v - DB.data.settings.startWeight), 1)} 斤`
-        : '—';
-    });
+        $('#wInput').addEventListener('input', e => this.onWeightInput(Number(e.target.value)));
     /* 顶栏滚动时收窄，把空间还给内容 */
     let _lastY = 0;
     window.addEventListener('scroll', () => {
@@ -2357,7 +2469,9 @@ const App = {
       else if (it.kind === 'action') mark = it.id === 'train' ? '开始' + icon('arrow') : '记录' + icon('arrow');
 
       const onclick = it.kind === 'check' ? `App.toggleItem('${it.id}','${it.group}')`
-        : it.kind === 'action' ? `App.go('${it.go}')` : `App.showTip('${it.id}')`;
+        : it.kind === 'action'
+          ? (it.id === 'weigh' ? 'App.openWeigh()' : `App.go('${it.go}')`)
+          : `App.showTip('${it.id}')`;
 
       html += `<button class="${cls.join(' ')}" onclick="${onclick}">
         <span class="tlTime">${it.time}</span>
@@ -2411,7 +2525,7 @@ const App = {
     if (group === 'meals') { r.meals = r.meals || {}; r.meals[id] = !r.meals[id]; }
     else { r.misc = r.misc || {}; r.misc[id] = !r.misc[id]; }
     if (r.remindOff && r.remindOff[id]) delete r.remindOff[id];
-    DB.save(); this.renderTimeline(); this.renderHero(); Timer.buzz(12);
+    DB.save(); Backup.auto(); this.renderTimeline(); this.renderHero(); Timer.buzz(12);
     const it = DB.timeline().find(x => x.id === id);
     if (it && this.isDone(it, r)) this.toast(it.name + ' 完成');
   },
@@ -2451,8 +2565,88 @@ const App = {
     this.toast(hidden ? '已隐藏说明，只留标题' : '已显示说明');
   },
 
-  /* ── 强制更新：注销 SW + 清缓存 + 重载。
-        手机上看到旧版页面时点这个。 ── */
+  renderBackupState() {
+    const st = Backup.state();
+    const c = Backup.cfg();
+    const a = $('#bkState'), b = $('#bkLast'), h = $('#bkHint');
+    if (a) { a.textContent = st.txt; a.style.color = st.cls === 'ok' ? 'var(--accent)' : 'var(--dim)'; }
+    if (b) b.textContent = st.last ? new Date(st.last).toLocaleString('zh-CN') : '—';
+    if (h) h.innerHTML = Backup.enabled()
+      ? '每次打卡后<b>自动上传</b>（延迟 20 秒，避免频繁请求）。也可以在下面点「立即备份一次」。'
+      : '开启后每次打卡都会自动把数据推到你的 GitHub 仓库，不用你管。';
+    if ($('#bkToken')) $('#bkToken').value = c.token;
+    if ($('#bkRepo')) $('#bkRepo').value = c.repo;
+    if ($('#bkPath')) $('#bkPath').value = c.path || 'data.json';
+  },
+
+  /* ── 自动备份：保存配置 / 立即同步 ── */
+  saveBackupCfg() {
+    const c = Backup.cfg();
+    c.token = ($('#bkToken') ? $('#bkToken').value : '').trim();
+    c.repo  = ($('#bkRepo') ? $('#bkRepo').value : '').trim();
+    c.path  = (($('#bkPath') ? $('#bkPath').value : '') || 'data.json').trim();
+    DB.save(true);
+    this.renderSettings();
+    if (!c.token || !c.repo) return this.toast('请把 Token 和仓库名都填上');
+    this.toast('正在测试…');
+    Backup.push(false);
+  },
+  syncNow() {
+    if (!Backup.enabled()) {
+      this.openSheet('还没开启云端备份',
+        '<p>开启之后<b>每次打卡都会自动上传</b>，不用你管，需要你提供一次 GitHub Token。</p>' +
+        '<p>位置：<b>设置 → 自动备份 → 开启云端自动备份</b>，填 Token 和仓库名即可。</p>');
+      return;
+    }
+    this.toast('正在备份…');
+    Backup.push(false);
+  },
+
+  /* ── 目标锁定：设定之后、达成之前不能改。
+        用户要求：目标设完就锁住，达成后才解锁并按新目标重新规划。 ── */
+  goalLocked() {
+    const s = DB.data.settings;
+    const list = DB.weights();
+    const cur = list.length ? list[list.length - 1].kg : s.startWeight;
+    const lost = s.startWeight - cur;
+    const reached = lost >= s.goalLoss;              // 达成主目标
+    /* 还没到「开始日期」之前可以随便改（还在准备阶段） */
+    const notStarted = diffDays(s.startDate, todayKey()) + 1 < 1;
+    return { locked: !notStarted, reached };
+  },
+
+  renderGoalLock() {
+    const { locked, reached } = this.goalLocked();
+    const note = $('#goalLockNote'), btn = $('#goalSaveBtn'), hint = $('#goalSaveHint');
+    const ids = ['setStartDate','setDays','setStart','setGoal','setKcal','setProtein','setSteps'];
+    const s = DB.data.settings;
+    const list = DB.weights();
+    const cur = list.length ? list[list.length - 1].kg : s.startWeight;
+    const left = Math.max(0, s.goalLoss - (s.startWeight - cur));
+
+    if (!locked || reached) {
+      ids.forEach(id => { const el = $('#' + id); if (el) { el.disabled = false; el.style.opacity = ''; } });
+      if (note) note.style.display = 'none';
+      if (btn) { btn.textContent = reached ? '已达成 · 设定下一个目标' : '保存'; btn.disabled = false; }
+      if (hint) hint.innerHTML = reached
+        ? '🎉 主目标已达成。现在可以设一个<b>新目标</b>，我会按新目标重新排每日热量、蛋白和训练强度。'
+        : '改这些不会动到任何历史记录。';
+      return;
+    }
+    /* 锁定状态：字段只读 */
+    ids.forEach(id => { const el = $('#' + id); if (el) { el.disabled = true; el.style.opacity = '.55'; } });
+    if (note) {
+      note.style.display = '';
+      note.innerHTML = `🔒 <b>目标已锁定</b>（计划进行中，不能改）。<br>
+        还差 <b>${fmt(kg2jin(left), 1)} 斤</b> 达成。<br>
+        <b>为什么锁住</b>：中途改目标就是改考核标准 —— 减不动了就把目标调低，那这个计划就没有意义了。<br>
+        达成之后会自动解锁，我会按新目标重新给你排方案。`;
+    }
+    if (btn) { btn.textContent = '目标已锁定'; btn.disabled = true; }
+    if (hint) hint.innerHTML = '要改只能等达成，或者把开始日期改到未来（重新开始计划）。';
+  },
+
+  /* ── 强制更新：注销 SW + 清缓存 + 重载。手机上看到旧版页面时点这个。 ── */
   async hardReload() {
     this.toast('正在清缓存…');
     try {
@@ -2610,13 +2804,33 @@ const App = {
       ? list.map(p => `<div class="kv"><span class="k" style="font-family:var(--mono);font-size:var(--f-xs)">${p.date}</span><span class="v">${fmt(kg2jin(p.kg), 1)} 斤</span></div>`).join('')
       : '<div class="hint">还没有记录。每天 17:00 称一次，填上面那个框就行。</div>';
   },
+  /* 重量页输入框：输入即更新（不再等到失焦才反应，用户要看到交互后的差别） */
+  onWeightInput(v) {
+    const s = DB.data.settings;
+    const ok = v > 0;
+    $('#wConvert').innerHTML = ok
+      ? `<b style="color:var(--accent)">${fmt(kg2jin(v), 1)} 斤</b>　·　BMI ${fmt(Engine.bmi(v, s.heightCm || 178), 1)}　·　比起始 ${v - s.startWeight >= 0 ? '+' : ''}${fmt(kg2jin(v - s.startWeight), 1)} 斤`
+      : '—';
+    /* 实时把这一点画进图表（虚线预览），用户马上看得到变化 */
+    this._preview = ok ? v : null;
+    this.drawChart();
+    const b = $('#wTodayBadge');
+    if (b) b.innerHTML = ok ? `预览 ${fmt(kg2jin(v), 1)} 斤` : (DB.get() && DB.get().weight != null ? `${fmt(kg2jin(DB.get().weight), 1)} 斤` : '未记录');
+  },
   saveWeight() {
     const v = Number($('#wInput').value);
     if (!v || v < 30 || v > 200) return this.toast('请输入合理的体重');
     DB.rec().weight = v;
-    DB.save(); this.renderWeightTop(); this.drawChart();
+    this._preview = null;
+    DB.save();
+    this.renderWeightTop(); this.drawChart();
     this.renderHero(); this.renderProgress();
-    this.toast('已记录 ' + fmt(kg2jin(v), 1) + ' 斤');
+    const list = DB.weights();
+    const prev = list.length >= 2 ? list[list.length - 2] : null;
+    if (prev) {
+      const d = kg2jin(v - prev.kg);
+      this.toast(`已记录 ${fmt(kg2jin(v), 1)} 斤 · 比上次${d >= 0 ? '重' : '轻'} ${fmt(Math.abs(d), 1)} 斤`);
+    } else this.toast(`已记录 ${fmt(kg2jin(v), 1)} 斤`);
   },
   fillWeightNow() {
     const list = DB.weights();
@@ -2634,7 +2848,9 @@ const App = {
     const W = box.width, H = box.height;
     g.clearRect(0, 0, W, H);
 
-    const list = DB.weights();
+    const list = DB.weights().slice();
+    /* 预览点：输入框里的数字实时画进来，让用户看到交互后的变化 */
+    if (this._preview) list.push({ date: todayKey(), kg: this._preview, preview: true });
     if (list.length < 2) {
       g.fillStyle = 'rgba(200,215,235,.26)';
       g.font = '12px -apple-system,sans-serif'; g.textAlign = 'center';
@@ -2674,7 +2890,13 @@ const App = {
     /* 单日点 */
     g.strokeStyle = 'rgba(200,215,235,.28)'; g.lineWidth = 1.2;
     g.beginPath(); list.forEach((p, i) => i ? g.lineTo(X(i), Y(p.kg)) : g.moveTo(X(i), Y(p.kg))); g.stroke();
-    list.forEach((p, i) => { g.beginPath(); g.arc(X(i), Y(p.kg), 2.2, 0, Math.PI * 2); g.fillStyle = 'rgba(200,215,235,.5)'; g.fill(); });
+    list.forEach((p, i) => {
+      g.beginPath(); g.arc(X(i), Y(p.kg), p.preview ? 4.5 : 2.2, 0, Math.PI * 2);
+      if (p.preview) {
+        g.fillStyle = 'rgba(7,10,16,.95)'; g.fill();
+        g.strokeStyle = '#4fd6c4'; g.lineWidth = 2; g.stroke();
+      } else { g.fillStyle = 'rgba(200,215,235,.5)'; g.fill(); }
+    });
 
     /* 7 日均线 */
     g.strokeStyle = '#4fd6c4'; g.lineWidth = 2.4; g.lineJoin = 'round'; g.lineCap = 'round';
@@ -2711,11 +2933,10 @@ const App = {
 
     const dayNum = clamp(diffDays(s.startDate, todayKey()) + 1, 1, s.planDays);
     $('#pDays').innerHTML = dayNum + '<sub>天</sub>';
-    $('#pLeft').innerHTML = Math.max(0, s.planDays - dayNum) + '<sub>天</sub>';
 
     const span = list.length >= 2 ? Math.max(1, diffDays(list[0].date, list[list.length - 1].date)) : 0;
     const rateJin = span ? kg2jin(list[0].kg - cur) / span : 0;
-    $('#pRate').innerHTML = span && rateJin > 0 ? fmt(rateJin, 2) + '<sub>斤/天</sub>' : '<span style="font-size:var(--f-2xs);color:var(--dim);font-weight:500">需 2 次体重记录</span>';
+    $('#pRate').innerHTML = span && rateJin > 0 ? fmt(rateJin, 2) + '<sub>斤/天</sub>' : '<span style="font-size:var(--f-3xs);color:var(--dim);font-weight:500">需 2 次记录</span>';
     if (rateJin > 0.02 && remain > 0) {
       const days = Math.ceil(remain / (rateJin / JIN));
       const eta = addDays(todayKey(), days);
@@ -2743,7 +2964,6 @@ const App = {
     $('#gNotes').innerHTML = MuscleModel.encourage(Math.max(0, lostJin)).map(n =>
       `<div class="note ${n.tone}"><span class="ni">${icon(n.ic)}</span><span><span class="nt">${n.title}</span><span class="nb">${n.body}</span></span></div>`).join('');
 
-    $('#gSplit').textContent = `肌肉占比 ${bd.musclePct}%`;
     $('#cFat').innerHTML = fmt(bd.fat, 1) + '<sub>斤</sub>';
     $('#cMuscle').innerHTML = fmt(bd.muscle, 1) + '<sub>斤</sub>';
     $('#cWater').innerHTML = fmt(Math.max(0, lostJin * 0.17), 1) + '<sub>斤</sub>';
@@ -2780,6 +3000,66 @@ const App = {
     $('#sMiss').textContent = miss;
     $('#sBest').textContent = DB.bestStreak();
     $('#sNow').textContent = DB.streak();
+  },
+
+  /* ── 称重：底部抽屉，不跳页（用户说跳页很割裂） ── */
+  openWeigh() {
+    const r = DB.get() || {};
+    const has = r.weight != null;
+    const list = DB.weights();
+    const last = list.length ? list[list.length - 1].kg : null;
+    this.sheet('称重打卡', `
+      <p>称之前先去趟厕所、把水杯放下。<b>下午 5 点的体重天生比早上重 1~2 斤</b>，那不是胖。</p>
+      <div class="field">
+        <input id="drawerWeight" type="number" inputmode="decimal" step="0.1"
+               placeholder="例如 79.4" value="${has ? r.weight : ''}" style="font-size:22px;font-weight:650">
+        <span class="unit">kg</span>
+      </div>
+      <div class="hint mt3" id="drawerHint">${has ? '今天已记录' : (last ? '上次 ' + fmt(kg2jin(last), 1) + ' 斤' : '还没有历史记录')}</div>
+      <div class="row2 mt4">
+        <button class="btn primary" onclick="App.saveWeightDrawer()">保存</button>
+        <button class="btn" onclick="App.fillDrawerLast()">用上次</button>
+      </div>
+    `);
+    const inp = $('#drawerWeight');
+    if (inp) {
+      setTimeout(() => { try { inp.focus(); } catch (e) {} }, 260);
+      inp.addEventListener('input', () => {
+        const v = Number(inp.value);
+        const h = $('#drawerHint');
+        if (!h) return;
+        if (!v) { h.textContent = last ? '上次 ' + fmt(kg2jin(last), 1) + ' 斤' : '还没有历史记录'; return; }
+        const d = last != null ? kg2jin(v - last) : 0;
+        const base = last != null ? `比上次 ${d >= 0 ? '+' : ''}${fmt(d, 1)} 斤` : '';
+        h.innerHTML = `<b>${fmt(kg2jin(v), 1)} 斤</b>　${base}　·　BMI ${fmt(Engine.bmi(v, DB.data.settings.heightCm || 178), 1)}`;
+      });
+    }
+  },
+  fillDrawerLast() {
+    const list = DB.weights();
+    if (!list.length) return this.toast('还没有历史记录');
+    const inp = $('#drawerWeight');
+    if (inp) { inp.value = list[list.length - 1].kg; inp.dispatchEvent(new Event('input')); }
+  },
+  saveWeightDrawer() {
+    const v = Number(($('#drawerWeight') || {}).value);
+    if (!v || v < 30 || v > 200) return this.toast('请输入合理的体重');
+    DB.rec().weight = v;
+    DB.save();
+    this.closeSheet();
+    this.renderWeightTop();
+    this.drawChart();
+    this.renderHero();
+    this.renderProgress();
+    /* 明确告诉用户"记录之后发生了什么" */
+    const list = DB.weights();
+    const prev = list.length >= 2 ? list[list.length - 2] : null;
+    if (prev) {
+      const d = kg2jin(v - prev.kg);
+      this.toast(`已记录 ${fmt(kg2jin(v), 1)} 斤 · 比上次${d >= 0 ? '重' : '轻'} ${fmt(Math.abs(d), 1)} 斤`);
+    } else {
+      this.toast(`已记录 ${fmt(kg2jin(v), 1)} 斤`);
+    }
   },
 
   /* ── 模拟 ── */
@@ -3071,6 +3351,8 @@ const App = {
     $('#dAutoBtn').textContent = s.autoBackup ? '已开启' : '已关闭';
     $('#dAutoBtn').className = 'btn ghost' + (s.autoBackup ? '' : ' danger');
 
+    this.renderGoalLock();
+    this.renderBackupState();
     $('#portionGuide').innerHTML = PORTION_GUIDE.map(p =>
       `<details><summary>${p.q}</summary><div class="body">${p.a}</div></details>`).join('');
   },
