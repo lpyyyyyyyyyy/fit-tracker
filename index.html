@@ -266,7 +266,10 @@ button{cursor:pointer}
       max-content 在空内容时行为也不稳。这里改成「状态列绝对定位在右侧」，
       内容列永远是简单的 1fr，不再依赖任何 auto/fr 的博弈。
    3) 标题行不要用 flex 包住圆点：直接让圆点 inline-block 跟着文字，
-      少一层布局就少一个出错点。 */
+      少一层布局就少一个出错点。
+   4) **默认隐藏副标题会连带藏掉「吃什么」** —— 早餐、下午加餐、晚餐都因此被藏过，
+      用户以为方案里没这些东西。规则：凡是「吃什么 / 做什么」的项在 JS 里标 keep:true；
+      另外 renderTimeline 有兜底 —— 可打卡却没有副标题的项自动强制显示。 */
 .tl{position:relative}
 .tlBlock{padding:var(--s6) 0 var(--s2) 58px;
   font-size:var(--f-3xs);letter-spacing:.22em;text-transform:uppercase;color:var(--dim);font-weight:650}
@@ -1094,7 +1097,7 @@ details .body b{color:var(--text);font-weight:650}
    1 · 常量与工具
    ════════════════════════════════════════════════════════════════ */
 /* App 版本 —— 每次改完内容把它 +1，设置页会显示，用来确认看到的是不是最新版 */
-const APP_VER = '2026.09.17-7';
+const APP_VER = '2026.09.17-8';
 
 const JIN = 2;
 const DAY = 86400000;
@@ -1565,43 +1568,43 @@ const DB = {
     add({ id:'train', time:s.trainTime || '19:00', ic:'dumbbell', kind:'action', go:'train',
       name:'训练 12 分钟', sub:'4 个动作 · 自动计时',
       tip:'深蹲 → 俯卧撑 → 站姿后踢腿 → 平板支撑。每个动作 1 组，组间歇 60 秒，全程自动衔接。<br><br><b>时机</b>：关掉电脑后立刻做 —— 别先坐下、别先刷手机、别先吃饭。一旦坐下来，这 12 分钟就永远没有了。<br><br>累到不行那天，<b>只做 10 个深蹲，30 秒也算完成</b>。保住「我还是在练的人」这条线，比练满 12 分钟重要得多。<br><br>训练时间可以在设置页改。' });
-    add({ id:'m1', time:'08:30', ic:'meal', kind:'check', group:'meals',
+    add({ id:'m1', time:'08:30', ic:'meal', kind:'check', group:'meals', keep:true,
       name:'早餐', sub:'水煮蛋 2 个 · 蛋白粉',
       tip:'水煮蛋 2 个；蛋白粉 1 勺，<b>用家里那盒牛奶冲，250ml 就行</b>。复合维生素 1 片。<br><br><b>牛奶怎么选</b>：全脂奶 250ml ≈ 165 kcal / 8g 蛋白；<b>脱脂奶 250ml ≈ 85 kcal / 8.5g 蛋白</b> —— 同样是 8g 蛋白，脱脂省 80 kcal。有脱脂就买脱脂，没有就全脂，别为这个纠结。<br><br><b>蛋白粉会不会长胖</b>：一勺约 100 kcal / 25g 蛋白，它就是蛋白质，跟鸡胸里的同一种东西 —— <b>热量赤字下不会让你长胖</b>。<br>⚠️ 唯一要停的情况：包装上每 100g 蛋白质 <b>低于 30g</b>，那是「增肌粉」（加了麦芽糊精和糖），那个才会胖。' });
-    add({ id:'coffee1', time:s.coffee1, ic:'coffee', kind:'check', group:'misc',
+    add({ id:'coffee1', time:s.coffee1, ic:'coffee', kind:'check', group:'misc', keep:true,
       name:'第一杯咖啡', sub:'黑咖啡 · 补 200ml 水',
       tip:'只喝黑咖啡 / 美式。拿铁、卡布、加了奶糖的一杯 150~250 kcal，等于吃掉半顿饭。<br>每喝一杯咖啡额外补 200ml 水 —— 咖啡利尿，不补会头晕。' });
 
-    add({ id:'coffee2', time:s.coffee2, ic:'coffee', kind:'check', group:'misc',
+    add({ id:'coffee2', time:s.coffee2, ic:'coffee', kind:'check', group:'misc', keep:true,
       name:'第二杯咖啡', sub:'最后一杯',
       tip:'这是最后一杯。14:00 之后一滴都不碰（茶、可乐、奶茶也算）。<br>咖啡因半衰期 5~6 小时，你 01:30 睡，下午那杯会吃掉你本就不多的深睡 —— 你会睡着，但那 6 小时只顶 4 小时。' });
     add({ id:'m2', time:'12:30', ic:'meal', kind:'check', group:'meals', keep:true,
       name:'午餐', sub:`${PROTEIN_ROTATION[dow]} · 玉米 · 菠菜`,
       tip: HOWTO.lunch(PROTEIN_ROTATION[dow]) });
-    add({ id:'corn', time:'12:30', ic:'meal', kind:'check', group:'misc',
+    add({ id:'corn', time:'12:30', ic:'meal', kind:'check', group:'misc', keep:true,
       name:'玉米 1 小根', sub:'约 150g · 替代米饭',
       tip:'<b>老玉米（整根煮的那种），1 小根约 150g，约 110 kcal。</b>这是你唯一的碳水来源，用来替代米饭。<br><br>为什么用玉米不用米饭：同样碳水，玉米多 3 倍纤维、饱腹感强得多，而且不需要煮饭。<br>⚠ 买整根煮的玉米，<b>不要买那种加了糖和油的"甜玉米粒罐头"或"即食玉米棒"</b>。<br>备选：南瓜 200g（46 kcal，更省）／ 红薯 100g（跟玉米差不多）。<br>实在不想吃任何碳水也可以去掉，代价是更容易饿 —— 但<b>菠菜 300g 必须吃满</b>，不然纤维和钾都不够。' });
-    add({ id:'spinach', time:'12:30', ic:'leaf', kind:'check', group:'misc',
+    add({ id:'spinach', time:'12:30', ic:'leaf', kind:'check', group:'misc', keep:true,
       name:'菠菜 150g', sub:'一碗 · 补镁钾',
       tip:'煮熟装满一个普通饭碗约 150g。中午一碗、晚上一碗，<b>全天 300g —— 这是你唯一的镁和钾来源</b>（你没有镁片）。<br>300g 约提供 240mg 镁 + 1600mg 钾，只花 70 kcal。<br>缺镁的表现：半夜腿抽筋、眼皮跳、入睡难、便秘 —— 出现就说明没吃满。<br><br><b>为什么别的菜不替代</b>：生菜、黄瓜、冬瓜的镁含量差 3~5 倍，等于没吃。<br>真吃腻了可以换：芥蓝 / 小白菜 / 空心菜 / 菌菇（镁和钾也够）。<br>技巧：早上蛋白粉里加一把冷冻菠菜打匀，完全尝不出来。' });
     add({ id:'nap', time:'13:00', ic:'moon', kind:'check', group:'misc',
       name:'午睡 60 分钟', sub:'闹钟 14:00 · 窗帘拉上',
       tip:'13:00 躺下，闹钟定 14:00。<br><b>60 分钟是完整的睡眠周期，醒来正好在浅睡期。</b>千万别睡成 45 分钟 —— 那是深睡被强行打断，醒来比不睡更困，一下午废掉。<br>窗帘拉上、眼罩戴上。睡不着也算，闭眼安静躺 20 分钟同样能降皮质醇。' });
 
-    add({ id:'m3', time:'16:00', ic:'meal', kind:'check', group:'meals',
+    add({ id:'m3', time:'16:00', ic:'meal', kind:'check', group:'meals', keep:true,
       name:'下午加餐', sub:'水煮蛋 2 个',
       tip:'水煮蛋 2 个，或者水浸金枪鱼半罐。<br>这一餐是为了防晚饭失控 —— 1000 kcal 的饮食里，下午 4 点这一口能救你晚上不点外卖。' });
     add({ id:'weigh', time:'17:00', ic:'scale', kind:'action', go:'weight',
       name:'称重 + 打卡', sub:'只看 7 日均线',
       tip:'称之前先去趟厕所、把水杯放下。<br>下午 5 点的体重天生比早上重 1~2 斤（一天的水和饭），而且更容易被「今天吃咸了」影响。<br><b>所以永远只看 7 日均线，绝不看单日数字。</b>某天虚涨 2 斤不是胖，是水，两天就回去。' });
 
-    add({ id:'m4', time:'18:30', ic:'meal', kind:'check', group:'meals',
+    add({ id:'m4', time:'18:30', ic:'meal', kind:'check', group:'meals', keep:true,
       name:'晚餐', sub:'蛋白粉 1 勺 · 菠菜 150g',
       tip:'蛋白粉 1 勺（牛奶冲）+ 晚餐那碗菠菜 150g。<br><b>晚餐不放盐</b>，只放醋、柠檬、辣椒面 —— 盐只放早餐和午餐。这条比断水更有效，而且安全。<br><br>不饿的话可以只喝蛋白粉，但<b>这一勺不能省</b>：去掉它全天蛋白从 137g 掉到 112g，对 80kg 的你刚好卡在保肌线下。<br>真饿的话允许加：水煮蛋 1 个，或再来一碗菠菜。' });
     add({ id:'stopwater', time:'20:00', ic:'water', kind:'info',
       name:'停止喝水', sub:'之后一口都不喝',
       tip:'之后一口都不喝。<br>不是为了上镜，是为了不半夜起夜 —— 你只睡 6 小时，起一次夜就毁掉一半深睡。<br>白天已经喝够 2.4L，晚间断水不会脱水。' });
-    add({ id:'m5', time:'23:00', ic:'meal', kind:'check', group:'meals',
+    add({ id:'m5', time:'23:00', ic:'meal', kind:'check', group:'meals', keep:true,
       name:'睡前半勺蛋白粉', sub:'防深夜点外卖',
       tip:'蛋白粉半勺 + 少量水（100ml 以内）。<br>熬夜的人这半勺作用比不熬夜的人更大：压住深夜饥饿激素，防你 23:30 点外卖，同时给夜间提供氨基酸、减少肌肉分解。<br>如果还是饿得受不了，只允许加：水煮蛋 1 个、或冷冻蔬菜一把。别开别的口子。' });
     add({ id:'sleep', time:s.sleepTime, ic:'moon', kind:'info',
@@ -2522,7 +2525,11 @@ const App = {
       const isNow = !done && !trainDone && actionable
         && toMin(it.time) <= toMin(hhmm) && toMin(hhmm) < toMin(this.nextTime(list, it));
       const cls = ['tlRow', it.kind];
-      if (it.keep) cls.push('keep');   // 这一行的副标题永远显示（如午餐的鸡胸/虾）
+      /* 副标题永远显示的两种情况：
+         ① 显式标了 keep（吃什么 / 做什么的项，如午餐的虾/牛肉、下午加餐的鸡蛋）
+         ② 兜底：可打卡却没有副标题的项 —— 只显示一个名字等于没告诉用户做什么
+         纯 info 型（熄灯睡觉、停止喝水）只是时间点标记，副标题可折起来。 */
+      if (it.keep || (it.sub && it.kind !== 'info')) cls.push('keep');
       if (done || trainDone) cls.push('done');
       if (overdue) cls.push('overdue');
       if (overdue && Reminder.firedId(it.id)) cls.push('alerted');   // 已通知过，留个痕
