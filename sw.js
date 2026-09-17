@@ -1,10 +1,18 @@
-/* 离线缓存 —— 让 App 装到主屏幕后即使断网也能打开。
-   只在 https 或 localhost 下才会注册成功（浏览器要求）。 */
-const CACHE = 'ran-fit-v1';
+/* 离线缓存 —— 让 App 装到主屏幕后断网也能打开。
+   只在 https 或 localhost 下才会注册成功（浏览器要求）。
+
+   ⚠️ 改过内容后必须把 CACHE 版本号 +1，否则老缓存会一直生效，
+      用户看到的还是旧版页面（这个坑真踩过）。 */
+const VER = 'v3';
+const CACHE = 'ran-fit-' + VER;
 const ASSETS = ['./', './index.html', './manifest.json'];
 
 self.addEventListener('install', e => {
-  e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)).then(() => self.skipWaiting()));
+  e.waitUntil(
+    caches.open(CACHE)
+      .then(c => c.addAll(ASSETS).catch(() => {}))
+      .then(() => self.skipWaiting())
+  );
 });
 
 self.addEventListener('activate', e => {
@@ -15,26 +23,39 @@ self.addEventListener('activate', e => {
   );
 });
 
+/* 网络优先：拿得到就用最新的，并顺手更新缓存；拿不到才回缓存。
+   比「缓存优先」慢一点点，但绝不会让你看到过期页面。 */
+function networkFirst(req) {
+  return fetch(req, { cache: 'no-store' })
+    .then(r => {
+      if (r && r.status === 200) {
+        const cp = r.clone();
+        caches.open(CACHE).then(c => c.put(req, cp)).catch(() => {});
+      }
+      return r;
+    })
+    .catch(() => caches.match(req).then(hit => hit || caches.match('./index.html')));
+}
+
 self.addEventListener('fetch', e => {
   const req = e.request;
   if (req.method !== 'GET') return;
   const url = new URL(req.url);
-  if (url.origin !== location.origin) return;   // 只处理自己的资源
+  if (url.origin !== location.origin) return;      // 只处理自己的资源
 
-  /* 页面导航：先网络（拿最新），失败再回缓存 */
-  if (req.mode === 'navigate') {
-    e.respondWith(
-      fetch(req)
-        .then(r => { caches.open(CACHE).then(c => c.put('./index.html', r.clone())); return r; })
-        .catch(() => caches.match('./index.html').then(r => r || caches.match('./')))
-    );
+  /* 页面和脚本一律网络优先 —— 保证你看到的是最新版 */
+  const isDoc = req.mode === 'navigate' || url.pathname.endsWith('/') || url.pathname.endsWith('.html');
+  const isCode = url.pathname.endsWith('.js');
+  if (isDoc || isCode) {
+    e.respondWith(networkFirst(req));
     return;
   }
-  /* 其他资源：先缓存，再网络 */
+  /* 其他静态资源：缓存优先（快），但也没几个 */
   e.respondWith(
     caches.match(req).then(hit => hit || fetch(req).then(r => {
       if (r && r.status === 200 && r.type === 'basic') {
-        caches.open(CACHE).then(c => c.put(req, r.clone()));
+        const cp = r.clone();
+        caches.open(CACHE).then(c => c.put(req, cp)).catch(() => {});
       }
       return r;
     }).catch(() => hit))
@@ -54,6 +75,8 @@ self.addEventListener('message', e => {
       vibrate: [90, 50, 90],
     });
   }
+  /* 页面要求立刻检查更新 */
+  if (d.type === 'skipWaiting') self.skipWaiting();
 });
 
 self.addEventListener('notificationclick', e => {
