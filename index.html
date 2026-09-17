@@ -282,6 +282,16 @@ button{cursor:pointer}
 .cup.full::after{opacity:1;transform:none}
 .cup:active{transform:scale(.84)}
 
+/* ════════════ 极简单行：输入 + 标签并排 ════════════ */
+.rowline{display:flex;align-items:center;justify-content:space-between;gap:var(--s3);min-height:34px}
+.rowline .hint{flex:1;min-width:0;text-align:right}
+.plainIn{flex:1;min-width:0;font-size:var(--f-sm);font-weight:600;
+  font-variant-numeric:tabular-nums;letter-spacing:-.01em;
+  background:none;border:none;border-bottom:1px solid var(--line);padding:7px 0;
+  transition:border-color var(--d2) var(--e-out)}
+.plainIn:focus{border-bottom-color:var(--accent)}
+.plainIn::placeholder{color:var(--dim);font-weight:400}
+
 /* ════════════ 输入 ════════════ */
 .field{display:flex;align-items:center;gap:var(--s3);background:var(--surface-hi);
   border:1px solid transparent;border-radius:var(--r2);padding:13px var(--s4);
@@ -535,11 +545,11 @@ details .body b{color:var(--text);font-weight:650}
               </linearGradient>
             </defs>
           </svg>
-          <div class="mid"><div class="big" id="heroPct">0</div><div class="lbl">完成</div></div>
+          <div class="mid"><div class="big" id="heroPct">0</div></div>
         </div>
         <div class="metrics">
-          <div class="metric"><span class="k">热量</span><span class="v" id="hKcal">0<sub>/1000 kcal</sub></span></div>
-          <div class="metric"><span class="k">进水</span><span class="v" id="hWater">0<sub>/8 杯</sub></span></div>
+          <div class="metric"><span class="k">热量</span><span class="v" id="hKcal">0<sub>/1000</sub></span></div>
+          <div class="metric"><span class="k">水</span><span class="v" id="hWater">0<sub>/8</sub></span></div>
           <div class="metric"><span class="k">步数</span><span class="v" id="hSteps">0<sub>/2500</sub></span></div>
           <div class="metric"><span class="k">连续</span><span class="v" id="hStreak">0<sub>天</sub></span></div>
         </div>
@@ -571,27 +581,19 @@ details .body b{color:var(--text);font-weight:650}
 
     <div class="card">
       <div class="chead">
-        <div class="ctitle"><span class="badge ink"><span class="i" data-i="water"></span></span>补水</div>
+        <div class="ctitle"><span class="badge ink"><span class="i" data-i="water"></span></span>补水 · 步数</div>
         <span class="tag" id="cupCount">0 / 8</span>
       </div>
       <div class="cups" id="cups"></div>
-      <div class="hint mt4">每杯 300ml，全天 2.4L。<b>20:00 后停止喝水。</b></div>
-    </div>
-
-    <div class="card">
-      <div class="chead">
-        <div class="ctitle"><span class="badge dim"><span class="i" data-i="steps"></span></span>步数</div>
+      <div class="rowline mt4">
+        <input id="stepsInput" type="number" inputmode="numeric" placeholder="走了多少步" class="plainIn">
         <span class="tag" id="stepTag">—</span>
       </div>
-      <div class="field">
-        <span class="i" data-i="steps"></span>
-        <input id="stepsInput" type="number" inputmode="numeric" placeholder="今天走了多少步">
-        <span class="unit">步</span>
+      <div class="rowline mt3">
+        <button class="btn ghost" onclick="App.startMarch()" id="marchBtn">
+          <span class="i" data-i="steps"></span>原地踏步 20 分钟</button>
+        <span class="hint" id="marchState"></span>
       </div>
-      <div class="hint mt3">目标 2500 步。没到不标红 —— 连续 3 天低于 1000 才会提醒。</div>
-      <button class="btn wide mt4" onclick="App.startMarch()" id="marchBtn">
-        <span class="i" data-i="steps"></span>原地踏步 20 分钟</button>
-      <div class="hint mt3" id="marchState"></div>
     </div>
   </section>
 
@@ -849,24 +851,28 @@ details .body b{color:var(--text);font-weight:650}
       <div><div class="kicker">全部可以改</div><h1 class="h1">设置</h1></div>
     </header>
 
-    <div class="sec">目标与身体参数</div>
+    <div class="sec">目标</div>
     <div class="card">
       <div class="kv"><span class="k">开始日期</span><span class="v"><input id="setStartDate" type="date"></span></div>
       <div class="kv"><span class="k">计划天数</span><span class="v"><input id="setDays" type="number">天</span></div>
       <div class="kv"><span class="k">起始体重</span><span class="v"><input id="setStart" type="number" step="0.1">kg</span></div>
-      <div class="kv"><span class="k">身高</span><span class="v"><input id="setHeight" type="number">cm</span></div>
-      <div class="kv"><span class="k">年龄</span><span class="v"><input id="setAge" type="number">岁</span></div>
-      <div class="kv"><span class="k">性别</span><span class="v" style="gap:0">
-        <select id="setSex" style="text-align:right;font-weight:650">
-          <option value="m">男</option><option value="f">女</option>
-        </select></span></div>
       <div class="kv"><span class="k">主目标</span><span class="v"><input id="setGoal" type="number" step="0.1">kg</span></div>
-      <div class="kv"><span class="k">参考线</span><span class="v"><input id="setRef" type="number" step="0.1">kg</span></div>
-      <div class="kv"><span class="k">每日热量目标</span><span class="v"><input id="setKcal" type="number">kcal</span></div>
-      <div class="kv"><span class="k">每日蛋白目标</span><span class="v"><input id="setProtein" type="number">g</span></div>
+      <div class="kv"><span class="k">每日热量</span><span class="v"><input id="setKcal" type="number">kcal</span></div>
+      <div class="kv"><span class="k">每日蛋白</span><span class="v"><input id="setProtein" type="number">g</span></div>
       <div class="kv"><span class="k">步数目标</span><span class="v"><input id="setSteps" type="number">步</span></div>
+      <details class="mt4">
+        <summary>身体参数（算 BMI / 体脂率用）</summary>
+        <div class="body">
+          <div class="kv"><span class="k">身高</span><span class="v"><input id="setHeight" type="number">cm</span></div>
+          <div class="kv"><span class="k">年龄</span><span class="v"><input id="setAge" type="number">岁</span></div>
+          <div class="kv"><span class="k">性别</span><span class="v" style="gap:0">
+            <select id="setSex" style="text-align:right;font-weight:650">
+              <option value="m">男</option><option value="f">女</option>
+            </select></span></div>
+        </div>
+      </details>
       <button class="btn primary wide mt5" onclick="App.saveSettings()">保存</button>
-      <div class="hint mt3">身高 / 年龄 / 性别是算 BMI 和体脂率用的。改这些不会动到任何历史记录。</div>
+      <div class="hint mt3">改这些不会动到任何历史记录。</div>
     </div>
 
     <div class="sec">到点提醒</div>
@@ -877,28 +883,27 @@ details .body b{color:var(--text);font-weight:650}
         <button class="btn primary" onclick="Reminder.enableNotify()">开启通知</button>
         <button class="btn" onclick="Reminder.testAll()">测试所有阶段</button>
       </div>
-      <div class="hr"></div>
-      <div class="kv"><span class="k">训练时间</span><span class="v" style="gap:0">
-        <select id="setTrainTime">
-          <option value="09:30">上午 9:30</option>
-          <option value="12:00">中午 12:00</option>
-          <option value="15:00">下午 15:00</option>
-          <option value="19:00">晚上 19:00</option>
-          <option value="21:00">晚上 21:00</option>
-          <option value="custom">自定义…</option>
-        </select></span></div>
-      <div class="kv" id="trainTimeCustomRow" style="display:none">
-        <span class="k">自定义时间</span><span class="v"><input id="setTrainTimeCustom" type="time"></span></div>
-      <div class="kv"><span class="k">第一杯咖啡</span><span class="v"><input id="setCoffee1" type="time"></span></div>
-      <div class="kv"><span class="k">第二杯咖啡</span><span class="v"><input id="setCoffee2" type="time"></span></div>
-      <div class="kv"><span class="k">起床</span><span class="v"><input id="setWake" type="time"></span></div>
-      <div class="kv"><span class="k">就寝</span><span class="v"><input id="setSleep" type="time"></span></div>
-      <div class="hint mt4">
-        网页通知在后台或锁屏时<b>不保证按时弹出</b>（iPhone 尤其严格，还必须先「添加到主屏幕」）。
-        已过点的提醒会在你下次打开时补出来，不会丢。
-      </div>
       <div class="hint mt3" id="remindPermissionHint"></div>
-      <button class="btn wide mt4" onclick="App.openSheet('抄进手机闹钟 · 每天重复', Reminder.alarmListHTML())">列出提醒时间</button>
+      <details class="mt4">
+        <summary>提醒时间（默认够用，不用改）</summary>
+        <div class="body">
+          <div class="kv"><span class="k">训练时间</span><span class="v" style="gap:0">
+            <select id="setTrainTime">
+              <option value="09:30">上午 9:30</option>
+              <option value="12:00">中午 12:00</option>
+              <option value="15:00">下午 15:00</option>
+              <option value="19:00">晚上 19:00</option>
+              <option value="21:00">晚上 21:00</option>
+              <option value="custom">自定义…</option>
+            </select></span></div>
+          <div class="kv" id="trainTimeCustomRow" style="display:none">
+            <span class="k">自定义时间</span><span class="v"><input id="setTrainTimeCustom" type="time"></span></div>
+          <div class="kv"><span class="k">第一杯咖啡</span><span class="v"><input id="setCoffee1" type="time"></span></div>
+          <div class="kv"><span class="k">第二杯咖啡</span><span class="v"><input id="setCoffee2" type="time"></span></div>
+          <div class="kv"><span class="k">起床</span><span class="v"><input id="setWake" type="time"></span></div>
+          <div class="kv"><span class="k">就寝</span><span class="v"><input id="setSleep" type="time"></span></div>
+        </div>
+      </details>
     </div>
 
     <div class="sec">数据</div>
@@ -1214,7 +1219,7 @@ const DB = {
       tip:'深蹲 → 俯卧撑 → 鸟狗式 → 平板支撑。每个动作 1 组，组间歇 60 秒，全程自动衔接。<br><br><b>时机</b>：关掉电脑后立刻做 —— 别先坐下、别先刷手机、别先吃饭。一旦坐下来，这 12 分钟就永远没有了。<br><br>累到不行那天，<b>只做 10 个深蹲，30 秒也算完成</b>。保住「我还是在练的人」这条线，比练满 12 分钟重要得多。<br><br>训练时间可以在设置页改。' });
     add({ id:'m1', time:'08:30', ic:'meal', kind:'check', group:'meals',
       name:'早餐', sub:'水煮蛋 2 个 · 蛋白粉',
-      tip:'水煮蛋 2 个；蛋白粉 1 勺 —— <b>用白水冲就行</b>，有豆浆更好喝，没有完全不影响减脂（豆浆只是口感，蛋白质主要在粉里）。复合维生素 1 片。<br><br><b>关于蛋白粉会不会长胖</b>：一勺约 100 kcal / 25g 蛋白，它就是蛋白质，跟鸡胸里的蛋白是同一种东西 —— <b>在热量赤字下不会让你长胖</b>。<br>⚠️ 只有一种情况要停：看包装，<b>每 100g 里蛋白质低于 30g</b> 的那种是「增肌粉」（加了大量麦芽糊精和糖），那个才会胖。≥80g 就是纯乳清，放心喝。' });
+      tip:'水煮蛋 2 个；蛋白粉 1 勺，<b>用家里那盒牛奶冲，250ml 就行</b>。复合维生素 1 片。<br><br><b>牛奶怎么选</b>：全脂奶 250ml ≈ 165 kcal / 8g 蛋白；<b>脱脂奶 250ml ≈ 85 kcal / 8.5g 蛋白</b> —— 同样是 8g 蛋白，脱脂省 80 kcal。有脱脂就买脱脂，没有就全脂，别为这个纠结。<br><br><b>蛋白粉会不会长胖</b>：一勺约 100 kcal / 25g 蛋白，它就是蛋白质，跟鸡胸里的同一种东西 —— <b>热量赤字下不会让你长胖</b>。<br>⚠️ 唯一要停的情况：包装上每 100g 蛋白质 <b>低于 30g</b>，那是「增肌粉」（加了麦芽糊精和糖），那个才会胖。' });
     add({ id:'coffee1', time:s.coffee1, ic:'coffee', kind:'check', group:'misc',
       name:'第一杯咖啡', sub:'黑咖啡 · 补 200ml 水',
       tip:'只喝黑咖啡 / 美式。拿铁、卡布、加了奶糖的一杯 150~250 kcal，等于吃掉半顿饭。<br>每喝一杯咖啡额外补 200ml 水 —— 咖啡利尿，不补会头晕。' });
@@ -1244,7 +1249,7 @@ const DB = {
 
     add({ id:'m4', time:'18:30', ic:'meal', kind:'check', group:'meals',
       name:'晚餐', sub:'蛋白粉 1 勺 · 菠菜 150g',
-      tip:'蛋白粉 1 勺（白水冲）+ 晚餐那碗菠菜 150g。<br><b>晚餐不放盐</b>，只放醋、柠檬、辣椒面 —— 盐只放早餐和午餐。这条比断水更有效，而且安全。<br><br>不饿的话可以只喝蛋白粉，但<b>这一勺不能省</b>：去掉它全天蛋白从 137g 掉到 112g，对 80kg 的你刚好卡在保肌线下。<br>真饿的话允许加：水煮蛋 1 个，或再来一碗菠菜。' });
+      tip:'蛋白粉 1 勺（牛奶冲）+ 晚餐那碗菠菜 150g。<br><b>晚餐不放盐</b>，只放醋、柠檬、辣椒面 —— 盐只放早餐和午餐。这条比断水更有效，而且安全。<br><br>不饿的话可以只喝蛋白粉，但<b>这一勺不能省</b>：去掉它全天蛋白从 137g 掉到 112g，对 80kg 的你刚好卡在保肌线下。<br>真饿的话允许加：水煮蛋 1 个，或再来一碗菠菜。' });
     add({ id:'stopwater', time:'20:00', ic:'water', kind:'info',
       name:'停止喝水', sub:'之后一口都不喝',
       tip:'之后一口都不喝。<br>不是为了上镜，是为了不半夜起夜 —— 你只睡 6 小时，起一次夜就毁掉一半深睡。<br>白天已经喝够 2.4L，晚间断水不会脱水。' });
@@ -2142,7 +2147,7 @@ const App = {
         const seg = list.slice(idxs[0], idxs[idxs.length - 1] + 1);
         const bT = seg.filter(x => x.kind === 'check').length;
         const bD = seg.filter(x => x.kind === 'check' && this.isDone(x, r)).length;
-        html += `<div class="tlBlock">${it.block}${bT ? `<span class="cnt${bD === bT ? ' all' : ''}">${bD}/${bT}</span>` : ''}</div>`;
+        html += `<div class="tlBlock">${it.block}</div>`;
         lastBlock = it.block;
       }
       const done = it.kind === 'check' && this.isDone(it, r);
@@ -2816,7 +2821,6 @@ const App = {
     $('#setKcal').value = s.targetKcal || 1000;
     $('#setProtein').value = s.targetProtein || 150;
     $('#setGoal').value = s.goalLoss;
-    $('#setRef').value = s.refLoss;
     $('#setSteps').value = s.stepGoal;
     $('#setCoffee1').value = s.coffee1;
     $('#setCoffee2').value = s.coffee2;
@@ -2865,7 +2869,7 @@ const App = {
       if ($('#setSex').value) s.sex = $('#setSex').value;
       const kc = Number($('#setKcal').value); if (kc >= 600 && kc < 5000) s.targetKcal = kc;
       const pr = Number($('#setProtein').value); if (pr >= 40 && pr < 400) s.targetProtein = pr;
-      if (Number($('#setRef').value) > 0) s.refLoss = Number($('#setRef').value);
+
       if (Number($('#setDays').value) > 0) s.planDays = Number($('#setDays').value);
       if ($('#setStartDate').value) s.startDate = $('#setStartDate').value;
       if (Number($('#setSteps').value) > 0) s.stepGoal = Number($('#setSteps').value);
