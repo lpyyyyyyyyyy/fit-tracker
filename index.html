@@ -134,16 +134,31 @@ button{cursor:pointer}
 .view.on>*:nth-child(n+9){animation-delay:.36s}
 @keyframes rise{from{opacity:0;transform:translate3d(0,16px,0)}to{opacity:1;transform:none}}
 
-/* ════════════ 顶栏 ════════════ */
-.top{display:flex;align-items:flex-end;justify-content:space-between;gap:var(--s4);
-  padding:calc(env(safe-area-inset-top) + var(--s8)) 0 var(--s6)}
+/* ════════════ 顶栏：锁死在屏幕顶部，滚动时不走 ════════════ */
+.top{
+  position:sticky;top:0;z-index:30;
+  display:flex;align-items:center;justify-content:space-between;gap:var(--s4);
+  padding:calc(env(safe-area-inset-top) + var(--s4)) 0 var(--s3);
+  margin:0 calc(var(--s5) * -1) var(--s3);
+  padding-left:var(--s5);padding-right:var(--s5);
+  background:linear-gradient(180deg,rgba(7,10,16,.94) 62%,rgba(7,10,16,.72) 100%);
+  backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);
+  transition:padding var(--d2) var(--e-out),background var(--d2) var(--e-out);
+}
+/* 滚下去之后收窄，把空间还给内容 */
+.top.shrink{padding-top:calc(env(safe-area-inset-top) + var(--s2));padding-bottom:var(--s2)}
+.top .kicker{transition:opacity var(--d2),max-height var(--d2) var(--e-out);
+  max-height:20px;overflow:hidden}
+.top.shrink .kicker{opacity:0;max-height:0;margin-bottom:0}
 .kicker{font-size:var(--f-3xs);letter-spacing:.22em;text-transform:uppercase;
-  color:var(--dim);font-weight:600;margin-bottom:var(--s2)}
-.h1{font-size:var(--f-xl);font-weight:600;letter-spacing:-.015em;margin:0;line-height:1.25}
+  color:var(--dim);font-weight:600;margin-bottom:3px}
+.h1{font-size:var(--f-xl);font-weight:600;letter-spacing:-.015em;margin:0;line-height:1.25;
+  transition:font-size var(--d2) var(--e-out)}
+.top.shrink .h1{font-size:var(--f-lg)}
 .h1 em{font-style:normal;color:var(--accent)}
 .chip{display:inline-flex;align-items:center;gap:6px;padding:7px 13px;border-radius:var(--rf);
   background:var(--surface);border:1px solid var(--line);font-size:var(--f-2xs);color:var(--muted);
-  white-space:nowrap;letter-spacing:.04em}
+  white-space:nowrap;letter-spacing:.04em;flex:none}
 .chip b{font-weight:650;color:var(--text);font-variant-numeric:tabular-nums}
 .chip .i{font-size:13px;color:var(--accent)}
 
@@ -175,35 +190,37 @@ button{cursor:pointer}
 .tag.gold{background:rgba(216,173,106,.1);color:var(--gold);border-color:rgba(216,173,106,.2)}
 
 /* ════════════ 今日环 ════════════ */
-.hero{display:grid;grid-template-columns:auto minmax(0,1fr);gap:var(--s5);align-items:center}
-.ring{position:relative;width:136px;height:136px;flex:none}
+.hero{display:grid;grid-template-columns:auto minmax(0,1fr);gap:var(--s4);align-items:center}
+.ring{position:relative;width:112px;height:112px;flex:none}
 .ring svg{transform:rotate(-90deg);display:block;overflow:visible}
 .ring .mid{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
-  width:104px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:1px}
-.ring .big{font-size:var(--f-hero);font-weight:600;letter-spacing:-.04em;line-height:1;
+  width:86px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:0}
+.ring .big{font-size:27px;font-weight:600;letter-spacing:-.04em;line-height:1;
   font-variant-numeric:tabular-nums}
-.ring .lbl{font-size:var(--f-3xs);letter-spacing:.2em;text-transform:uppercase;color:var(--dim);margin-top:4px}
+.ring .lbl{font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:var(--dim);margin-top:1px}
 .ring .glow{position:absolute;inset:8%;border-radius:50%;pointer-events:none;
   background:radial-gradient(circle,rgba(79,214,196,.13),transparent 66%);
   animation:breathe 5.2s var(--e-soft) infinite}
 @keyframes breathe{0%,100%{opacity:.5;transform:scale(1)}50%{opacity:1;transform:scale(1.07)}}
 
 .metrics{display:flex;flex-direction:column;min-width:0}
-.metric{display:flex;align-items:baseline;justify-content:space-between;gap:var(--s3);padding:11px 0}
+.metric{display:flex;align-items:baseline;justify-content:space-between;gap:var(--s3);padding:8px 0}
 .metric .k{font-size:var(--f-xs);color:var(--faint)}
 .metric .v{font-size:var(--f-md);font-weight:600;font-variant-numeric:tabular-nums;letter-spacing:-.01em}
 .metric .v sub{font-size:var(--f-3xs);color:var(--dim);font-weight:500;margin-left:3px;letter-spacing:.02em}
 
 /* ════════════ 时间轴（无线版：靠间距和留白分组） ════════════ */
 .tl{position:relative}
-.tlBlock{display:flex;align-items:baseline;gap:var(--s2);padding:var(--s7) 0 var(--s3) 54px;
+/* 时间列 52px + 圆点列 14px + 间距，用变量统一管理，改一处全对 */
+.tl{--tw:52px; --dotw:14px; --gap:var(--s3)}
+.tlBlock{display:flex;align-items:baseline;gap:var(--s2);
+  padding:var(--s7) 0 var(--s3) calc(var(--tw) + var(--dotw) + var(--gap) + var(--gap));
   font-size:var(--f-3xs);letter-spacing:.22em;text-transform:uppercase;color:var(--dim);font-weight:650}
 .tlBlock:first-child{padding-top:var(--s1)}
 .tlBlock .cnt{font-family:var(--mono);font-size:9.5px;letter-spacing:.02em;color:rgba(200,215,235,.2)}
 .tlBlock .cnt.all{color:rgba(79,214,196,.55)}
-/* 时间列 52px 给等宽数字留足空间；圆点列 20px，净空足够呼吸光晕扩散 */
-.tlRow{display:grid;grid-template-columns:52px 20px minmax(0,1fr) auto;align-items:center;
-  column-gap:var(--s3);padding:16px var(--s2) 16px 0;width:100%;text-align:left;
+.tlRow{display:grid;grid-template-columns:var(--tw) var(--dotw) minmax(0,1fr) auto;align-items:center;
+  column-gap:var(--gap);padding:16px 0;width:100%;text-align:left;
   background:none;border:none;border-radius:var(--r2);color:var(--text);
   position:relative;overflow:hidden;
   transition:background var(--d1) var(--e-out)}
@@ -218,22 +235,25 @@ button{cursor:pointer}
 /* ── 已完成：实心渐变圆点（和"当前"完全不同）── */
 .tlRow.done .tlDot{background:var(--accent);border-color:transparent;box-shadow:0 0 9px rgba(79,214,196,.4)}
 .tlRow.overdue .tlDot{border-color:rgba(224,169,79,.85);background:rgba(224,169,79,.3)}
-/* ── 当前该做：左侧一道竖条 + 空心圆环呼吸。刻意不用实心点，避免看起来像已完成 ── */
-.tlRow.now{background:linear-gradient(90deg,rgba(79,214,196,.055),transparent 58%)}
-.tlRow.now::before{content:"";position:absolute;left:0;top:9px;bottom:9px;width:2px;
-  border-radius:2px;background:var(--accent);opacity:.85}
+/* ── 当前该做：整行淡底 + 空心圆环呼吸。
+      竖条挂在「文字列」的左边（不是整行的左边），所以永远不会碰到时间数字 ── */
+.tlRow.now{background:linear-gradient(90deg,rgba(79,214,196,.05),transparent 58%)}
+.tlRow.now .tlMain::before{content:"";position:absolute;
+  left:calc(var(--tw) + var(--dotw) + var(--gap) + var(--gap) - 7px);
+  top:10px;bottom:10px;width:2px;border-radius:2px;background:var(--accent);opacity:.8}
+.tlRow.done .tlMain::before{display:none}
 .tlRow.now .tlDot{border-color:var(--accent);border-width:2px;background:transparent;
   animation:halo 3.4s var(--e-soft) infinite}
 @keyframes halo{0%,100%{box-shadow:0 0 0 0 rgba(79,214,196,.34)}55%{box-shadow:0 0 0 4.5px rgba(79,214,196,0)}}
 /* ── 防溢出：任何长文案都只能在自己格子里截断，绝不可能顶到卡片边框 ── */
-.tlMain{min-width:0;overflow:hidden}
+.tlMain{min-width:0;overflow:hidden;position:relative}
 .tlName{display:flex;align-items:center;gap:8px;font-size:var(--f-sm);font-weight:600;line-height:1.35;
   min-width:0;transition:color var(--d2)}
 .tlName .i{font-size:15px;color:var(--faint);flex:none;transition:color var(--d2)}
 .tlName .nm{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .tlRow.done .tlName .i{color:var(--accent-deep)}
 .tlRow.now .tlName .i{color:var(--accent)}
-.tlSub{font-size:var(--f-2xs);color:var(--dim);margin-top:6px;line-height:1.7;padding-left:23px;
+.tlSub{font-size:var(--f-2xs);color:var(--dim);margin-top:6px;line-height:1.7;
   overflow-wrap:anywhere;overflow:hidden}
 .tlRow.done .tlName{color:var(--dim);font-weight:500}
 .tlRow.done .tlName .nm{text-decoration:line-through;text-decoration-thickness:1px;
@@ -488,7 +508,8 @@ details .body b{color:var(--text);font-weight:650}
 
   <!-- ══════════════ 今日 ══════════════ -->
   <section class="view on" id="v-today">
-    <div id="overdueBadge" class="banner" style="display:none"></div>
+    <div id="lateBar" class="banner" style="display:none" onclick="App.openLate()"></div>
+    <div id="overdueBadge" class="banner" style="display:none" onclick="App.scrollToTimeline()"></div>
     <div id="notStartedBar" class="banner info" style="display:none"></div>
 
     <header class="top">
@@ -503,7 +524,7 @@ details .body b{color:var(--text);font-weight:650}
       <div class="hero">
         <div class="ring">
           <div class="glow"></div>
-          <svg width="136" height="136" viewBox="0 0 136 136">
+          <svg width="112" height="112" viewBox="0 0 136 136">
             <circle cx="68" cy="68" r="57" fill="none" stroke="var(--track)" stroke-width="10"/>
             <circle id="heroArc" cx="68" cy="68" r="57" fill="none" stroke="url(#gAcc)" stroke-width="10"
                     stroke-linecap="round" stroke-dasharray="358.1" stroke-dashoffset="358.1"
@@ -1169,56 +1190,68 @@ const DB = {
     return '睡前';
   },
 
-  timeline() {
+  /* 把一个 HH:MM 往后推 n 分钟（跨天则回到 24 小时内）*/
+  shiftTime(t, n) {
+    const m = (toMin(t) + n) % 1440;
+    return String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0');
+  },
+  /* 今天的顺延分钟数（起晚了用）*/
+  shiftMinutes() { const r = this.get(); return (r && r.shift) || 0; },
+
+  timeline(shiftMin) {
     const s = this.data.settings;
+    const shift = shiftMin != null ? shiftMin : this.shiftMinutes();
     const dow = new Date().getDay();
     const dayNum = diffDays(s.startDate, todayKey()) + 1;
     const carb = (dayNum === 10 || dayNum === 20);
     const L = [];
+    /* 顺延：起晚了的时候，所有时间整体后移，提醒时间也跟着走。
+       不改吃什么、吃多少 —— 只挪时间。 */
+    const add = o => { if (shift) o.time = this.shiftTime(o.time, shift); L.push(o); };
 
-    L.push({ id:'train', time:s.trainTime || '19:00', ic:'dumbbell', kind:'action', go:'train',
+    add({ id:'train', time:s.trainTime || '19:00', ic:'dumbbell', kind:'action', go:'train',
       name:'训练 12 分钟', sub:'4 个动作 · 自动计时',
       tip:'深蹲 → 俯卧撑 → 鸟狗式 → 平板支撑。每个动作 1 组，组间歇 60 秒，全程自动衔接。<br><br><b>时机</b>：关掉电脑后立刻做 —— 别先坐下、别先刷手机、别先吃饭。一旦坐下来，这 12 分钟就永远没有了。<br><br>累到不行那天，<b>只做 10 个深蹲，30 秒也算完成</b>。保住「我还是在练的人」这条线，比练满 12 分钟重要得多。<br><br>训练时间可以在设置页改。' });
-    L.push({ id:'m1', time:'08:30', ic:'meal', kind:'check', group:'meals',
+    add({ id:'m1', time:'08:30', ic:'meal', kind:'check', group:'meals',
       name:'早餐', sub:'水煮蛋 2 个 · 蛋白粉',
       tip:'水煮蛋 2 个；蛋白粉 1 勺 —— <b>用白水冲就行</b>，有豆浆更好喝，没有完全不影响减脂（豆浆只是口感，蛋白质主要在粉里）。复合维生素 1 片。<br><br><b>关于蛋白粉会不会长胖</b>：一勺约 100 kcal / 25g 蛋白，它就是蛋白质，跟鸡胸里的蛋白是同一种东西 —— <b>在热量赤字下不会让你长胖</b>。<br>⚠️ 只有一种情况要停：看包装，<b>每 100g 里蛋白质低于 30g</b> 的那种是「增肌粉」（加了大量麦芽糊精和糖），那个才会胖。≥80g 就是纯乳清，放心喝。' });
-    L.push({ id:'coffee1', time:s.coffee1, ic:'coffee', kind:'check', group:'misc',
+    add({ id:'coffee1', time:s.coffee1, ic:'coffee', kind:'check', group:'misc',
       name:'第一杯咖啡', sub:'黑咖啡 · 补 200ml 水',
       tip:'只喝黑咖啡 / 美式。拿铁、卡布、加了奶糖的一杯 150~250 kcal，等于吃掉半顿饭。<br>每喝一杯咖啡额外补 200ml 水 —— 咖啡利尿，不补会头晕。' });
 
-    L.push({ id:'coffee2', time:s.coffee2, ic:'coffee', kind:'check', group:'misc',
+    add({ id:'coffee2', time:s.coffee2, ic:'coffee', kind:'check', group:'misc',
       name:'第二杯咖啡', sub:'最后一杯',
       tip:'这是最后一杯。14:00 之后一滴都不碰（茶、可乐、奶茶也算）。<br>咖啡因半衰期 5~6 小时，你 01:30 睡，下午那杯会吃掉你本就不多的深睡 —— 你会睡着，但那 6 小时只顶 4 小时。' });
-    L.push({ id:'m2', time:'12:30', ic:'meal', kind:'check', group:'meals',
+    add({ id:'m2', time:'12:30', ic:'meal', kind:'check', group:'meals',
       name:'午餐', sub:`${PROTEIN_ROTATION[dow]} · 玉米 · 菠菜`,
       tip:`<b>${PROTEIN_ROTATION[dow]}</b>（水煮或干煎，做法见「训练」页下面的说明或直接看份量速查）；<br><b>玉米 1 小根</b>（约 150g，就是唯一的碳水，替代米饭）；<br><b>菠菜 150g</b>（煮熟装满一个饭碗，别和肉一起炒，水煮蘸醋）。<br><br>调味随便用辣椒面、花椒粉、醋、蒜末 —— 几乎零热量。<br>❌ 不放油，不勾芡，不用香油碟。` });
-    L.push({ id:'corn', time:'12:30', ic:'meal', kind:'check', group:'misc',
+    add({ id:'corn', time:'12:30', ic:'meal', kind:'check', group:'misc',
       name:'玉米 1 小根', sub:'约 150g · 替代米饭',
       tip:'<b>老玉米（整根煮的那种），1 小根约 150g，约 110 kcal。</b>这是你唯一的碳水来源，用来替代米饭。<br><br>为什么用玉米不用米饭：同样碳水，玉米多 3 倍纤维、饱腹感强得多，而且不需要煮饭。<br>⚠ 买整根煮的玉米，<b>不要买那种加了糖和油的"甜玉米粒罐头"或"即食玉米棒"</b>。<br>备选：南瓜 200g（46 kcal，更省）／ 红薯 100g（跟玉米差不多）。<br>实在不想吃任何碳水也可以去掉，代价是更容易饿 —— 但<b>菠菜 300g 必须吃满</b>，不然纤维和钾都不够。' });
-    L.push({ id:'spinach', time:'12:30', ic:'leaf', kind:'check', group:'misc',
+    add({ id:'spinach', time:'12:30', ic:'leaf', kind:'check', group:'misc',
       name:'菠菜 150g', sub:'一碗 · 补镁钾',
       tip:'煮熟装满一个普通饭碗约 150g。中午一碗、晚上一碗，<b>全天 300g —— 这是你唯一的镁和钾来源</b>（你没有镁片）。<br>300g 约提供 240mg 镁 + 1600mg 钾，只花 70 kcal。<br>缺镁的表现：半夜腿抽筋、眼皮跳、入睡难、便秘 —— 出现就说明没吃满。<br><br><b>为什么别的菜不替代</b>：生菜、黄瓜、冬瓜的镁含量差 3~5 倍，等于没吃。<br>真吃腻了可以换：芥蓝 / 小白菜 / 空心菜 / 菌菇（镁和钾也够）。<br>技巧：早上蛋白粉里加一把冷冻菠菜打匀，完全尝不出来。' });
-    L.push({ id:'nap', time:'13:00', ic:'moon', kind:'check', group:'misc',
+    add({ id:'nap', time:'13:00', ic:'moon', kind:'check', group:'misc',
       name:'午睡 60 分钟', sub:'闹钟 14:00 · 窗帘拉上',
       tip:'13:00 躺下，闹钟定 14:00。<br><b>60 分钟是完整的睡眠周期，醒来正好在浅睡期。</b>千万别睡成 45 分钟 —— 那是深睡被强行打断，醒来比不睡更困，一下午废掉。<br>窗帘拉上、眼罩戴上。睡不着也算，闭眼安静躺 20 分钟同样能降皮质醇。' });
 
-    L.push({ id:'m3', time:'16:00', ic:'meal', kind:'check', group:'meals',
+    add({ id:'m3', time:'16:00', ic:'meal', kind:'check', group:'meals',
       name:'下午加餐', sub:'水煮蛋 2 个',
       tip:'水煮蛋 2 个，或者水浸金枪鱼半罐。<br>这一餐是为了防晚饭失控 —— 1000 kcal 的饮食里，下午 4 点这一口能救你晚上不点外卖。' });
-    L.push({ id:'weigh', time:'17:00', ic:'scale', kind:'action', go:'weight',
+    add({ id:'weigh', time:'17:00', ic:'scale', kind:'action', go:'weight',
       name:'称重 + 打卡', sub:'只看 7 日均线',
       tip:'称之前先去趟厕所、把水杯放下。<br>下午 5 点的体重天生比早上重 1~2 斤（一天的水和饭），而且更容易被「今天吃咸了」影响。<br><b>所以永远只看 7 日均线，绝不看单日数字。</b>某天虚涨 2 斤不是胖，是水，两天就回去。' });
 
-    L.push({ id:'m4', time:'18:30', ic:'meal', kind:'check', group:'meals',
+    add({ id:'m4', time:'18:30', ic:'meal', kind:'check', group:'meals',
       name:'晚餐', sub:'蛋白粉 1 勺 · 菠菜 150g',
       tip:'蛋白粉 1 勺（白水冲）+ 晚餐那碗菠菜 150g。<br><b>晚餐不放盐</b>，只放醋、柠檬、辣椒面 —— 盐只放早餐和午餐。这条比断水更有效，而且安全。<br><br>不饿的话可以只喝蛋白粉，但<b>这一勺不能省</b>：去掉它全天蛋白从 137g 掉到 112g，对 80kg 的你刚好卡在保肌线下。<br>真饿的话允许加：水煮蛋 1 个，或再来一碗菠菜。' });
-    L.push({ id:'stopwater', time:'20:00', ic:'water', kind:'info',
+    add({ id:'stopwater', time:'20:00', ic:'water', kind:'info',
       name:'停止喝水', sub:'之后一口都不喝',
       tip:'之后一口都不喝。<br>不是为了上镜，是为了不半夜起夜 —— 你只睡 6 小时，起一次夜就毁掉一半深睡。<br>白天已经喝够 2.4L，晚间断水不会脱水。' });
-    L.push({ id:'m5', time:'23:00', ic:'meal', kind:'check', group:'meals',
+    add({ id:'m5', time:'23:00', ic:'meal', kind:'check', group:'meals',
       name:'睡前半勺蛋白粉', sub:'防深夜点外卖',
       tip:'蛋白粉半勺 + 少量水（100ml 以内）。<br>熬夜的人这半勺作用比不熬夜的人更大：压住深夜饥饿激素，防你 23:30 点外卖，同时给夜间提供氨基酸、减少肌肉分解。<br>如果还是饿得受不了，只允许加：水煮蛋 1 个、或冷冻蔬菜一把。别开别的口子。' });
-    L.push({ id:'sleep', time:s.sleepTime, ic:'moon', kind:'info',
+    add({ id:'sleep', time:s.sleepTime, ic:'moon', kind:'info',
       name:'熄灯睡觉', sub:'固定在 ' + s.sleepTime,
       tip:'固定这个点，周末也一样。<br><b>规律 6 小时 > 忽长忽短</b>（工作日 5 小时 + 周末补到 10 小时，对代谢比规律 6 小时更差，补觉补不回脂肪）。<br>睡前 60 分钟把大灯换成暖光小灯、屏幕调暗 —— 深睡期尽量压缩进这 6 小时里。' });
 
@@ -1993,6 +2026,15 @@ const App = {
         ? `= ${fmt(kg2jin(v), 1)} 斤　·　比起始 ${v - DB.data.settings.startWeight >= 0 ? '+' : ''}${fmt(kg2jin(v - DB.data.settings.startWeight), 1)} 斤`
         : '—';
     });
+    /* 顶栏滚动时收窄，把空间还给内容 */
+    let _lastY = 0;
+    window.addEventListener('scroll', () => {
+      const y = window.scrollY;
+      if (Math.abs(y - _lastY) < 6) return;
+      _lastY = y;
+      $$('.top').forEach(t => t.classList.toggle('shrink', y > 28));
+    }, { passive: true });
+
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'visible') { this.renderAll(); Reminder.schedule(); Sky.play(); }
       else Sky.pause();
@@ -2060,6 +2102,7 @@ const App = {
     this.renderHero();
     this.renderSteps();
     this.renderRecover();
+    this.renderLate();
     this.renderTimeline();
 
     const r = DB.rec();
@@ -2203,6 +2246,106 @@ const App = {
     tag.textContent = v >= s.stepGoal ? '达标' : `${v} / ${s.stepGoal}`;
     tag.className = 'tag' + (v >= s.stepGoal ? ' ok' : '');
   },
+
+  /* ══ 到点未完成的横幅（这组方法之前漏定义了，是 bug） ══ */
+  showOverdueBadge(due) {
+    const el = $('#overdueBadge');
+    if (!el) return;
+    if (!due || !due.length) { el.style.display = 'none'; return; }
+    const names = due.slice(0, 3).map(x => x.name).join(' · ');
+    const more = due.length > 3 ? ` 等 ${due.length} 项` : '';
+    el.style.display = '';
+    el.innerHTML = `${icon('alert')}<span>到点还没做：<b>${names}</b>${more}</span><span class="go">去打卡</span>`;
+  },
+  hideOverdueBadge() { const el = $('#overdueBadge'); if (el) el.style.display = 'none'; },
+  scrollToTimeline() {
+    const el = $('#timeline');
+    if (el) el.scrollIntoView({ behavior:'smooth', block:'start' });
+  },
+
+  /* ══ 起晚了 ══ */
+  lateInfo() {
+    const r = DB.rec();
+    const hhmm = (() => { const n = new Date(); return String(n.getHours()).padStart(2,'0') + ':' + String(n.getMinutes()).padStart(2,'0'); })();
+    const first = DB.reminderList().find(it => {
+      if (toMin(it.time) > toMin(hhmm) - 20) return false;        // 落后不到 20 分钟不算
+      if (it.kind === 'check' && this.isDone(it, r)) return false;
+      if (it.id === 'train' && r.train) return false;
+      return true;
+    });
+    if (!first) return null;
+    return { first, lateMin: toMin(hhmm) - toMin(first.time) };
+  },
+
+  renderLate() {
+    const el = $('#lateBar');
+    if (!el) return;
+    const s = DB.data.settings;
+    const info = (diffDays(s.startDate, todayKey()) + 1 >= 1) ? this.lateInfo() : null;
+    if (!info || this._lateOff === todayKey()) { el.style.display = 'none'; return; }
+    const h = Math.floor(info.lateMin / 60), m = info.lateMin % 60;
+    const ago = h ? `${h} 小时 ${m} 分钟` : `${m} 分钟`;
+    el.style.display = '';
+    el.innerHTML = `${icon('clock')}<span>「${info.first.name}」已经过了 <b>${ago}</b> —— 起晚了？点这里处理</span><span class="go">处理</span>`;
+  },
+
+  openLate() {
+    const info = this.lateInfo();
+    if (!info) { this.toast('今天没有落后的项'); return; }
+    const h = Math.floor(info.lateMin / 60), m = info.lateMin % 60;
+    const ago = h ? `${h} 小时 ${m} 分钟` : `${m} 分钟`;
+    const cur = DB.shiftMinutes();
+    this.sheet('起晚了 · 怎么办', `
+      <p>现在比计划落后 <b>${ago}</b>（<b>${info.first.time}</b> 的「${info.first.name}」还没做）。</p>
+      <p><b>先说最重要的一条：不要为了追进度而少吃。</b><br>
+      少一顿只会让肌肉多掉，秤上掉的还是水。正确做法是<b>把剩下的日程往后挪</b>。</p>
+      <div class="stack mt4">
+        <button class="btn primary wide" onclick="App.applyShift()">顺延今天剩余日程</button>
+        <button class="btn wide" onclick="App.skipPast()">跳过已错过的，只留接下来的</button>
+        <button class="btn ghost wide" onclick="App.dismissLate()">今天就这样，别提醒了</button>
+      </div>
+      ${cur ? `<p class="hint mt4">当前已顺延 <b>${cur} 分钟</b>。顺延只改提醒时间，不改吃什么、吃多少。</p>` : ''}
+    `);
+  },
+
+  /* 把第一个未完成项挪到「现在」，其余等比后移 */
+  applyShift() {
+    const r = DB.rec();
+    const hhmm = (() => { const n = new Date(); return String(n.getHours()).padStart(2,'0') + ':' + String(n.getMinutes()).padStart(2,'0'); })();
+    const first = DB.reminderList().find(it => {
+      if (it.kind === 'check' && this.isDone(it, r)) return false;
+      if (it.id === 'train' && r.train) return false;
+      return toMin(it.time) >= 7 * 60;      // 跳过夜里的项
+    });
+    if (!first) { this.toast('今天已经全部完成'); this.closeSheet(); return; }
+    const shift = Math.max(0, toMin(hhmm) - toMin(first.time));
+    r.shift = shift;
+    DB.save(true);
+    Reminder.schedule();
+    this.renderToday();
+    this.closeSheet();
+    this.toast(shift ? `已顺延 ${shift} 分钟，提醒时间跟着改了` : '没有需要顺延的');
+  },
+
+  skipPast() {
+    const r = DB.rec();
+    const hhmm = (() => { const n = new Date(); return String(n.getHours()).padStart(2,'0') + ':' + String(n.getMinutes()).padStart(2,'0'); })();
+    r.remindOff = r.remindOff || {};
+    let n = 0;
+    DB.reminderList().forEach(it => {
+      if (toMin(it.time) > toMin(hhmm)) return;
+      if (it.kind === 'check' && this.isDone(it, r)) return;
+      if (it.id === 'train' && r.train) return;
+      r.remindOff[it.id] = true; n++;
+    });
+    DB.save(true);
+    Reminder.schedule();
+    this.renderToday();
+    this.closeSheet();
+    this.toast(n ? `跳过了 ${n} 个错过的项，剩下的照常提醒` : '没有错过的项');
+  },
+
+  dismissLate() { this._lateOff = todayKey(); this.renderLate(); this.closeSheet(); this.toast('今天不再提示'); },
 
   /* ── 断签补救 ── */
   renderRecover() {
