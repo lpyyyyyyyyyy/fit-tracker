@@ -1,7 +1,6 @@
-/* 绂荤嚎缂撳瓨 鈥斺€?璁?App 瑁呭埌涓诲睆骞曞悗鏂綉涔熻兘鎵撳紑銆?   鍙湪 https 鎴?localhost 涓嬫墠浼氭敞鍐屾垚鍔燂紙娴忚鍣ㄨ姹傦級銆?
-   鈿狅笍 鏀硅繃鍐呭鍚庡繀椤绘妸 CACHE 鐗堟湰鍙?+1锛屽惁鍒欒€佺紦瀛樹細涓€鐩寸敓鏁堬紝
-      鐢ㄦ埛鐪嬪埌鐨勮繕鏄棫鐗堥〉闈紙杩欎釜鍧戠湡韪╄繃锛夈€?*/
-const VER = 'v5';
+/* 缁傝崵鍤庣紓鎾崇摠 閳ユ柡鈧?鐠?App 鐟佸懎鍩屾稉璇茬潌楠炴洖鎮楅弬顓犵秹娑旂喕鍏橀幍鎾崇磻閵?   閸欘亜婀?https 閹?localhost 娑撳澧犳导姘暈閸愬本鍨氶崝鐕傜礄濞村繗顫嶉崳銊洣濮瑰偊绱氶妴?
+   閳跨媴绗?閺€纭呯箖閸愬懎顔愰崥搴＄箑妞ょ粯濡?CACHE 閻楀牊婀伴崣?+1閿涘苯鎯侀崚娆掆偓浣虹处鐎涙ü绱版稉鈧惄瀵告晸閺佸牞绱?      閻劍鍩涢惇瀣煂閻ㄥ嫯绻曢弰顖涙＋閻楀牓銆夐棃顫礄鏉╂瑤閲滈崸鎴犳埂闊晞绻冮敍澶堚偓?*/
+const VER = 'v6';
 const CACHE = 'ran-fit-' + VER;
 const ASSETS = ['./', './index.html', './manifest.json'];
 
@@ -21,7 +20,7 @@ self.addEventListener('activate', e => {
   );
 });
 
-/* 缃戠粶浼樺厛锛氭嬁寰楀埌灏辩敤鏈€鏂扮殑锛屽苟椤烘墜鏇存柊缂撳瓨锛涙嬁涓嶅埌鎵嶅洖缂撳瓨銆?   姣斻€岀紦瀛樹紭鍏堛€嶆參涓€鐐圭偣锛屼絾缁濅笉浼氳浣犵湅鍒拌繃鏈熼〉闈€?*/
+/* 缂冩垹绮舵导妯哄帥閿涙碍瀣佸妤€鍩岀亸杈╂暏閺堚偓閺傛壆娈戦敍灞借嫙妞ょ儤澧滈弴瀛樻煀缂傛挸鐡ㄩ敍娑欏瑏娑撳秴鍩岄幍宥呮礀缂傛挸鐡ㄩ妴?   濮ｆ柣鈧瞼绱︾€涙ü绱崗鍫涒偓宥嗗弮娑撯偓閻愬湱鍋ｉ敍灞肩稻缂佹繀绗夋导姘愁唨娴ｇ姷婀呴崚鎷岀箖閺堢喖銆夐棃顫偓?*/
 function networkFirst(req) {
   return fetch(req, { cache: 'no-store' })
     .then(r => {
@@ -38,16 +37,16 @@ self.addEventListener('fetch', e => {
   const req = e.request;
   if (req.method !== 'GET') return;
   const url = new URL(req.url);
-  if (url.origin !== location.origin) return;      // 鍙鐞嗚嚜宸辩殑璧勬簮
+  if (url.origin !== location.origin) return;      // 閸欘亜顦╅悶鍡氬殰瀹歌京娈戠挧鍕爱
 
-  /* 椤甸潰鍜岃剼鏈竴寰嬬綉缁滀紭鍏?鈥斺€?淇濊瘉浣犵湅鍒扮殑鏄渶鏂扮増 */
+  /* 妞ょ敻娼伴崪宀冨壖閺堫兛绔村瀣秹缂佹粈绱崗?閳ユ柡鈧?娣囨繆鐦夋担鐘垫箙閸掓壆娈戦弰顖涙付閺傛壆澧?*/
   const isDoc = req.mode === 'navigate' || url.pathname.endsWith('/') || url.pathname.endsWith('.html');
   const isCode = url.pathname.endsWith('.js');
   if (isDoc || isCode) {
     e.respondWith(networkFirst(req));
     return;
   }
-  /* 鍏朵粬闈欐€佽祫婧愶細缂撳瓨浼樺厛锛堝揩锛夛紝浣嗕篃娌″嚑涓?*/
+  /* 閸忔湹绮棃娆愨偓浣界カ濠ф劧绱扮紓鎾崇摠娴兼ê鍘涢敍鍫濇彥閿涘绱濇担鍡曠瘍濞屸€冲殤娑?*/
   e.respondWith(
     caches.match(req).then(hit => hit || fetch(req).then(r => {
       if (r && r.status === 200 && r.type === 'basic') {
@@ -59,11 +58,11 @@ self.addEventListener('fetch', e => {
   );
 });
 
-/* 鍏佽椤甸潰閫氳繃 SW 寮归€氱煡锛堥儴鍒嗙幆澧冧笅姣旂洿鎺?new Notification 鏇村彲闈狅級 */
+/* 閸忎浇顔忔い鐢告桨闁俺绻?SW 瀵綊鈧氨鐓￠敍鍫ュ劥閸掑棛骞嗘晶鍐х瑓濮ｆ梻娲块幒?new Notification 閺囨潙褰查棃鐙呯礆 */
 self.addEventListener('message', e => {
   const d = e.data || {};
   if (d.type === 'notify') {
-    self.registration.showNotification(d.title || '鐕?路 鍑忚剛鎵撳崱', {
+    self.registration.showNotification(d.title || '閻?璺?閸戝繗鍓涢幍鎾冲幢', {
       body: d.body || '',
       tag: 'ran-fit',
       renotify: true,
@@ -72,7 +71,7 @@ self.addEventListener('message', e => {
       vibrate: [90, 50, 90],
     });
   }
-  /* 椤甸潰瑕佹眰绔嬪埢妫€鏌ユ洿鏂?*/
+  /* 妞ょ敻娼扮憰浣圭湴缁斿鍩㈠Λ鈧弻銉︽纯閺?*/
   if (d.type === 'skipWaiting') self.skipWaiting();
 });
 
