@@ -28,7 +28,7 @@
   --ok-400:#5fd39a; --warn-400:#e0a94f; --bad-400:#e2798c; --ink-400:#8ba0d8;
 
   /* 间距 · 4 的倍数（整体放大一档，制造留白） */
-  --s1:5px; --s2:10px; --s3:14px; --s4:18px; --s5:24px; --s6:30px; --s7:40px; --s8:52px; --s9:72px;
+  --s1:5px; --s2:10px; --s3:14px; --s4:18px; --s5:24px; --s6:32px; --s7:44px; --s8:56px; --s9:76px;
   /* 圆角 */
   --r1:10px; --r2:16px; --r3:22px; --r4:28px; --rf:999px;
   /* 字阶 */
@@ -82,10 +82,19 @@ body{
   font-family:-apple-system,BlinkMacSystemFont,"SF Pro SC","PingFang SC","HarmonyOS Sans SC","Source Han Sans SC","Microsoft YaHei",system-ui,sans-serif;
   font-size:var(--f-md); line-height:1.68;
   letter-spacing:.008em;
+  /* ⚠️ overflow-x:hidden 挡不住「横向拖拽」—— 手机上左右滑页面还是会跟着动，
+     感觉像整个界面在晃。必须配 touch-action:pan-y 才真的锁住：
+     只允许纵向手势，横向手势直接不响应。 */
   overflow-x:hidden;
+  touch-action:pan-y;
+  overscroll-behavior-x:none;
+  overscroll-behavior-y:contain;
   -webkit-font-smoothing:antialiased;
   text-rendering:optimizeLegibility;
 }
+/* 所有元素都不许超出容器宽度，否则横向又能滑出橡皮筋效果 */
+#app,#app *{max-width:100%}
+img,canvas,svg,video{max-width:100%}
 button,input,select,textarea{font:inherit;color:inherit;background:none;border:none;outline:none}
 button{cursor:pointer}
 
@@ -215,7 +224,7 @@ button{cursor:pointer}
 /* ════════════ 卡片 ════════════ */
 .card{
   position:relative;background:var(--surface);border:1px solid var(--line);border-radius:var(--r4);
-  padding:var(--s5) var(--s4);margin-bottom:var(--s5);box-shadow:var(--shadow-1);
+  padding:20px var(--s4);margin-bottom:28px;box-shadow:var(--shadow-1);
   backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);
   transition:border-color var(--d2) var(--e-out),background var(--d2) var(--e-out);
   overflow:hidden;
@@ -288,7 +297,7 @@ button{cursor:pointer}
   background:none;border:none;border-radius:var(--r1);color:var(--text);
   position:relative;overflow:hidden;
   transition:background var(--d1) var(--e-out),padding var(--d2) var(--e-out),min-height var(--d2) var(--e-out)}
-.tlRow{min-height:56px}
+.tlRow{min-height:54px}
 .tlRow:active{background:rgba(200,215,235,.07)}   /* M3 状态层（列表行用淡一点的） */
 .tlRow.done{}
 /* 刻意不做「已完成就变矮」：那会让整页高度突然跳动，用户感觉是页面缩小了 */
@@ -498,6 +507,16 @@ canvas{display:block;width:100%;height:100%}
 .trainEntry .te-t{flex:1;min-width:0;font-size:var(--f-sm);font-weight:600;
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
+/* 步数：折叠成一行，点了才展开 —— 少一张卡，少一层框 */
+.stepRow{display:flex;align-items:center;gap:10px;width:100%;text-align:left;
+  padding:2px 0;transition:opacity 120ms ease-out}
+.stepRow:active{opacity:.65}
+.stepRow .i{font-size:17px;color:var(--faint);flex:none}
+.stepRow .sr-k{font-size:var(--f-sm);color:var(--text-2)}
+.stepRow .sr-v{margin-left:auto;font-family:var(--mono);font-size:var(--f-sm);
+  font-weight:600;font-variant-numeric:tabular-nums}
+.stepRow .sr-go{font-size:var(--f-2xs);color:var(--dim);flex:none}
+
 /* ════════════ 弹层里的「做法」区块 ════════════ */
 .howto{background:rgba(200,215,235,.045);border-radius:var(--r2);
   padding:var(--s4);margin:0 0 var(--s3)}
@@ -657,7 +676,7 @@ details .body b{color:var(--text);font-weight:650}
         <div class="metrics">
           <div class="metric"><span class="k">热量</span><span class="v" id="hKcal">0<sub>/1000</sub></span></div>
           <div class="metric"><span class="k">水</span><span class="v" id="hWater">0<sub>/8</sub></span></div>
-          <div class="metric"><span class="k">步数</span><span class="v" id="hSteps">0<sub>/2500</sub></span></div>
+          <div class="metric"><span class="k">已减</span><span class="v" id="hLost">0<sub>斤</sub></span></div>
           <div class="metric"><span class="k">连续</span><span class="v" id="hStreak">0<sub>天</sub></span></div>
         </div>
       </div>
@@ -671,14 +690,33 @@ details .body b{color:var(--text);font-weight:650}
       <button class="btn mt4" onclick="App.openRecover()">怎么办</button>
     </div>
 
+    <!-- 步数：不单独占一张卡 —— 它就是「今天的一个数字」，
+         并进上面那张指标卡的「步数」行里，点一下才展开。少一张卡，少一层框。 -->
+    <div class="card" id="stepCard">
+      <button class="stepRow" onclick="App.toggleStepPanel()">
+        <span class="i" data-i="steps"></span>
+        <span class="sr-k">步数</span>
+        <span class="sr-v" id="stepInline">—</span>
+        <span class="sr-go" id="stepGo">记录 ›</span>
+      </button>
+      <div id="stepPanel" style="display:none">
+        <div class="row2 mt3">
+          <button class="btn primary" id="pedoBtn" onclick="App.togglePedo()">自动计步</button>
+          <button class="btn ghost" onclick="App.pickSteps()">手动填</button>
+        </div>
+        <div class="hint mt3" id="pedoState">自动计步只有页面开着才计数（浏览器的限制）。</div>
+        <input id="stepsInput" type="number" inputmode="numeric" placeholder="今天走了多少步" class="plainIn mt3">
+      </div>
+    </div>
+
     <div class="card">
       <div class="chead">
         <div class="ctitle"><span class="badge"><span class="i" data-i="orbit"></span></span>今日时间轴</div>
         <button class="tag acc" id="timelinePill" onclick="App.toggleSub()">—</button>
       </div>
       <!-- 训练入口放在时间轴上面：底部 Tab 只放 5 个（M3 / iOS 规范上限），
-           训练收进今日页，而且必须在首屏就能看到 -->
-      <button class="trainEntry" onclick="App.go('train')">
+           训练改成弹窗，而且必须在首屏就能看到 -->
+      <button class="trainEntry" onclick="App.openTrain()">
         <span class="i" data-i="dumbbell"></span>
         <span class="te-t">今天的 12 分钟训练</span>
         <span class="tag" id="trainTag">开始 ›</span>
@@ -686,23 +724,7 @@ details .body b{color:var(--text);font-weight:650}
       <div id="timeline" class="tl hideSub"></div>
       <div class="hint mt4" id="mealHint"></div>
     </div>
-
-    <!-- 水分并进时间轴了（见每个时段右侧的点阵）；这里只留步数 -->
-    <div class="card">
-      <div class="chead">
-        <div class="ctitle"><span class="badge ink"><span class="i" data-i="steps"></span></span>步数</div>
-        <span class="tag" id="stepTag">—</span>
-      </div>
-      <div class="rowline">
-        <input id="stepsInput" type="number" inputmode="numeric" placeholder="走了多少步" class="plainIn">
-      </div>
-      <div class="rowline mt3">
-        <button class="btn ghost" onclick="App.startMarch()" id="marchBtn">
-          <span class="i" data-i="steps"></span>原地踏步 20 分钟</button>
-        <span class="hint" id="marchState"></span>
-      </div>
-    </div>
-  </section>
+</section>
 
   <!-- ══════════════ 体重 ══════════════ -->
   <section class="view" id="v-weight">
@@ -1097,7 +1119,7 @@ details .body b{color:var(--text);font-weight:650}
    1 · 常量与工具
    ════════════════════════════════════════════════════════════════ */
 /* App 版本 —— 每次改完内容把它 +1，设置页会显示，用来确认看到的是不是最新版 */
-const APP_VER = '2026.09.17-8';
+const APP_VER = '2026.09.17-10';
 
 const JIN = 2;
 const DAY = 86400000;
@@ -1123,7 +1145,9 @@ const ICONS = {
   sleep:'<path d="M12 3.2 13.9 9l5.9 1.9-5.9 1.9L12 18.7l-1.9-5.9L4.2 10.9 10.1 9Z"/>',
   water:'<path d="M12 2.9c3.4 4.2 5.7 7.1 5.7 10.1A5.7 5.7 0 0 1 6.3 13c0-3 2.3-5.9 5.7-10.1Z"/>',
   scale:'<path d="M12 4.4v15.2M6 19.6h12"/><path d="m4 9.5 8-4.6 8 4.6"/><path d="M8.6 9.5 10.4 15M15.4 9.5 13.6 15"/>',
-  steps:'<path d="M7 20.5c-1.2-1.6-1.6-3.7-1.4-6l.5-3.2c.2-1.3 1-2.3 2.1-2.8M7.2 4.6a2.1 2.1 0 1 0 0 4.2 2.1 2.1 0 0 0 0-4.2Z"/><path d="M17 20.5c-1.2-1.6-1.6-3.7-1.4-6l.5-3.2c.2-1.3 1-2.3 2.1-2.8M17.2 4.6a2.1 2.1 0 1 0 0 4.2 2.1 2.1 0 0 0 0-4.2Z"/>',
+  /* ⚠️ 原来画的是两个「脚印」，14px 下看着像两个问号（用户反馈图标坏了）。
+     换成清晰的走路小人。 */
+  steps:'<circle cx="13.6" cy="4.2" r="2"/><path d="M11 21v-4.2l-2.4-2.2.9-4.6a2 2 0 0 1 3.5-.9l1.5 1.9 2.6 1"/><path d="M8.8 13.4 5.2 15.6M11 16.8l-2.6 4.2"/>',
   orbit:'<circle cx="12" cy="12" r="3.2"/><ellipse cx="12" cy="12" rx="10" ry="4.4" transform="rotate(-28 12 12)"/>',
   target:'<circle cx="12" cy="12" r="8.4"/><circle cx="12" cy="12" r="3.4"/><path d="M12 3.6v2.6M12 17.8v2.6M3.6 12h2.6M17.8 12h2.6"/>',
   clock:'<circle cx="12" cy="12" r="8.6"/><path d="M12 7.4V12l3.2 2.2"/>',
@@ -1214,6 +1238,14 @@ const Backup = {
 /* ════════════════════════════════════════════════════════════════
    2 · 内容常量
    ════════════════════════════════════════════════════════════════ */
+/* 动作要领 —— 训练页和弹窗共用同一份内容 */
+const EX_GUIDE = [
+  { n:'深蹲', b:'双脚与肩同宽，脚尖稍朝外。像往后坐椅子一样把屁股往后下方坐，膝盖跟着脚尖方向走。蹲到大腿接近与地面平行，用脚跟发力站起，站直时夹一下屁股。<br><b>常见错误：</b>膝盖往内夹（想象把膝盖往小脚趾方向推）、脚跟离地、蹲得太浅。' },
+  { n:'俯卧撑', b:'先选难度：撑墙 → 跪姿 → 上斜（撑床沿）→ 地面标准。手比肩略宽，身体从头到脚一条直线，收腹夹臀。往下时胸部真的沉下去，手肘往身体后方斜 45°。<br><b>常见错误：</b>塌腰、撅屁股、只点头不降身体。' },
+  { n:'站姿后踢腿', b:'<b>站着做，不用趴地上。</b>侧身扶墙或扶椅背，身体站直。<br>一条腿向后伸直抬起，<b>抬到和身体差不多齐平就停 1~2 秒</b>，感受臀部收紧，慢慢放回。左右各算 1 次。<br><b>常见错误：</b>甩腰借力（要夹紧屁股，用臀发力不是用腰）、抬太高导致腰反弓、身体跟着转。<br>做腻了可以换成：徒手深蹲慢放（3 秒下 1 秒上）、椅子深蹲（坐一下再站起）。' },
+  { n:'平板支撑', b:'手肘在肩膀正下方，前臂贴地。收腹、夹臀、脚尖蹬地，身体一条直线。<br><b>不要憋气</b> —— 保持正常呼吸。<br><b>常见错误：</b>塌腰（腰会疼）、撅屁股、低头看地。<br><b>撑不住怎么办：</b>撑 20 秒歇 10 秒再撑，累计 30 秒也算完成。质量比时长重要。' },
+];
+
 const EXERCISES = [
   { id:'squat', name:'深蹲',     secs:45, unit:'个', base:15, tip:'像往后坐椅子，膝盖跟脚尖方向' },
   { id:'push',  name:'俯卧撑',   secs:45, unit:'个', base:10, tip:'身体一条直线，胸真的沉下去' },
@@ -1222,8 +1254,10 @@ const EXERCISES = [
 ];
 const REST = 60, WARMUP = 120, COOLDOWN = 120;
 
+/* ⚠️ 用户要求删掉「下午加餐」。原来那 2 个水煮蛋已并进早餐（变成 4 个），
+   总热量和蛋白没变，只是少了一个时段。 */
 const MEAL_TEMPLATE = [
-  { id:'m1', name:'早餐' }, { id:'m2', name:'午餐' }, { id:'m3', name:'下午加餐' },
+  { id:'m1', name:'早餐' }, { id:'m2', name:'午餐' },
   { id:'m4', name:'晚餐' }, { id:'m5', name:'睡前半勺' },
 ];
 const MISC_TEMPLATE = [
@@ -1569,8 +1603,8 @@ const DB = {
       name:'训练 12 分钟', sub:'4 个动作 · 自动计时',
       tip:'深蹲 → 俯卧撑 → 站姿后踢腿 → 平板支撑。每个动作 1 组，组间歇 60 秒，全程自动衔接。<br><br><b>时机</b>：关掉电脑后立刻做 —— 别先坐下、别先刷手机、别先吃饭。一旦坐下来，这 12 分钟就永远没有了。<br><br>累到不行那天，<b>只做 10 个深蹲，30 秒也算完成</b>。保住「我还是在练的人」这条线，比练满 12 分钟重要得多。<br><br>训练时间可以在设置页改。' });
     add({ id:'m1', time:'08:30', ic:'meal', kind:'check', group:'meals', keep:true,
-      name:'早餐', sub:'水煮蛋 2 个 · 蛋白粉',
-      tip:'水煮蛋 2 个；蛋白粉 1 勺，<b>用家里那盒牛奶冲，250ml 就行</b>。复合维生素 1 片。<br><br><b>牛奶怎么选</b>：全脂奶 250ml ≈ 165 kcal / 8g 蛋白；<b>脱脂奶 250ml ≈ 85 kcal / 8.5g 蛋白</b> —— 同样是 8g 蛋白，脱脂省 80 kcal。有脱脂就买脱脂，没有就全脂，别为这个纠结。<br><br><b>蛋白粉会不会长胖</b>：一勺约 100 kcal / 25g 蛋白，它就是蛋白质，跟鸡胸里的同一种东西 —— <b>热量赤字下不会让你长胖</b>。<br>⚠️ 唯一要停的情况：包装上每 100g 蛋白质 <b>低于 30g</b>，那是「增肌粉」（加了麦芽糊精和糖），那个才会胖。' });
+      name:'早餐', sub:'水煮蛋 4 个 · 蛋白粉',
+      tip:'<b>水煮蛋 4 个</b>（原来 2 个在下午加餐，已并到这里，营养一点没少）；蛋白粉 1 勺，<b>用家里那盒牛奶冲，250ml 就行</b>。复合维生素 1 片。<br><br>一次煮 4 个不费事 —— 冷水下锅，水开煮 8 分钟，关火泡 2 分钟，剥壳刚好。<b>可以一次煮一周的量放冰箱</b>。<br><br><b>牛奶怎么选</b>：全脂奶 250ml ≈ 165 kcal / 8g 蛋白；<b>脱脂奶 250ml ≈ 85 kcal / 8.5g 蛋白</b> —— 同样是 8g 蛋白，脱脂省 80 kcal。有脱脂就买脱脂，没有就全脂，别为这个纠结。<br><br><b>蛋白粉会不会长胖</b>：一勺约 100 kcal / 25g 蛋白，它就是蛋白质，跟鸡胸里的同一种东西 —— <b>热量赤字下不会让你长胖</b>。<br>⚠️ 唯一要停的情况：包装上每 100g 蛋白质 <b>低于 30g</b>，那是「增肌粉」（加了麦芽糊精和糖），那个才会胖。' });
     add({ id:'coffee1', time:s.coffee1, ic:'coffee', kind:'check', group:'misc', keep:true,
       name:'第一杯咖啡', sub:'黑咖啡 · 补 200ml 水',
       tip:'只喝黑咖啡 / 美式。拿铁、卡布、加了奶糖的一杯 150~250 kcal，等于吃掉半顿饭。<br>每喝一杯咖啡额外补 200ml 水 —— 咖啡利尿，不补会头晕。' });
@@ -1591,9 +1625,7 @@ const DB = {
       name:'午睡 60 分钟', sub:'闹钟 14:00 · 窗帘拉上',
       tip:'13:00 躺下，闹钟定 14:00。<br><b>60 分钟是完整的睡眠周期，醒来正好在浅睡期。</b>千万别睡成 45 分钟 —— 那是深睡被强行打断，醒来比不睡更困，一下午废掉。<br>窗帘拉上、眼罩戴上。睡不着也算，闭眼安静躺 20 分钟同样能降皮质醇。' });
 
-    add({ id:'m3', time:'16:00', ic:'meal', kind:'check', group:'meals', keep:true,
-      name:'下午加餐', sub:'水煮蛋 2 个',
-      tip:'水煮蛋 2 个，或者水浸金枪鱼半罐。<br>这一餐是为了防晚饭失控 —— 1000 kcal 的饮食里，下午 4 点这一口能救你晚上不点外卖。' });
+    /* 下午加餐已按用户要求删除，鸡蛋并进早餐 */
     add({ id:'weigh', time:'17:00', ic:'scale', kind:'action', go:'weight',
       name:'称重 + 打卡', sub:'只看 7 日均线',
       tip:'称之前先去趟厕所、把水杯放下。<br>下午 5 点的体重天生比早上重 1~2 斤（一天的水和饭），而且更容易被「今天吃咸了」影响。<br><b>所以永远只看 7 日均线，绝不看单日数字。</b>某天虚涨 2 斤不是胖，是水，两天就回去。' });
@@ -1835,12 +1867,13 @@ const Engine = {
    4.1 · 行为影响引擎 —— 每个打卡项的「做 vs 不做」
    ════════════════════════════════════════════════════════════════ */
 const Impact = {
-  /* 每项行为在「满分计划」里的定位 */
+  /* 每项行为在「满分计划」里的定位
+     ⚠️ 下午加餐已删。那 2 个鸡蛋并进早餐 → 早餐从 400 kcal/44g 变成 500 kcal/56g，
+        所以「满分计划」的构成没变，只是少了一个时段。 */
   SPEC: {
     train:   { kcal:0,   protein:0,  kind:'train', label:'训练 12 分钟' },
-    m1:      { kcal:400, protein:44, kind:'meal',  label:'早餐' },
+    m1:      { kcal:500, protein:56, kind:'meal',  label:'早餐' },
     m2:      { kcal:400, protein:55, kind:'meal',  label:'午餐' },
-    m3:      { kcal:100, protein:12, kind:'meal',  label:'下午加餐' },
     m4:      { kcal:110, protein:25, kind:'meal',  label:'晚餐' },
     m5:      { kcal:55,  protein:12, kind:'meal',  label:'睡前半勺' },
     spinach: { kcal:70,  protein:5,  kind:'micro', label:'菠菜 300g' },
@@ -2213,7 +2246,7 @@ const Reminder = {
 
   /* 每个阶段的提示语（通知标题） */
   LABEL: {
-    train:'该训练了 · 12 分钟', m1:'该吃早餐了', m2:'该吃午餐了', m3:'该加餐了',
+    train:'该训练了 · 12 分钟', m1:'该吃早餐了', m2:'该吃午餐了',
     m4:'该喝晚餐那勺蛋白粉了', m5:'睡前半勺蛋白粉', coffee1:'第一杯咖啡',
     coffee2:'第二杯咖啡，也是最后一杯', nap:'该午睡了 · 60 分钟',
     spinach:'该吃菠菜了 · 150g', corn:'该吃玉米了', weigh:'该称重打卡了',
@@ -2287,6 +2320,31 @@ const Reminder = {
    ════════════════════════════════════════════════════════════════ */
 const Timer = {
   seq: [], idx: 0, running: false, endAt: 0, raf: null, countUp: false, elapsed: 0, wakeLock: null,
+
+  /* 动作要领 —— 训练页和弹窗共用同一份 */
+  renderExGuide() {
+    const html = EX_GUIDE.map(g =>
+      `<div style="margin-bottom:var(--s4)">
+         <b style="color:var(--text)">${g.n}</b><br>
+         <span style="font-size:var(--f-xs);color:var(--text-2);line-height:1.75">${g.b}</span>
+       </div>`).join('');
+    const a = $('#exGuide'), b = $('#exGuideDrawer');
+    if (a) a.innerHTML = html;
+    if (b) b.innerHTML = html;
+  },
+
+  /* 弹窗刚打开时把界面同步成当前状态（不能只等 tick，否则会显示旧数字） */
+  syncUI() {
+    if (this.seq.length && this.idx < this.seq.length) this.paint();
+    else {
+      const total = this.total();
+      const n = $('#tNum');
+      if (n) n.textContent = this.clip(`${Math.floor(total / 60)}:${String(total % 60).padStart(2, '0')}`, 8);
+      const e = $('#tEx'); if (e) e.textContent = '准备开始';
+      const h = $('#tHint'); if (h) h.textContent = '点开始，自动衔接';
+      const b = $('#tStartBtn'); if (b) b.textContent = '开始训练';
+    }
+  },
 
   build() {
     const t = [{ label:'热身', hint:'原地踏步，活动关节', secs:WARMUP, kind:'warm' }];
@@ -2481,7 +2539,7 @@ const App = {
 
     const r = DB.rec();
     if (document.activeElement !== $('#stepsInput')) $('#stepsInput').value = r.steps ?? '';
-    $('#marchState').textContent = r.steps ? `今天已记录 ${r.steps} 步` : '绑在刷手机/看剧上，20 分钟。';
+    this.renderSteps();
     const tt2 = $('#trainTag');
     if (tt2) { tt2.textContent = r.train ? '已完成 ✓' : '开始 ›'; tt2.className = 'tag' + (r.train ? ' ok' : ''); }
   },
@@ -2494,7 +2552,12 @@ const App = {
     const meals = Object.values(r.meals || {}).filter(Boolean).length;
     $('#hKcal').innerHTML = (meals * 200) + '<sub>/1000 kcal</sub>';
     $('#hWater').innerHTML = (r.water || 0) + '<sub>/8 杯</sub>';
-    $('#hSteps').innerHTML = (r.steps || 0) + `<sub>/${s.stepGoal}</sub>`;
+    /* 步数下面有独立一行了，这里改显示「已减」，信息不重复 */
+    const wl = DB.weights();
+    const curKg = wl.length ? wl[wl.length - 1].kg : s.startWeight;
+    const lostJin = kg2jin(s.startWeight - curKg);
+    const hl = $('#hLost');
+    if (hl) hl.innerHTML = (lostJin > 0 ? fmt(lostJin, 1) : '0') + '<sub>斤</sub>';
     $('#hStreak').innerHTML = DB.streak() + '<sub>天</sub>';
   },
 
@@ -2541,7 +2604,7 @@ const App = {
 
       const onclick = it.kind === 'check' ? `App.toggleItem('${it.id}','${it.group}')`
         : it.kind === 'action'
-          ? (it.id === 'weigh' ? 'App.openWeigh()' : `App.go('${it.go}')`)
+          ? (it.id === 'weigh' ? 'App.openWeigh()' : it.id === 'train' ? 'App.openTrain()' : `App.go('${it.go}')`)
           : `App.showTip('${it.id}')`;
 
       html += `<button class="${cls.join(' ')}" onclick="${onclick}">
@@ -2617,14 +2680,40 @@ const App = {
        <button class="btn wide mt2" onclick="App.listenFixed('${it.id}');App.closeSheet()">今天不再提醒这一项</button>`);
   },
 
-  /* ── 步数（补水已经移到时间轴各时段里了） ── */
+  /* ── 步数：折叠成一行入口 + 展开面板（不再单独占一张大卡） ── */
+  toggleStepPanel() {
+    const p = $('#stepPanel');
+    if (!p) return;
+    const open = p.style.display === 'none';
+    p.style.display = open ? '' : 'none';
+    const g = $('#stepGo');
+    if (g) g.textContent = open ? '收起' : '记录 ›';
+  },
+  pickSteps() {
+    const el = $('#stepsInput');
+    if (el) { el.focus(); try { el.scrollIntoView({ block:'center', behavior:'smooth' }); } catch (e) {} }
+  },
+  togglePedo() {
+    if (Pedometer.running) Pedometer.stop(); else Pedometer.start();
+  },
+
   renderSteps() {
     const s = DB.data.settings, r = DB.rec();
     const v = r.steps || 0;
-    const tag = $('#stepTag');
-    if (!tag) return;
-    tag.textContent = v >= s.stepGoal ? '达标' : `${v} / ${s.stepGoal}`;
-    tag.className = 'tag' + (v >= s.stepGoal ? ' ok' : '');
+    const done = v >= s.stepGoal;
+    const inline = $('#stepInline');
+    if (inline) {
+      inline.textContent = v ? `${v} 步` : '还没记录';
+      inline.style.color = done ? 'var(--accent)' : (v ? 'var(--text)' : 'var(--dim)');
+    }
+    const pb = $('#pedoBtn'), ps = $('#pedoState');
+    if (pb) {
+      pb.textContent = Pedometer.running ? `计步中 · ${Pedometer.steps} 步` : '自动计步';
+      pb.className = 'btn ' + (Pedometer.running ? '' : 'primary');
+    }
+    if (ps) ps.textContent = Pedometer.running
+      ? '正在读手机传感器 —— 页面开着才计数，切走或锁屏就停。'
+      : '自动计步只有页面开着才计数（浏览器的限制）。也可以直接手填。';
   },
 
   /* 副标题显示/隐藏（默认隐藏，点时间轴右上角那个标签切换）*/
@@ -3133,6 +3222,58 @@ const App = {
     }
   },
 
+  /* ── 训练：弹窗版（和称重一样，不跳页）。
+        原来点训练会跳到「训练」页，现在直接从底部滑出计时器。
+        只放计时器和动作要领 —— 动作列表本身没必要单独占一块。 ── */
+  openTrain() {
+    const total = Timer.total();
+    this.sheet('12 分钟训练', `
+      <div class="timerWrap">
+        <div class="tRing" id="tRing" style="width:200px;height:200px">
+          <div class="aura"></div>
+          <svg width="200" height="200" viewBox="0 0 224 224" style="width:200px;height:200px;flex:none">
+            <circle cx="112" cy="112" r="98" fill="none" stroke="var(--track)" stroke-width="12"/>
+            <circle id="tArc" cx="112" cy="112" r="98" fill="none" stroke="url(#gT)" stroke-width="12"
+                    stroke-linecap="round" stroke-dasharray="615.8" stroke-dashoffset="0"/>
+          </svg>
+          <div class="mid">
+            <div class="ex" id="tEx">准备开始</div>
+            <div class="num" id="tNum">${Timer.clip(Math.floor(total / 60) + ':' + String(total % 60).padStart(2, '0'), 8)}</div>
+            <div class="hint" id="tHint">点开始，自动衔接</div>
+          </div>
+        </div>
+        <button class="btn primary wide" id="tStartBtn" onclick="Timer.toggle()">开始训练</button>
+        <div class="row2" style="width:100%">
+          <button class="btn" onclick="Timer.reset()">重置</button>
+          <button class="btn" onclick="App.trainDone()">做完了</button>
+        </div>
+      </div>
+      <p class="hint" style="margin-top:var(--s5)">深蹲 → 俯卧撑 → 站姿后踢腿 → 平板支撑，每个 1 组，组间休息 60 秒，全程自动衔接。</p>
+      <details class="mt3">
+        <summary>动作要领（做之前看一遍）</summary>
+        <div class="body" id="exGuideDrawer"></div>
+      </details>
+    `);
+    /* 弹窗里的元素 id 和训练页重复，渲染时优先找弹窗里的 */
+    this.renderExGuide();
+    Timer.syncUI();
+  },
+
+  /* 手动标记训练完成 */
+  trainDone() {
+    const r = DB.rec();
+    r.train = r.train || {};
+    if (!r.train.done) {
+      r.train.done = true;
+      r.train.plank = r.train.plank || 30;
+    }
+    DB.save(); Backup.auto();
+    Timer.buzz([60, 40, 60]);
+    this.closeSheet();
+    this.renderToday();
+    this.toast('训练完成 · 今天不掉肌肉');
+  },
+
   /* ── 模拟 ── */
   renderSim() {
     const s = DB.data.settings;
@@ -3325,12 +3466,7 @@ const App = {
         <span class="v" style="font-family:var(--mono);font-size:var(--f-sm)">${this.exTarget(ex)} <span style="font-size:var(--f-3xs);color:var(--dim)">${ex.unit}${ex.countUp ? '起' : ''}</span></span>
       </div>`).join('');
 
-    $('#exGuide').innerHTML = [
-      { n:'深蹲', b:'双脚与肩同宽，脚尖稍朝外。像往后坐椅子一样把屁股往后下方坐，膝盖跟着脚尖方向走。蹲到大腿接近与地面平行，用脚跟发力站起，站直时夹一下屁股。<br><b>常见错误：</b>膝盖往内夹（想象把膝盖往小脚趾方向推）、脚跟离地、蹲得太浅。' },
-      { n:'俯卧撑', b:'先选难度：撑墙 → 跪姿 → 上斜（撑床沿）→ 地面标准。手比肩略宽，身体从头到脚一条直线，收腹夹臀。往下时胸部真的沉下去，手肘往身体后方斜 45°。<br><b>常见错误：</b>塌腰、撅屁股、只点头不降身体。' },
-      { n:'站姿后踢腿', b:'<b>站着做，不用趴地上。</b>侧身扶墙或扶椅背，身体站直。<br>一条腿向后伸直抬起，<b>抬到和身体差不多齐平就停 1~2 秒</b>，感受臀部收紧，慢慢放回。左右各算 1 次。<br><b>常见错误：</b>甩腰借力（要夹紧屁股，用臀发力不是用腰）、抬太高导致腰反弓、身体跟着转。<br>做腻了可以换成：徒手深蹲慢放（3 秒下 1 秒上）、椅子深蹲（坐一下再站起）。' },
-      { n:'平板支撑', b:'手肘在肩膀正下方，身体从头到脚一条直线，收紧腹部和屁股，正常呼吸别憋气。<br><b>常见错误：</b>塌腰（最常见，会腰痛）、抬臀太高、憋气。宁可时间短，也别塌腰。' },
-    ].map(x => `<details><summary>${x.n}</summary><div class="body">${x.b}</div></details>`).join('');
+    if ($('#exGuide')) $('#exGuide').innerHTML = EX_GUIDE.map(g => `<div style="margin-bottom:var(--s4)"><b style="color:var(--text)">${g.n}</b><br><span style="font-size:var(--f-xs);color:var(--text-2);line-height:1.75">${g.b}</span></div>`).join('');;
   },
   finishTrain() {
     const r = DB.rec();
@@ -3342,33 +3478,6 @@ const App = {
     Timer.buzz([60, 40, 60]);   /* 调研建议：成功后两下短震，别太长 */
   },
   savePlank(secs) { const r = DB.rec(); r.train = r.train || {}; r.train.plank = secs; DB.save(true); },
-
-  startMarch() {
-    if (this.marchTimer) {
-      clearInterval(this.marchTimer); this.marchTimer = null;
-      $('#marchBtn').innerHTML = icon('steps') + '原地踏步 20 分钟';
-      $('#marchState').textContent = '已取消';
-      return;
-    }
-    let left = 20 * 60;
-    const tick = () => {
-      left--;
-      const m = Math.floor(left / 60), s = left % 60;
-      $('#marchState').textContent = `踏步中… 还剩 ${m}:${String(s).padStart(2, '0')} · 约 ${Math.round((20 * 60 - left) / 60 * 100)} 步`;
-      if (left <= 0) {
-        clearInterval(this.marchTimer); this.marchTimer = null;
-        const r = DB.rec(); r.steps = (r.steps || 0) + 2000;
-        $('#stepsInput').value = r.steps;
-        $('#marchBtn').innerHTML = icon('steps') + '原地踏步 20 分钟';
-        DB.save(); this.renderHero(); this.renderSteps();
-        this.toast('踏步完成 +2000 步'); Timer.buzz([60, 40, 60]);   /* 调研建议：成功后两下短震，别太长 */
-        $('#marchState').textContent = `完成，已 +2000 步，今天共 ${r.steps} 步`;
-      }
-    };
-    tick();
-    $('#marchBtn').innerHTML = icon('clock') + '取消踏步';
-    this.marchTimer = setInterval(tick, 1000);
-  },
 
   /* ── 设置 ── */
   renderSettings() {
@@ -3588,9 +3697,137 @@ const Sky = {
 };
 
 /* ════════════════════════════════════════════════════════════════
+   手机自己数步（网页能自动拿步数的唯一办法）
+   ────────────────────────────────────────────────────────────────
+   ⚠️ 为什么不是读「健康」：
+      HealthKit 只对原生 App 开放，网页读不到（苹果的安全设计）。
+      导入导出包又要用户操作，太麻烦 —— 已放弃。
+   网页能自动拿步数的唯一途径是读手机的加速度计（DeviceMotionEvent），
+   自己在页面上算步数。限制说清楚：
+     · 只有页面开着的时候才计数（切走/锁屏就停）
+     · iOS 必须先点一下授权，且要 https
+     · 是估算值，不如系统计步准，但「原地踏步」这类完全够用
+   ════════════════════════════════════════════════════════════════ */
+const Pedometer = {
+  running: false, base: 0, last: 0, lastPeak: 0, buf: [], zero: 0, steps: 0,
+
+  supported() {
+    return typeof DeviceMotionEvent !== 'undefined';
+  },
+  /* iOS 13+ 要显式请求权限，而且必须在用户点击里调用 */
+  async ask() {
+    if (!this.supported()) return false;
+    const D = DeviceMotionEvent;
+    if (typeof D.requestPermission === 'function') {
+      try { return (await D.requestPermission()) === 'granted'; }
+      catch (e) { return false; }
+    }
+    return true;                 // Android / 桌面不用请求
+  },
+
+  async start() {
+    if (this.running) return;
+    const ok = await this.ask();
+    if (!ok) { App.toast('没拿到传感器权限，改成手填吧'); return; }
+    const r = DB.rec();
+    this.base = r.steps || 0;
+    this.steps = 0;
+    this.buf = [];
+    this.lastPeak = 0;
+    this.zero = performance.now();
+    this.running = true;
+    window.addEventListener('devicemotion', this.onMotion);
+    App.renderSteps();
+    App.toast('开始计步 —— 手机放口袋里走就行');
+  },
+
+  stop() {
+    if (!this.running) return;
+    this.running = false;
+    window.removeEventListener('devicemotion', this.onMotion);
+    App.renderSteps();
+    App.toast('停止计步');
+  },
+
+  /* 峰值检测：加速度模长超过阈值算一步，带最小间隔防抖 */
+  onMotion(e) {
+    const P = Pedometer;
+    const a = e.accelerationIncludingGravity;
+    if (!a) return;
+    const mag = Math.sqrt((a.x || 0) ** 2 + (a.y || 0) ** 2 + (a.z || 0) ** 2);
+    const now = performance.now();
+    /* 每 30 帧算一次动态阈值，适应不同手机的灵敏度和握持方式 */
+    P.buf.push(mag);
+    if (P.buf.length > 30) P.buf.shift();
+    const avg = P.buf.reduce((s, v) => s + v, 0) / P.buf.length;
+    const thr = avg + 1.3;
+
+    if (mag > thr && now - P.lastPeak > 280) {
+      P.lastPeak = now;
+      P.steps++;
+      /* 每 10 步写一次盘并刷新界面，别每一步都写 */
+      if (P.steps % 10 === 0) {
+        const r = DB.rec();
+        r.steps = P.base + P.steps;
+        DB.save(true);
+        App.renderSteps();
+        App.renderHero();
+      }
+    }
+  },
+
+  /* 收尾：把没写盘的步数补上 */
+  flush() {
+    if (!this.running) return;
+    const r = DB.rec();
+    r.steps = this.base + this.steps;
+    DB.save(true);
+  },
+};
+window.addEventListener('beforeunload', () => Pedometer.flush());
+document.addEventListener('visibilitychange', () => { if (document.hidden) Pedometer.flush(); });
+
+
+/* ════════════════════════════════════════════════════════════════
+   锁住横向滑动
+   ────────────────────────────────────────────────────────────────
+   CSS 的 overflow-x:hidden 和 touch-action:pan-y 能挡掉大部分情况，
+   但 iOS Safari 在某些情况下（惯性滚动、双指、横向拖拽）还是会晃。
+   这里再加一层 JS 兜底：手势起始方向偏横向时直接 preventDefault。
+   ════════════════════════════════════════════════════════════════ */
+const LockSwipe = {
+  x: 0, y: 0, locked: false,
+
+  init() {
+    /* 记录起点 */
+    document.addEventListener('touchstart', e => {
+      if (e.touches.length !== 1) { this.locked = false; return; }
+      this.x = e.touches[0].clientX;
+      this.y = e.touches[0].clientY;
+      this.locked = false;
+    }, { passive: true });
+
+    /* 判断方向：横向幅度明显大于纵向 → 锁掉这个手势 */
+    document.addEventListener('touchmove', e => {
+      if (e.touches.length !== 1) return;
+      const dx = Math.abs(e.touches[0].clientX - this.x);
+      const dy = Math.abs(e.touches[0].clientY - this.y);
+      if (this.locked || (dx > 8 && dx > dy * 1.4)) {
+        this.locked = true;
+        if (e.cancelable) e.preventDefault();
+      }
+    }, { passive: false });
+
+    /* 双指缩放也去掉，省得误触把界面搞歪 */
+    document.addEventListener('gesturestart', e => e.preventDefault());
+    document.addEventListener('dblclick', e => e.preventDefault());
+  },
+};
+
+/* ════════════════════════════════════════════════════════════════
    启动
    ════════════════════════════════════════════════════════════════ */
-window.addEventListener('load', () => { Sky.init(); App.init(); });
+window.addEventListener('load', () => { Sky.init(); App.init(); LockSwipe.init(); });
 window.addEventListener('resize', () => {
   clearTimeout(window._rz);
   window._rz = setTimeout(() => { if (App.view === 'weight') App.drawChart(); }, 180);
