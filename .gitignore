@@ -1,13 +1,10 @@
-﻿_serve.js
+﻿# ── 不进仓库的本地工具 ──
+_serve.js
 _test.js
 _static_test.js
-_find.js
-_check.js
 _seed.js
 _shoot.js
-_diag.js
-_backup.js
-_task.ps1
+_syntax_check.js
 _cert.pem
 _key.pem
 _cert.cnf
@@ -18,5 +15,7 @@ _task-install.log
 shots/
 shots2/
 减脂打卡备份-*.json
+__pycache__/
+*.pyc
 .DS_Store
 node_modules/
