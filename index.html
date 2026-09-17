@@ -423,6 +423,20 @@ canvas{display:block;width:100%;height:100%}
 @keyframes up{from{transform:translateY(26px);opacity:.5}to{transform:none;opacity:1}}
 .sheet .grip{width:38px;height:4px;border-radius:2px;background:var(--line-hi);margin:-8px auto var(--s5)}
 .sheet h3{margin:0 0 var(--s3);font-size:var(--f-lg);font-weight:600;letter-spacing:-.01em}
+/* ════════════ 弹层里的「做法」区块 ════════════ */
+.howto{background:rgba(200,215,235,.045);border-radius:var(--r2);
+  padding:var(--s4);margin:0 0 var(--s3)}
+.howto:last-child{margin-bottom:0}
+.howto .ht{font-size:var(--f-sm);font-weight:650;color:var(--text);margin-bottom:var(--s2)}
+.howto .hs{font-size:var(--f-2xs);color:var(--dim);margin-bottom:var(--s3)}
+.howto .hsub{font-size:var(--f-2xs);font-weight:650;color:var(--accent);
+  margin:var(--s3) 0 var(--s2);letter-spacing:.02em}
+.howto .hw{font-size:var(--f-2xs);color:var(--dim);line-height:1.75;margin-top:var(--s3)}
+.howto .hw b{color:var(--text-2)}
+.hl{margin:0;padding-left:1.25em;font-size:var(--f-xs);color:var(--text-2);line-height:1.85}
+.hl li{margin-bottom:3px}
+.hl li::marker{color:var(--dim);font-family:var(--mono);font-size:var(--f-2xs)}
+.hl b{color:var(--text);font-weight:650}
 .sheet p{margin:0 0 var(--s4);color:var(--text-2);font-size:var(--f-sm);line-height:1.75}
 .sheet p b{color:var(--text);font-weight:650}
 .sheet .row{display:flex;gap:var(--s3);margin-top:var(--s5)}
@@ -924,6 +938,11 @@ details .body b{color:var(--text);font-weight:650}
 
     <div class="sec">数据</div>
     <div class="card">
+      <div class="kv"><span class="k">App 版本</span><span class="v" id="appVer" style="font-family:var(--mono);font-size:var(--f-xs)">—</span></div>
+      <div class="kv"><span class="k">离线缓存</span><span class="v" id="swState" style="font-size:var(--f-xs)">—</span></div>
+      <div class="hint mt3">如果改了内容但页面上看不到新东西，点下面按钮强刷一次。</div>
+      <button class="btn wide mt3" onclick="App.hardReload()">强制更新到最新版</button>
+      <div class="hr"></div>
       <div class="kv"><span class="k">本地打卡记录</span><span class="v" id="dLocalCount">0 天</span></div>
       <div class="kv"><span class="k">最后备份</span><span class="v" id="dLastBackup" style="font-size:var(--f-xs)">—</span></div>
       <div class="kv"><span class="k">自动备份</span><span class="v"><button class="btn ghost" onclick="App.toggleAutoBackup()" id="dAutoBtn">—</button></span></div>
@@ -984,6 +1003,9 @@ details .body b{color:var(--text);font-weight:650}
 /* ════════════════════════════════════════════════════════════════
    1 · 常量与工具
    ════════════════════════════════════════════════════════════════ */
+/* App 版本 —— 每次改完内容把它 +1，设置页会显示，用来确认看到的是不是最新版 */
+const APP_VER = '2026.09.17-3';
+
 const JIN = 2;
 const DAY = 86400000;
 const $  = s => document.querySelector(s);
@@ -1063,6 +1085,95 @@ const MISC_TEMPLATE = [
 ];
 /* 蛋白只在鸡胸和虾之间隔天换 */
 const PROTEIN_ROTATION = ['鸡胸 250g','虾 250g','鸡胸 250g','虾 250g','鸡胸 250g','虾 250g','鸡胸 250g'];
+
+/* ════════════════════════════════════════════════════════════════
+   做法说明 —— 点「午餐」时直接展开，不用去别处找。
+   两个蛋白做法都会给（今天那个完整展开，另一个折起来），
+   因为它们是隔天轮换的，用户总要看第二次。
+   ════════════════════════════════════════════════════════════════ */
+const HOWTO = {
+  chicken: `<div class="ht">🐔 鸡胸怎么做（250g ≈ 一块巴掌大）</div>
+    <div class="hs">两种做法挑一个，<b>做法 A 最不容易柴，新手先用 A</b></div>
+    <div class="hsub">A · 水煮撕丝（最嫩）</div>
+    <ol class="hl">
+      <li>冷水下锅，水没过鸡胸，加 <b>2 片姜 + 一点盐</b></li>
+      <li><b>水开后立刻转最小火，盖盖子焖 12 分钟</b> —— 大火滚肉就柴</li>
+      <li>关火再焖 5 分钟，捞出来<b>放凉</b>再撕成丝</li>
+    </ol>
+    <div class="hsub">B · 不粘锅干煎（最香）</div>
+    <ol class="hl">
+      <li>鸡胸<b>横着片成两片薄的</b>（太厚外面老了里面还生），刀背拍松</li>
+      <li>撒盐 + 辣椒面 + 花椒粉，<b>腌 10 分钟</b></li>
+      <li>不粘锅烧热，<b>不放油</b>，中火每面 <b>3 分钟</b></li>
+      <li>关火后在锅里<b>盖着焖 2 分钟</b> —— 这一步是嫩的关键</li>
+    </ol>
+    <div class="hw">判断熟了没：筷子插最厚的地方，能轻松插透就好了。</div>`,
+
+  shrimp: `<div class="ht">🦐 虾怎么做（250g ≈ 半袋冷冻虾，12~15 只）</div>
+    <ol class="hl">
+      <li>水烧开，放 <b>2 片姜 + 几粒花椒 + 一点盐</b>（盐让虾肉紧实）</li>
+      <li>虾下锅，<b>煮 1.5~2 分钟</b>，煮到虾身弯成 <b>C 形</b>就立刻捞</li>
+      <li><b>捞进凉水（或冰水）过一下</b> —— 这一步让肉是脆的，不过水会变软</li>
+      <li>蘸料：<b>醋 + 辣椒面 + 蒜末 + 黑胡椒</b>（几乎零热量）</li>
+    </ol>
+    <div class="hw">⚠️ 虾身弯成 <b>O 形</b>就是煮老了。宁可早 10 秒捞，别多煮。<br>
+    买<b>冷冻生虾或鲜虾</b>，别买泡发的「虾仁」—— 那种钠极高，吃了第二天脸会肿。</div>`,
+
+  corn: `<div class="ht">🌽 玉米怎么做（1 小根 ≈ 150g）</div>
+    <ol class="hl">
+      <li>买<b>整根煮的老玉米</b>，水开下锅煮 8~10 分钟</li>
+      <li>懒得煮就买真空即食玉米，撕开直接啃</li>
+    </ol>
+    <div class="hw">⚠️ 不要买「甜玉米粒罐头」「黄油玉米棒」—— 加了糖和油，热量翻倍。<br>
+    备选：南瓜 200g（46 kcal，更省）／ 红薯 100g（跟玉米差不多）。</div>`,
+
+  spinach: `<div class="ht">🥬 菠菜怎么做（150g ≈ 煮熟装满一个饭碗）</div>
+    <ol class="hl">
+      <li>买<b>冷冻菠菜</b>最省事 —— 不用洗、不用切，直接微波 4 分钟</li>
+      <li>新鲜菠菜：水开下锅<b>烫 1 分钟</b>就捞，别久煮</li>
+      <li>捞出来<b>把水挤掉</b>（不然一盘汤），放<b>一小撮盐</b>，或只蘸醋</li>
+    </ol>
+    <div class="hw">⚠️ <b>别和鸡胸一起炒</b> —— 一起炒就得放油，那 10g 油等于白饿一顿。<br>
+    分成两道：肉用煮或煎，菠菜用水烫。<br>
+    ⚠️ 晚餐那一碗菠菜<b>不放盐</b>，只放醋和辣椒面。</div>`,
+
+  season: `<div class="ht">🧂 调味 · 具体放什么（几乎零热量）</div>
+    <div class="hsub">随便放的（不限量）</div>
+    <div class="hw">辣椒面 · 花椒粉 · 干辣椒段 · 蒜末 · 姜片 · 醋 · 生抽 · 柠檬汁 · 葱花 · 香菜</div>
+    <div class="hsub">要计量的（就这三样是热量）</div>
+    <ol class="hl">
+      <li><b>盐</b>：早餐和午餐正常放，大概 <b>每餐 1 小撮（1g 左右）</b>；<b>晚餐不放盐</b></li>
+      <li><b>黑胡椒</b>：随便撒，几乎零热量（现磨的香得多）</li>
+      <li><b>油</b>：全天合计 <b>不超过 10g</b>（约 1 瓷勺）。能不放就不放 —— 不粘锅干煎可以完全不放</li>
+    </ol>
+    <div class="hsub">绝对不碰</div>
+    <div class="hw">❌ <b>香油、红油、芝麻酱</b>（1 瓷勺 100+ kcal）<br>
+    ❌ 火锅油碟、烧烤撒料里的油、勾芡<br>
+    ❌ 老干妈、豆瓣酱、甜面酱（含油含糖）</div>
+    <div class="hsub">各道菜配什么</div>
+    <div class="hw">
+    · <b>鸡胸</b>：盐 + 辣椒面 + 花椒粉 + 黑胡椒（腌 10 分钟）<br>
+    · <b>虾</b>：水里放姜片 + 花椒 + 一点盐；蘸醋 + 辣椒面 + 蒜末<br>
+    · <b>菠菜</b>：一小撮盐；或者只蘸醋（醋能提味又不加热量）<br>
+    · <b>玉米</b>：什么都不用放，直接啃</div>`,
+
+  /* 午餐整体：今天那个展开，另一个折起来 */
+  lunch(today) {
+    const isShrimp = /虾/.test(today);
+    const primary = isShrimp ? HOWTO.shrimp : HOWTO.chicken;
+    const secondary = isShrimp ? HOWTO.chicken : HOWTO.shrimp;
+    const otherName = isShrimp ? '鸡胸' : '虾';
+    const todayName = isShrimp ? '虾' : '鸡胸';
+    return `<p>今天吃：<b>${today}</b> ＋ <b>玉米 1 小根</b> ＋ <b>菠菜 150g</b>。三样怎么做都在下面。</p>`
+      + `<div class="howto">${primary}</div>`
+      + `<details class="howto"><summary>明天轮到${otherName} · 做法先看一遍</summary>
+           <div class="body">${secondary}</div>
+         </details>`
+      + `<div class="howto">${HOWTO.corn}</div>`
+      + `<div class="howto">${HOWTO.spinach}</div>`
+      + `<div class="howto">${HOWTO.season}</div>`;
+  },
+};
 
 const PORTION_GUIDE = [
   { q:'鸡胸 / 虾 250g 长什么样？', a:'一个手掌大（不含手指）、厚度约 2 指。<br>最省事：1kg 鸡胸分 4 袋，一袋就是 250g；虾 500g 一袋，<b>半袋就是 250g</b>。' },
@@ -1245,7 +1356,7 @@ const DB = {
       tip:'这是最后一杯。14:00 之后一滴都不碰（茶、可乐、奶茶也算）。<br>咖啡因半衰期 5~6 小时，你 01:30 睡，下午那杯会吃掉你本就不多的深睡 —— 你会睡着，但那 6 小时只顶 4 小时。' });
     add({ id:'m2', time:'12:30', ic:'meal', kind:'check', group:'meals', keep:true,
       name:'午餐', sub:`${PROTEIN_ROTATION[dow]} · 玉米 · 菠菜`,
-      tip:`<b>${PROTEIN_ROTATION[dow]}</b>（水煮或干煎，做法见「训练」页下面的说明或直接看份量速查）；<br><b>玉米 1 小根</b>（约 150g，就是唯一的碳水，替代米饭）；<br><b>菠菜 150g</b>（煮熟装满一个饭碗，别和肉一起炒，水煮蘸醋）。<br><br>调味随便用辣椒面、花椒粉、醋、蒜末 —— 几乎零热量。<br>❌ 不放油，不勾芡，不用香油碟。` });
+      tip: HOWTO.lunch(PROTEIN_ROTATION[dow]) });
     add({ id:'corn', time:'12:30', ic:'meal', kind:'check', group:'misc',
       name:'玉米 1 小根', sub:'约 150g · 替代米饭',
       tip:'<b>老玉米（整根煮的那种），1 小根约 150g，约 110 kcal。</b>这是你唯一的碳水来源，用来替代米饭。<br><br>为什么用玉米不用米饭：同样碳水，玉米多 3 倍纤维、饱腹感强得多，而且不需要煮饭。<br>⚠ 买整根煮的玉米，<b>不要买那种加了糖和油的"甜玉米粒罐头"或"即食玉米棒"</b>。<br>备选：南瓜 200g（46 kcal，更省）／ 红薯 100g（跟玉米差不多）。<br>实在不想吃任何碳水也可以去掉，代价是更容易饿 —— 但<b>菠菜 300g 必须吃满</b>，不然纤维和钾都不够。' });
@@ -2312,6 +2423,23 @@ const App = {
     this.toast(hidden ? '已隐藏说明，只留标题' : '已显示说明');
   },
 
+  /* ── 强制更新：注销 SW + 清缓存 + 重载。
+        手机上看到旧版页面时点这个。 ── */
+  async hardReload() {
+    this.toast('正在清缓存…');
+    try {
+      if ('serviceWorker' in navigator) {
+        const regs = await navigator.serviceWorker.getRegistrations();
+        await Promise.all(regs.map(r => r.unregister()));
+      }
+      if (window.caches) {
+        const ks = await caches.keys();
+        await Promise.all(ks.map(k => caches.delete(k)));
+      }
+    } catch (e) {}
+    location.reload();
+  },
+
   /* ── 到点未完成的横幅 ── */
   showOverdueBadge(due) {
     const el = $('#overdueBadge');
@@ -2916,6 +3044,13 @@ const App = {
     if (rh) rh.innerHTML = Notification_.secure() ? ''
       : '当前是本地预览地址（http），浏览器不允许发系统通知。<b>部署到 https 之后这里就能一键开启。</b>在那之前，App 内的到点提醒、震动、顶部横幅都正常工作 —— 只要 App 开着。';
 
+    const av = $('#appVer'); if (av) av.textContent = APP_VER;
+    const sws = $('#swState');
+    if (sws) {
+      if (!('serviceWorker' in navigator)) sws.textContent = '浏览器不支持';
+      else if (!Notification_.secure()) sws.textContent = '仅 https 下启用';
+      else sws.textContent = navigator.serviceWorker.controller ? '已启用（离线可用）' : '未接管（刷新一次）';
+    }
     $('#dLocalCount').textContent = Object.keys(DB.data.records).length + ' 天';
     const b = localStorage.getItem(DB.BACKUP_KEY);
     $('#dLastBackup').textContent = b ? new Date(JSON.parse(b).savedAt).toLocaleString('zh-CN') : '—';
