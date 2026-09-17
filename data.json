@@ -1,0 +1,201 @@
+{
+  "version": 1,
+  "createdAt": "2026-09-17T03:47:30.556Z",
+  "settings": {
+    "startWeight": 80,
+    "goalLoss": 8,
+    "refLoss": 10,
+    "planDays": 30,
+    "startDate": "2026-09-08",
+    "stepGoal": 2500,
+    "autoBackup": true,
+    "wakeTime": "08:30",
+    "sleepTime": "01:30",
+    "remindOn": true,
+    "coffee1": "09:00",
+    "coffee2": "13:00",
+    "trainTime": "19:00",
+    "heightCm": 178,
+    "age": 20,
+    "sex": "m",
+    "targetKcal": 1000,
+    "targetProtein": 150,
+    "backup": {
+      "token": "",
+      "repo": "",
+      "path": "data.json"
+    }
+  },
+  "records": {
+    "2026-09-03": {
+      "weight": 80,
+      "meals": {
+        "m1": 1,
+        "m2": 1,
+        "m3": 1,
+        "m4": 1,
+        "m5": 1
+      },
+      "water": 8,
+      "misc": {
+        "coffee1": 1,
+        "coffee2": 1,
+        "nap": 1,
+        "corn": 1,
+        "spinach": 1
+      },
+      "steps": 3200,
+      "train": {
+        "done": true,
+        "plank": 32
+      }
+    },
+    "2026-09-05": {
+      "weight": 79.7,
+      "meals": {
+        "m1": 1,
+        "m2": 1,
+        "m3": 1,
+        "m4": 1,
+        "m5": 1
+      },
+      "water": 8,
+      "misc": {
+        "coffee1": 1,
+        "coffee2": 1,
+        "nap": 1,
+        "corn": 1,
+        "spinach": 1
+      },
+      "steps": 3200,
+      "train": {
+        "done": true,
+        "plank": 33
+      }
+    },
+    "2026-09-07": {
+      "weight": 79.6,
+      "meals": {
+        "m1": 1,
+        "m2": 1,
+        "m3": 1,
+        "m4": 1,
+        "m5": 1
+      },
+      "water": 8,
+      "misc": {
+        "coffee1": 1,
+        "coffee2": 1,
+        "nap": 1,
+        "corn": 1,
+        "spinach": 1
+      },
+      "steps": 3200,
+      "train": {
+        "done": true,
+        "plank": 34
+      }
+    },
+    "2026-09-09": {
+      "weight": 79.2,
+      "meals": {
+        "m1": 1,
+        "m2": 1,
+        "m3": 1,
+        "m4": 1,
+        "m5": 1
+      },
+      "water": 8,
+      "misc": {
+        "coffee1": 1,
+        "coffee2": 1,
+        "nap": 1,
+        "corn": 1,
+        "spinach": 1
+      },
+      "steps": 3200,
+      "train": {
+        "done": true,
+        "plank": 35
+      }
+    },
+    "2026-09-11": {
+      "weight": 79,
+      "meals": {
+        "m1": 1,
+        "m2": 1,
+        "m3": 1,
+        "m4": 1,
+        "m5": 1
+      },
+      "water": 8,
+      "misc": {
+        "coffee1": 1,
+        "coffee2": 1,
+        "nap": 1,
+        "corn": 1,
+        "spinach": 1
+      },
+      "steps": 3200,
+      "train": {
+        "done": true,
+        "plank": 36
+      }
+    },
+    "2026-09-13": {
+      "weight": 78.7,
+      "meals": {
+        "m1": 1,
+        "m2": 1,
+        "m3": 1,
+        "m4": 1,
+        "m5": 1
+      },
+      "water": 8,
+      "misc": {
+        "coffee1": 1,
+        "coffee2": 1,
+        "nap": 1,
+        "corn": 1,
+        "spinach": 1
+      },
+      "steps": 3200,
+      "train": {
+        "done": true,
+        "plank": 37
+      }
+    },
+    "2026-09-15": {
+      "weight": 78.6,
+      "meals": {
+        "m1": 1,
+        "m2": 1,
+        "m5": 1
+      },
+      "water": 4,
+      "misc": {
+        "coffee1": 1
+      },
+      "steps": 1200,
+      "train": null
+    },
+    "2026-09-17": {
+      "meals": {
+        "m1": 1,
+        "m2": 1
+      },
+      "water": 5,
+      "misc": {
+        "coffee1": 1,
+        "nap": 1,
+        "corn": 1,
+        "spinach": 1
+      },
+      "steps": 2600,
+      "train": {
+        "done": true,
+        "plank": 40
+      }
+    }
+  }
+}
