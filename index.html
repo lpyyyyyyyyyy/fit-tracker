@@ -193,18 +193,20 @@ button{cursor:pointer}
 .view.on{display:block}
 /* 除顶栏外，内容都居中限制在 600px（宽屏不至于拉太开） */
 .view > *:not(.top){margin-left:auto;margin-right:auto;max-width:600px;width:100%}
-.view.on>*{animation:rise var(--d3) var(--e-out) both}
+.view.on>*{animation:rise var(--d3) var(--e-out)}
 .view.on>*:nth-child(1){animation-delay:0s}
-.view.on>*:nth-child(2){animation-delay:.045s}
-.view.on>*:nth-child(3){animation-delay:.09s}
-.view.on>*:nth-child(4){animation-delay:.135s}
-.view.on>*:nth-child(5){animation-delay:.18s}
-.view.on>*:nth-child(6){animation-delay:.225s}
-.view.on>*:nth-child(7){animation-delay:.27s}
-.view.on>*:nth-child(8){animation-delay:.315s}
-.view.on>*:nth-child(n+9){animation-delay:.36s}
-/* 视图入场：只做透明度和轻微位移，不做缩放 —— 缩放会让用户觉得字体在变大变小 */
-@keyframes rise{from{opacity:0;transform:translate3d(0,10px,0)}to{opacity:1;transform:none}}
+.view.on>*:nth-child(2){animation-delay:.03s}
+.view.on>*:nth-child(3){animation-delay:.06s}
+.view.on>*:nth-child(4){animation-delay:.09s}
+.view.on>*:nth-child(n+5){animation-delay:.12s}
+/* 视图入场：只做透明度和轻微位移，不做缩放 —— 缩放会让用户觉得字体在变大变小
+   ⚠️ 这里返工过一次。原来写的是 `animation ... both` + 逐项延迟（最多 .36s）：
+      `both` 会把「延迟期间」锁死在 from 状态，也就是 opacity:0 ——
+      快速切页 / 往回滑的时候，还没轮到的卡片就是一片纯黑，
+      用户看到的是「上面直接黑了」。
+      现在去掉了 `both`（延迟期间保持正常可见），延迟也压到最多 .12s。
+      代价是没那么「依次浮现」，但绝不会出现黑块。 */
+@keyframes rise{from{opacity:0;transform:translate3d(0,8px,0)}to{opacity:1;transform:none}}
 
 /* ════════════ 顶栏：锁死在屏幕顶部，滚动时不走 ════════════
    ⚠️ 顶栏「铺满整屏」这件事踩了三次坑，最后用固定定位伪元素解决，别再改：
@@ -589,7 +591,7 @@ canvas{display:block;width:100%;height:100%}
   border-radius:var(--r2);font-size:var(--f-2xs);line-height:1.45;
   border:1px solid rgba(224,169,79,.24);
   background:linear-gradient(120deg,rgba(224,169,79,.1),rgba(224,169,79,.03));
-  animation:rise var(--d3) var(--e-out) both;cursor:pointer}
+  animation:rise var(--d3) var(--e-out);cursor:pointer}
 .banner .i{font-size:16px;color:var(--warn)}
 .banner b{color:var(--text);font-weight:650}
 .banner .go{margin-left:auto;font-size:var(--f-3xs);letter-spacing:.1em;text-transform:uppercase;
@@ -1156,7 +1158,7 @@ details .body b{color:var(--text);font-weight:650}
    1 · 常量与工具
    ════════════════════════════════════════════════════════════════ */
 /* App 版本 —— 每次改完内容把它 +1，设置页会显示，用来确认看到的是不是最新版 */
-const APP_VER = '2026.09.17-14';
+const APP_VER = '2026.09.17-15';
 
 const JIN = 2;
 const DAY = 86400000;
