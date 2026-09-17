@@ -1,0 +1,2818 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1,user-scalable=no">
+<meta name="theme-color" content="#070a10">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>燃 · 减脂打卡</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%23070a10'/%3E%3Ccircle cx='32' cy='32' r='17' fill='none' stroke='%234fd6c4' stroke-width='4' stroke-linecap='round' stroke-dasharray='80 27'/%3E%3Ccircle cx='32' cy='32' r='4' fill='%23d8ad6a'/%3E%3C/svg%3E">
+<style>
+/* ════════════════════════════════════════════════════════════════
+   设计 token · 三层结构（原始值 → 语义 → 组件）
+   色相策略：深海蓝黑底 + 单一青色主调 + 暖金次调。
+   刻意不用紫蓝渐变和大面积霓虹 —— 那是"AI 味"的主要来源。
+   ════════════════════════════════════════════════════════════════ */
+:root{
+  /* 原始 —— 冷调中性 */
+  --n-1000:#070a10; --n-950:#0a0e16; --n-900:#0e131c;
+  --n-800:#141a25; --n-700:#1b2231; --n-600:#242d3e; --n-500:#303b4f;
+  --n-400:#4a566d; --n-300:#6d7a92; --n-200:#9aa6bb; --n-100:#c8d1de; --n-050:#eef2f8;
+  /* 原始 —— 主调（青，低饱和） */
+  --a-700:#1c6f68; --a-600:#2b9186; --a-500:#37af a1; --a-400:#4fd6c4; --a-300:#79e3d4; --a-200:#a8f0e5;
+  /* 原始 —— 次调（暖金） */
+  --b-600:#a8803f; --b-500:#c99f56; --b-400:#d8ad6a; --b-300:#e8c78f;
+  /* 原始 —— 状态 */
+  --ok-400:#5fd39a; --warn-400:#e0a94f; --bad-400:#e2798c; --ink-400:#8ba0d8;
+
+  /* 间距 · 4 的倍数（整体放大一档，制造留白） */
+  --s1:5px; --s2:10px; --s3:14px; --s4:18px; --s5:24px; --s6:30px; --s7:40px; --s8:52px; --s9:72px;
+  /* 圆角 */
+  --r1:10px; --r2:16px; --r3:22px; --r4:28px; --rf:999px;
+  /* 字阶 */
+  --f-display:44px; --f-hero:30px; --f-xl:22px; --f-lg:17px; --f-md:15px; --f-sm:13.5px; --f-xs:12px; --f-2xs:11px; --f-3xs:9.5px;
+  /* 缓动 */
+  --e-out:cubic-bezier(.16,1,.3,1);
+  --e-soft:cubic-bezier(.4,0,.2,1);
+  --e-spring:cubic-bezier(.34,1.4,.64,1);
+  --d1:.18s; --d2:.34s; --d3:.7s; --d4:1.2s;
+
+  /* 语义 */
+  --bg:var(--n-1000);
+  --bg-elev:var(--n-950);
+  --surface:rgba(200,215,235,.028);
+  --surface-hi:rgba(200,215,235,.052);
+  --surface-solid:#0f141d;
+  --line:rgba(200,215,235,.042);
+  --line-hi:rgba(200,215,235,.1);
+  --text:var(--n-050);
+  --text-2:var(--n-100);
+  --muted:var(--n-200);
+  --faint:var(--n-300);
+  --dim:var(--n-400);
+  --accent:var(--a-400);
+  --accent-soft:var(--a-300);
+  --accent-deep:var(--a-600);
+  --gold:var(--b-400);
+  --ok:var(--ok-400); --warn:var(--warn-400); --bad:var(--bad-400);
+  --track:rgba(200,215,235,.07);
+
+  --grad-accent:linear-gradient(135deg,var(--a-400) 0%,var(--a-600) 100%);
+  --grad-warm:linear-gradient(135deg,var(--b-400) 0%,var(--b-600) 100%);
+  --grad-cool:linear-gradient(135deg,var(--ink-400) 0%,#5b6fa8 100%);
+
+  --shadow-1:0 1px 0 rgba(255,255,255,.03) inset,0 16px 40px -28px rgba(0,0,0,.95);
+  --shadow-2:0 24px 60px -32px rgba(0,0,0,.98),0 0 0 1px rgba(200,215,235,.06);
+  --blur:saturate(140%) blur(22px);
+  --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace;
+}
+/* 修正：上面 --a-500 里有个笔误空格，这里覆盖成合法值 */
+:root{ --a-500:#37afa1; }
+
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{-webkit-text-size-adjust:100%}
+html,body{margin:0;padding:0;min-height:100%}
+body{
+  background:var(--bg); color:var(--text);
+  font-family:-apple-system,BlinkMacSystemFont,"SF Pro SC","PingFang SC","HarmonyOS Sans SC","Source Han Sans SC","Microsoft YaHei",system-ui,sans-serif;
+  font-size:var(--f-md); line-height:1.68;
+  letter-spacing:.008em;
+  overflow-x:hidden;
+  -webkit-font-smoothing:antialiased;
+  text-rendering:optimizeLegibility;
+}
+button,input,select,textarea{font:inherit;color:inherit;background:none;border:none;outline:none}
+button{cursor:pointer}
+
+/* ════════════ 环境层：星野 / 星云 / 网格 / 暗角 ════════════ */
+#sky{position:fixed;inset:0;z-index:0;pointer-events:none;display:block}
+#env{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+#env .neb{position:absolute;border-radius:50%;filter:blur(70px);opacity:.5}
+#env .neb.n1{width:78vw;height:78vw;left:-26vw;top:-30vw;
+  background:radial-gradient(circle at 50% 50%,rgba(55,175,161,.20),transparent 68%);animation:drift1 46s var(--e-soft) infinite alternate}
+#env .neb.n2{width:64vw;height:64vw;right:-22vw;top:2vh;
+  background:radial-gradient(circle at 50% 50%,rgba(139,160,216,.16),transparent 68%);animation:drift2 58s var(--e-soft) infinite alternate}
+#env .neb.n3{width:88vw;height:60vw;left:-10vw;top:44vh;
+  background:radial-gradient(circle at 50% 50%,rgba(200,159,86,.075),transparent 70%);animation:drift3 72s var(--e-soft) infinite alternate}
+@keyframes drift1{from{transform:translate3d(0,0,0) scale(1)}to{transform:translate3d(6%,5%,0) scale(1.14)}}
+@keyframes drift2{from{transform:translate3d(0,0,0) scale(1.08)}to{transform:translate3d(-7%,9%,0) scale(.94)}}
+@keyframes drift3{from{transform:translate3d(0,0,0)}to{transform:translate3d(5%,-6%,0) scale(1.1)}}
+#env .grid{position:absolute;left:-20%;right:-20%;bottom:-10%;height:58vh;
+  background-image:linear-gradient(rgba(200,215,235,.026) 1px,transparent 1px),
+                   linear-gradient(90deg,rgba(200,215,235,.026) 1px,transparent 1px);
+  background-size:52px 52px;
+  transform:perspective(460px) rotateX(64deg);
+  -webkit-mask-image:linear-gradient(to top,rgba(0,0,0,.34),transparent 52%);
+  mask-image:linear-gradient(to top,rgba(0,0,0,.34),transparent 52%);
+  animation:gridflow 34s linear infinite;opacity:.2}
+@keyframes gridflow{from{background-position:0 0,0 0}to{background-position:0 44px,44px 0}}
+#env .vig{position:absolute;inset:0;
+  background:radial-gradient(120% 78% at 50% 0%,transparent 42%,rgba(0,0,0,.55) 100%)}
+
+#app{position:relative;z-index:1;max-width:580px;margin:0 auto;padding:0 var(--s5) 156px}
+
+/* ════════════ 图标（内联 SVG，不用 emoji） ════════════ */
+.i{width:1em;height:1em;display:block;flex:none;overflow:visible}
+.i path,.i circle,.i rect,.i line,.i polyline{
+  fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.i.fill path,.i.fill circle{fill:currentColor;stroke:none}
+
+/* ════════════ 视图切换 ════════════ */
+.view{display:none}
+.view.on{display:block}
+.view.on>*{animation:rise var(--d3) var(--e-out) both}
+.view.on>*:nth-child(1){animation-delay:0s}
+.view.on>*:nth-child(2){animation-delay:.045s}
+.view.on>*:nth-child(3){animation-delay:.09s}
+.view.on>*:nth-child(4){animation-delay:.135s}
+.view.on>*:nth-child(5){animation-delay:.18s}
+.view.on>*:nth-child(6){animation-delay:.225s}
+.view.on>*:nth-child(7){animation-delay:.27s}
+.view.on>*:nth-child(8){animation-delay:.315s}
+.view.on>*:nth-child(n+9){animation-delay:.36s}
+@keyframes rise{from{opacity:0;transform:translate3d(0,16px,0)}to{opacity:1;transform:none}}
+
+/* ════════════ 顶栏 ════════════ */
+.top{display:flex;align-items:flex-end;justify-content:space-between;gap:var(--s4);
+  padding:calc(env(safe-area-inset-top) + var(--s8)) 0 var(--s6)}
+.kicker{font-size:var(--f-3xs);letter-spacing:.22em;text-transform:uppercase;
+  color:var(--dim);font-weight:600;margin-bottom:var(--s2)}
+.h1{font-size:var(--f-xl);font-weight:600;letter-spacing:-.015em;margin:0;line-height:1.25}
+.h1 em{font-style:normal;color:var(--accent)}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:7px 13px;border-radius:var(--rf);
+  background:var(--surface);border:1px solid var(--line);font-size:var(--f-2xs);color:var(--muted);
+  white-space:nowrap;letter-spacing:.04em}
+.chip b{font-weight:650;color:var(--text);font-variant-numeric:tabular-nums}
+.chip .i{font-size:13px;color:var(--accent)}
+
+/* ════════════ 卡片 ════════════ */
+.card{
+  position:relative;background:var(--surface);border:1px solid var(--line);border-radius:var(--r4);
+  padding:var(--s6) var(--s5);margin-bottom:var(--s6);box-shadow:var(--shadow-1);
+  backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);
+  transition:border-color var(--d2) var(--e-out),background var(--d2) var(--e-out);
+  overflow:hidden;
+}
+/* 顶部一道极淡的高光，制造"玻璃厚度" */
+.card.tap:active{background:rgba(200,215,235,.06)}
+.chead{display:flex;align-items:center;justify-content:space-between;gap:var(--s3);margin-bottom:var(--s5)}
+.ctitle{font-size:var(--f-sm);font-weight:600;letter-spacing:.01em;display:flex;align-items:center;gap:var(--s2);min-width:0}
+.ctitle .badge{width:26px;height:26px;border-radius:9px;flex:none;display:grid;place-items:center;
+  font-size:14px;background:rgba(79,214,196,.1);color:var(--accent);border:1px solid rgba(79,214,196,.18)}
+.ctitle .badge.gold{background:rgba(216,173,106,.1);color:var(--gold);border-color:rgba(216,173,106,.18)}
+.ctitle .badge.ink{background:rgba(139,160,216,.1);color:var(--ink-400);border-color:rgba(139,160,216,.18)}
+.ctitle .badge.dim{background:var(--surface-hi);color:var(--muted);border-color:var(--line)}
+
+.tag{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:var(--rf);
+  font-size:var(--f-3xs);font-weight:650;letter-spacing:.06em;text-transform:uppercase;
+  background:var(--surface-hi);color:var(--faint);border:1px solid var(--line)}
+.tag.ok{background:rgba(95,211,154,.1);color:var(--ok);border-color:rgba(95,211,154,.2)}
+.tag.warn{background:rgba(224,169,79,.1);color:var(--warn);border-color:rgba(224,169,79,.2)}
+.tag.bad{background:rgba(226,121,140,.1);color:var(--bad);border-color:rgba(226,121,140,.2)}
+.tag.acc{background:rgba(79,214,196,.1);color:var(--accent);border-color:rgba(79,214,196,.2)}
+.tag.gold{background:rgba(216,173,106,.1);color:var(--gold);border-color:rgba(216,173,106,.2)}
+
+/* ════════════ 今日环 ════════════ */
+.hero{display:grid;grid-template-columns:auto minmax(0,1fr);gap:var(--s5);align-items:center}
+.ring{position:relative;width:136px;height:136px;flex:none}
+.ring svg{transform:rotate(-90deg);display:block;overflow:visible}
+.ring .mid{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+  width:104px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:1px}
+.ring .big{font-size:var(--f-hero);font-weight:600;letter-spacing:-.04em;line-height:1;
+  font-variant-numeric:tabular-nums}
+.ring .lbl{font-size:var(--f-3xs);letter-spacing:.2em;text-transform:uppercase;color:var(--dim);margin-top:4px}
+.ring .glow{position:absolute;inset:8%;border-radius:50%;pointer-events:none;
+  background:radial-gradient(circle,rgba(79,214,196,.13),transparent 66%);
+  animation:breathe 5.2s var(--e-soft) infinite}
+@keyframes breathe{0%,100%{opacity:.5;transform:scale(1)}50%{opacity:1;transform:scale(1.07)}}
+
+.metrics{display:flex;flex-direction:column;min-width:0}
+.metric{display:flex;align-items:baseline;justify-content:space-between;gap:var(--s3);padding:11px 0}
+.metric .k{font-size:var(--f-xs);color:var(--faint)}
+.metric .v{font-size:var(--f-md);font-weight:600;font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+.metric .v sub{font-size:var(--f-3xs);color:var(--dim);font-weight:500;margin-left:3px;letter-spacing:.02em}
+
+/* ════════════ 时间轴（无线版：靠间距和留白分组） ════════════ */
+.tl{position:relative}
+.tlBlock{display:flex;align-items:baseline;gap:var(--s2);padding:var(--s7) 0 var(--s3) 54px;
+  font-size:var(--f-3xs);letter-spacing:.22em;text-transform:uppercase;color:var(--dim);font-weight:650}
+.tlBlock:first-child{padding-top:var(--s1)}
+.tlBlock .cnt{font-family:var(--mono);font-size:9.5px;letter-spacing:.02em;color:rgba(200,215,235,.2)}
+.tlBlock .cnt.all{color:rgba(79,214,196,.55)}
+/* 时间列 52px 给等宽数字留足空间；圆点列 20px，净空足够呼吸光晕扩散 */
+.tlRow{display:grid;grid-template-columns:52px 20px minmax(0,1fr) auto;align-items:center;
+  column-gap:var(--s3);padding:16px var(--s2) 16px 0;width:100%;text-align:left;
+  background:none;border:none;border-radius:var(--r2);color:var(--text);
+  position:relative;overflow:hidden;
+  transition:background var(--d1) var(--e-out)}
+.tlRow:active{background:rgba(200,215,235,.055)}
+/* 已完成的项自动收紧 —— 打完卡就不再占一整行的高度，一天越往后越清爽 */
+.tlRow.done{padding-top:8px;padding-bottom:8px}
+.tlRow.done .tlSub{display:none}
+.tlTime{font-family:var(--mono);font-size:var(--f-2xs);opacity:.85;color:var(--faint);
+  font-weight:500;letter-spacing:0;align-self:center;white-space:nowrap}
+.tlDot{width:9px;height:9px;border-radius:50%;justify-self:center;align-self:center;position:relative;
+  border:1.4px solid rgba(200,215,235,.2);transition:all var(--d2) var(--e-spring)}
+/* ── 已完成：实心渐变圆点（和"当前"完全不同）── */
+.tlRow.done .tlDot{background:var(--accent);border-color:transparent;box-shadow:0 0 9px rgba(79,214,196,.4)}
+.tlRow.overdue .tlDot{border-color:rgba(224,169,79,.85);background:rgba(224,169,79,.3)}
+/* ── 当前该做：左侧一道竖条 + 空心圆环呼吸。刻意不用实心点，避免看起来像已完成 ── */
+.tlRow.now{background:linear-gradient(90deg,rgba(79,214,196,.055),transparent 58%)}
+.tlRow.now::before{content:"";position:absolute;left:0;top:9px;bottom:9px;width:2px;
+  border-radius:2px;background:var(--accent);opacity:.85}
+.tlRow.now .tlDot{border-color:var(--accent);border-width:2px;background:transparent;
+  animation:halo 3.4s var(--e-soft) infinite}
+@keyframes halo{0%,100%{box-shadow:0 0 0 0 rgba(79,214,196,.34)}55%{box-shadow:0 0 0 4.5px rgba(79,214,196,0)}}
+/* ── 防溢出：任何长文案都只能在自己格子里截断，绝不可能顶到卡片边框 ── */
+.tlMain{min-width:0;overflow:hidden}
+.tlName{display:flex;align-items:center;gap:8px;font-size:var(--f-sm);font-weight:600;line-height:1.35;
+  min-width:0;transition:color var(--d2)}
+.tlName .i{font-size:15px;color:var(--faint);flex:none;transition:color var(--d2)}
+.tlName .nm{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tlRow.done .tlName .i{color:var(--accent-deep)}
+.tlRow.now .tlName .i{color:var(--accent)}
+.tlSub{font-size:var(--f-2xs);color:var(--dim);margin-top:6px;line-height:1.7;padding-left:23px;
+  overflow-wrap:anywhere;overflow:hidden}
+.tlRow.done .tlName{color:var(--dim);font-weight:500}
+.tlRow.done .tlName .nm{text-decoration:line-through;text-decoration-thickness:1px;
+  text-decoration-color:rgba(200,215,235,.18)}
+.tlRow.done .tlSub{opacity:.36}
+.tlMark{font-size:var(--f-2xs);color:var(--dim);white-space:nowrap;padding-left:var(--s2);
+  font-weight:600;letter-spacing:.04em;display:flex;align-items:center;gap:4px}
+.tlMark .i{font-size:13px}
+.tlRow.done .tlMark{color:var(--accent)}
+.tlRow.action .tlMark{color:var(--ink-400)}
+.tlRow.overdue .tlTime{color:var(--warn)}
+.tlRow.overdue .tlMark{color:var(--warn)}
+
+/* ════════════ 水杯：改成小圆点阵，视觉重量降到最低 ════════════ */
+.cups{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.cup{width:26px;height:26px;border-radius:50%;flex:none;position:relative;overflow:hidden;
+  border:1.2px solid rgba(200,215,235,.13);background:rgba(200,215,235,.015);
+  transition:transform var(--d1) var(--e-spring),border-color var(--d2),background var(--d2)}
+.cup::after{content:"";position:absolute;inset:0;border-radius:50%;
+  background:var(--grad-accent);opacity:0;transform:scale(.35);
+  transition:opacity var(--d2) var(--e-out),transform var(--d2) var(--e-spring)}
+.cup.full{border-color:transparent}
+.cup.full::after{opacity:1;transform:none}
+.cup:active{transform:scale(.84)}
+
+/* ════════════ 输入 ════════════ */
+.field{display:flex;align-items:center;gap:var(--s3);background:var(--surface-hi);
+  border:1px solid transparent;border-radius:var(--r2);padding:13px var(--s4);
+  transition:border-color var(--d2) var(--e-out),background var(--d2)}
+.field:focus-within{border-color:rgba(79,214,196,.36);background:rgba(200,215,235,.075)}
+.field .i{font-size:16px;color:var(--faint)}
+.field input{flex:1;min-width:0;font-size:var(--f-md);font-weight:600;
+  font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+.field input::placeholder{color:var(--dim);font-weight:400;letter-spacing:0}
+.field .unit{font-size:var(--f-xs);color:var(--dim)}
+
+/* ════════════ 按钮 ════════════ */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:var(--s2);
+  padding:13px var(--s5);border-radius:var(--r2);font-size:var(--f-sm);font-weight:600;
+  background:var(--surface-hi);border:1px solid var(--line);color:var(--text-2);
+  letter-spacing:.01em;
+  transition:transform var(--d1) var(--e-out),background var(--d1),border-color var(--d1),color var(--d1)}
+.btn .i{font-size:15px}
+.btn:active{background:rgba(200,215,235,.1);border-color:var(--line-hi)}
+.btn.primary{background:var(--grad-accent);color:#04211d;border-color:transparent;
+  box-shadow:0 10px 30px -14px rgba(79,214,196,.6)}
+.btn.primary:active{filter:brightness(.9)}
+.btn.gold{background:var(--grad-warm);color:#221704;border-color:transparent;
+  box-shadow:0 10px 30px -14px rgba(216,173,106,.5)}
+.btn.ghost{background:transparent;border-color:transparent;color:var(--faint);font-weight:500}
+.btn.ghost:active{color:var(--text)}
+.btn.danger{color:var(--bad);border-color:rgba(226,121,140,.24);background:transparent}
+.btn.wide{width:100%}
+
+/* ════════════ 进度条 ════════════ */
+.bar{height:6px;border-radius:var(--rf);background:var(--track);overflow:hidden}
+.bar i{display:block;height:100%;border-radius:inherit;width:0;background:var(--grad-accent);
+  transition:width 1.1s var(--e-out)}
+.bar.gold i{background:var(--grad-warm)}
+.bar.ink i{background:var(--grad-cool)}
+.bar.thin{height:4px}
+
+/* ════════════ 数据格 ════════════ */
+.tiles{display:grid;gap:var(--s4)}
+.tiles.c2{grid-template-columns:1fr 1fr}
+.tiles.c3{grid-template-columns:repeat(3,1fr)}
+.tile{background:var(--surface);border:1px solid var(--line);border-radius:var(--r2);padding:18px}
+.tile .k{font-size:var(--f-3xs);letter-spacing:.16em;text-transform:uppercase;color:var(--dim);
+  display:flex;align-items:center;gap:5px}
+.tile .k .i{font-size:12px}
+.tile .v{font-size:var(--f-xl);font-weight:600;letter-spacing:-.03em;font-variant-numeric:tabular-nums;
+  margin-top:6px;line-height:1.1}
+.tile .v sub{font-size:var(--f-2xs);font-weight:500;color:var(--dim);margin-left:3px;letter-spacing:0}
+.tile .d{font-size:var(--f-3xs);color:var(--dim);margin-top:4px}
+
+/* ════════════ 日历 ════════════ */
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+.cell{aspect-ratio:1;border-radius:10px;border:1px solid var(--line);display:grid;place-items:center;
+  font-family:var(--mono);font-size:var(--f-3xs);color:var(--dim);
+  transition:transform var(--d1) var(--e-spring),background var(--d2),border-color var(--d2),color var(--d2)}
+.cell.full{background:linear-gradient(150deg,rgba(79,214,196,.9),rgba(43,145,134,.75));
+  color:#04211d;font-weight:700;border-color:transparent;box-shadow:0 6px 18px -10px rgba(79,214,196,.7)}
+.cell.part{background:rgba(224,169,79,.12);color:var(--warn);border-color:rgba(224,169,79,.26)}
+.cell.miss{background:rgba(226,121,140,.07);color:var(--bad);border-color:rgba(226,121,140,.18)}
+.cell.today{box-shadow:0 0 0 1.5px var(--accent)}
+.cell.future{opacity:.34}
+.cell:active{background:rgba(200,215,235,.14)}
+
+/* ════════════ 计时器 ════════════ */
+.timerWrap{display:grid;place-items:center;gap:var(--s5);padding:var(--s5) 0 var(--s3)}
+.tRing{position:relative;width:224px;height:224px}
+.tRing svg{transform:rotate(-90deg);display:block;overflow:visible}
+.tRing .mid{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+  width:150px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;text-align:center}
+.tRing .ex{font-size:var(--f-md);font-weight:600;letter-spacing:.01em;line-height:1.2;max-width:150px}
+.tRing .num{font-size:var(--f-display);font-weight:500;letter-spacing:-.05em;line-height:1.02;
+  font-variant-numeric:tabular-nums;font-family:var(--mono)}
+.tRing .hint{font-size:var(--f-3xs);color:var(--dim);letter-spacing:.06em;max-width:142px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tRing .aura{position:absolute;inset:6%;border-radius:50%;pointer-events:none;
+  background:radial-gradient(circle,rgba(79,214,196,.1),transparent 68%);
+  animation:breathe 6s var(--e-soft) infinite}
+.tRing.rest .aura{background:radial-gradient(circle,rgba(216,173,106,.1),transparent 68%)}
+
+/* ════════════ 图表 ════════════ */
+.chartBox{position:relative;width:100%;height:216px}
+canvas{display:block;width:100%;height:100%}
+
+/* ════════════ 底部导航 ════════════ */
+.tabbar{position:fixed;left:50%;transform:translateX(-50%);
+  bottom:calc(env(safe-area-inset-bottom) + 14px);
+  width:min(580px - 32px,100% - 32px);z-index:50;
+  display:grid;grid-template-columns:repeat(6,1fr);gap:3px;padding:9px;
+  background:rgba(10,14,22,.78);border:1px solid var(--line);border-radius:var(--r4);
+  box-shadow:var(--shadow-2);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur)}
+.tab{display:flex;flex-direction:column;align-items:center;gap:6px;padding:11px 4px;
+  border-radius:var(--r2);color:var(--dim);font-size:var(--f-3xs);font-weight:600;
+  letter-spacing:.08em;position:relative;transition:color var(--d2) var(--e-out)}
+.tab .i{font-size:20px;transition:color var(--d2) var(--e-out)}
+.tab.on{color:var(--text)}
+.tab.on .i{color:var(--accent)}
+.tab.on::before{content:"";position:absolute;inset:0;border-radius:var(--r2);
+  background:var(--surface-hi);z-index:-1;animation:tabin var(--d2) var(--e-spring)}
+@keyframes tabin{from{opacity:0;transform:scale(.86)}to{opacity:1;transform:none}}
+
+/* ════════════ 弹层 / 提示 ════════════ */
+.sheet{position:fixed;inset:0;z-index:80;display:none}
+.sheet.on{display:block}
+.sheet .scrim{position:absolute;inset:0;background:rgba(3,5,9,.68);
+  backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);animation:fadein var(--d2) var(--e-out)}
+@keyframes fadein{from{opacity:0}to{opacity:1}}
+.sheet .panel{position:absolute;left:0;right:0;bottom:0;max-width:580px;margin:0 auto;
+  background:linear-gradient(180deg,#101620,#0b1017);
+  border-radius:var(--r4) var(--r4) 0 0;border-top:1px solid var(--line-hi);
+  padding:var(--s6) var(--s5) calc(env(safe-area-inset-bottom) + var(--s6));
+  max-height:86vh;overflow:auto;animation:up var(--d2) var(--e-out)}
+@keyframes up{from{transform:translateY(26px);opacity:.5}to{transform:none;opacity:1}}
+.sheet .grip{width:38px;height:4px;border-radius:2px;background:var(--line-hi);margin:-8px auto var(--s5)}
+.sheet h3{margin:0 0 var(--s3);font-size:var(--f-lg);font-weight:600;letter-spacing:-.01em}
+.sheet p{margin:0 0 var(--s4);color:var(--text-2);font-size:var(--f-sm);line-height:1.75}
+.sheet p b{color:var(--text);font-weight:650}
+.sheet .row{display:flex;gap:var(--s3);margin-top:var(--s5)}
+.sheet .row .btn{flex:1}
+.toast{position:fixed;left:50%;transform:translateX(-50%) translateY(16px);bottom:104px;z-index:99;
+  display:flex;align-items:center;gap:8px;background:rgba(16,22,32,.94);border:1px solid var(--line-hi);
+  border-radius:var(--rf);padding:11px 18px;font-size:var(--f-sm);font-weight:600;opacity:0;
+  pointer-events:none;transition:all var(--d2) var(--e-out);
+  backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);white-space:nowrap;box-shadow:var(--shadow-2)}
+.toast .i{font-size:14px;color:var(--accent)}
+.toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* ════════════ 提示条 ════════════ */
+.banner{display:flex;align-items:center;gap:var(--s3);padding:13px var(--s4);margin-bottom:var(--s4);
+  border-radius:var(--r2);font-size:var(--f-xs);line-height:1.5;
+  border:1px solid rgba(224,169,79,.24);
+  background:linear-gradient(120deg,rgba(224,169,79,.1),rgba(224,169,79,.03));
+  animation:rise var(--d3) var(--e-out) both;cursor:pointer}
+.banner .i{font-size:16px;color:var(--warn)}
+.banner b{color:var(--text);font-weight:650}
+.banner .go{margin-left:auto;font-size:var(--f-3xs);letter-spacing:.1em;text-transform:uppercase;
+  color:var(--warn);white-space:nowrap;font-weight:650}
+.banner.info{border-color:rgba(139,160,216,.24);
+  background:linear-gradient(120deg,rgba(139,160,216,.1),rgba(139,160,216,.03))}
+.banner.info .i,.banner.info .go{color:var(--ink-400)}
+
+/* ════════════ 折叠 ════════════ */
+details{background:var(--surface);border:1px solid var(--line);border-radius:var(--r2);
+  padding:17px var(--s4);margin-bottom:var(--s3);transition:border-color var(--d2)}
+details[open]{border-color:var(--line-hi)}
+details summary{font-size:var(--f-sm);font-weight:600;cursor:pointer;list-style:none;
+  display:flex;justify-content:space-between;align-items:center;gap:var(--s3)}
+details summary::-webkit-details-marker{display:none}
+details summary::after{content:"";width:7px;height:7px;flex:none;
+  border-right:1.5px solid var(--dim);border-bottom:1.5px solid var(--dim);
+  transform:rotate(45deg) translateY(-2px);transition:transform var(--d2) var(--e-out)}
+details[open] summary::after{transform:rotate(-135deg) translateY(-2px)}
+details .body{padding-top:var(--s3);font-size:var(--f-xs);color:var(--text-2);line-height:1.85}
+details .body b{color:var(--text);font-weight:650}
+
+/* ════════════ 开关 ════════════ */
+.sw{width:46px;height:27px;border-radius:var(--rf);background:var(--track);
+  border:1px solid var(--line-hi);position:relative;flex:none;transition:background var(--d2) var(--e-out)}
+.sw i{position:absolute;top:2px;left:2px;width:21px;height:21px;border-radius:50%;
+  background:var(--faint);transition:transform var(--d2) var(--e-spring),background var(--d2)}
+.sw.on{background:var(--grad-accent);border-color:transparent}
+.sw.on i{transform:translateX(19px);background:#04211d}
+
+/* ════════════ 肌肉守护卡 ════════════ */
+.guardTop{display:grid;grid-template-columns:auto minmax(0,1fr);gap:var(--s5);align-items:center}
+.guardNum{font-size:var(--f-display);font-weight:500;letter-spacing:-.05em;line-height:1;
+  font-family:var(--mono);font-variant-numeric:tabular-nums}
+.guardNum sub{font-size:var(--f-sm);font-weight:500;color:var(--dim);margin-left:2px;letter-spacing:0}
+.factors{display:flex;flex-direction:column;gap:var(--s3);margin-top:var(--s4)}
+.factor{display:grid;grid-template-columns:78px minmax(0,1fr) 34px;align-items:center;gap:var(--s3)}
+.factor .fn{font-size:var(--f-2xs);color:var(--text-2)}
+.factor .fv{font-family:var(--mono);font-size:var(--f-3xs);color:var(--dim);text-align:right}
+.factor.low .fn{color:var(--warn)}
+.factor.top .fn{color:var(--accent)}
+.note{display:flex;gap:var(--s3);padding:var(--s3) 0}
+.note+.note{padding-top:var(--s6)}
+.note .ni{width:22px;height:22px;border-radius:7px;flex:none;display:grid;place-items:center;font-size:12px}
+.note .nb{font-size:var(--f-xs);line-height:1.75;color:var(--text-2)}
+.note .nb b{color:var(--text);font-weight:650}
+.note .nt{font-size:var(--f-xs);font-weight:650;color:var(--text);margin-bottom:3px}
+.note.great .ni{background:rgba(95,211,154,.12);color:var(--ok)}
+.note.good .ni,.note.info .ni{background:rgba(79,214,196,.12);color:var(--accent)}
+.note.warn .ni{background:rgba(224,169,79,.12);color:var(--warn)}
+.note.bad .ni{background:rgba(226,121,140,.12);color:var(--bad)}
+.note.wait .ni{background:var(--surface-hi);color:var(--muted)}
+
+/* ════════════ 图表图例 ════════════ */
+.legend{display:flex;align-items:center;gap:var(--s4);flex-wrap:wrap;
+  font-size:var(--f-3xs);color:var(--dim);margin-top:var(--s3)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend em{width:14px;height:2px;border-radius:2px;font-style:normal;display:block}
+
+/* ════════════ 工具类 ════════════ */
+.sec{display:flex;align-items:center;gap:var(--s3);font-size:var(--f-3xs);letter-spacing:.2em;
+  text-transform:uppercase;color:var(--dim);font-weight:650;margin:var(--s9) 0 var(--s4)}
+
+.hint{font-size:var(--f-2xs);color:var(--dim);line-height:1.9}
+.hint b{color:var(--text-2);font-weight:650}
+/* ════════════ 数据行（无线：靠间距区分） ════════════ */
+.kv{display:flex;align-items:center;justify-content:space-between;gap:var(--s4);
+  padding:13px 0;font-size:var(--f-sm)}
+.kv .k{color:var(--muted)}
+.kv .v{font-weight:600;font-variant-numeric:tabular-nums;display:flex;align-items:center;gap:6px}
+.kv input{text-align:right;font-weight:650;font-variant-numeric:tabular-nums;
+  background:var(--surface-hi);border-radius:var(--r1);padding:6px 10px;min-width:72px;
+  border:1px solid transparent;transition:border-color var(--d2)}
+.kv input:focus{border-color:rgba(79,214,196,.36)}
+.kv select{background:var(--surface-hi);border-radius:var(--r1);padding:6px 10px;font-weight:650}
+.hr{height:var(--s5)}
+.mt2{margin-top:var(--s2)}.mt3{margin-top:var(--s3)}.mt4{margin-top:var(--s4)}.mt5{margin-top:var(--s5)}
+.stack{display:flex;flex-direction:column;gap:var(--s3)}
+.row2{display:flex;gap:var(--s3)}
+.row2>*{flex:1}
+</style>
+</head>
+<body>
+
+<canvas id="sky"></canvas>
+<div id="env">
+  <div class="neb n1"></div><div class="neb n2"></div><div class="neb n3"></div>
+  <div class="grid"></div><div class="vig"></div>
+</div>
+
+<div id="app">
+
+  <!-- ══════════════ 今日 ══════════════ -->
+  <section class="view on" id="v-today">
+    <div id="overdueBadge" class="banner" style="display:none"></div>
+    <div id="notStartedBar" class="banner info" style="display:none"></div>
+
+    <header class="top">
+      <div>
+        <div class="kicker" id="todayDate">—</div>
+        <h1 class="h1">今天，<em>照做就行</em></h1>
+      </div>
+      <div class="chip"><span class="i" data-i="orbit"></span><b id="dayNum">—</b></div>
+    </header>
+
+    <div class="card">
+      <div class="hero">
+        <div class="ring">
+          <div class="glow"></div>
+          <svg width="136" height="136" viewBox="0 0 136 136">
+            <circle cx="68" cy="68" r="57" fill="none" stroke="var(--track)" stroke-width="10"/>
+            <circle id="heroArc" cx="68" cy="68" r="57" fill="none" stroke="url(#gAcc)" stroke-width="10"
+                    stroke-linecap="round" stroke-dasharray="358.1" stroke-dashoffset="358.1"
+                    style="transition:stroke-dashoffset 1.2s cubic-bezier(.16,1,.3,1)"/>
+            <defs>
+              <linearGradient id="gAcc" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0" stop-color="#4fd6c4"/><stop offset="1" stop-color="#2b9186"/>
+              </linearGradient>
+            </defs>
+          </svg>
+          <div class="mid"><div class="big" id="heroPct">0</div><div class="lbl">完成</div></div>
+        </div>
+        <div class="metrics">
+          <div class="metric"><span class="k">热量</span><span class="v" id="hKcal">0<sub>/1000 kcal</sub></span></div>
+          <div class="metric"><span class="k">进水</span><span class="v" id="hWater">0<sub>/8 杯</sub></span></div>
+          <div class="metric"><span class="k">步数</span><span class="v" id="hSteps">0<sub>/2500</sub></span></div>
+          <div class="metric"><span class="k">连续</span><span class="v" id="hStreak">0<sub>天</sub></span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" id="recoverCard" style="display:none">
+      <div class="chead">
+        <div class="ctitle"><span class="badge gold"><span class="i" data-i="shield"></span></span>断签补救</div>
+      </div>
+      <p class="hint" id="recoverText"></p>
+      <button class="btn wide mt4" onclick="App.openRecover()">看补救方案</button>
+    </div>
+
+    <div class="card">
+      <div class="chead">
+        <div class="ctitle"><span class="badge"><span class="i" data-i="orbit"></span></span>今日时间轴</div>
+        <span class="tag acc" id="timelinePill">—</span>
+      </div>
+      <div id="timeline"></div>
+      <div class="hint mt4" id="mealHint"></div>
+      <div class="hr"></div>
+      <div class="kv" style="border-bottom:none;padding-bottom:0">
+        <span class="k" style="display:flex;align-items:center;gap:8px">
+          <span class="i" data-i="dumbbell" style="font-size:15px;color:var(--faint)"></span>今天训练</span>
+        <span class="v"><button class="btn ghost" onclick="App.go('train')"><span id="trainTag" class="tag">未完成</span></button></span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="chead">
+        <div class="ctitle"><span class="badge ink"><span class="i" data-i="water"></span></span>补水</div>
+        <span class="tag" id="cupCount">0 / 8</span>
+      </div>
+      <div class="cups" id="cups"></div>
+      <div class="hint mt4">每杯 300ml，全天 2.4L。<b>20:00 后停止喝水。</b></div>
+    </div>
+
+    <div class="card">
+      <div class="chead">
+        <div class="ctitle"><span class="badge dim"><span class="i" data-i="steps"></span></span>步数</div>
+        <span class="tag" id="stepTag">—</span>
+      </div>
+      <div class="field">
+        <span class="i" data-i="steps"></span>
+        <input id="stepsInput" type="number" inputmode="numeric" placeholder="今天走了多少步">
+        <span class="unit">步</span>
+      </div>
+      <div class="hint mt3">目标 2500 步。没到不标红 —— 连续 3 天低于 1000 才会提醒。</div>
+      <button class="btn wide mt4" onclick="App.startMarch()" id="marchBtn">
+        <span class="i" data-i="steps"></span>原地踏步 20 分钟</button>
+      <div class="hint mt3" id="marchState"></div>
+    </div>
+  </section>
+
+  <!-- ══════════════ 体重 ══════════════ -->
+  <section class="view" id="v-weight">
+    <header class="top">
+      <div><div class="kicker">每天 17:00</div><h1 class="h1">体重记录</h1></div>
+      <div class="chip" id="wTodayBadge">—</div>
+    </header>
+
+    <div class="card">
+      <div class="chead">
+        <div class="ctitle">今天的数字</div>
+        <span class="tag">看 7 日均线</span>
+      </div>
+      <div class="field">
+        <input id="wInput" type="number" inputmode="decimal" step="0.1" placeholder="例如 79.4">
+        <span class="unit">kg</span>
+      </div>
+      <div class="hint mt3" id="wConvert">—</div>
+      <div class="row2 mt4">
+        <button class="btn primary" onclick="App.saveWeight()">保存</button>
+        <button class="btn" onclick="App.fillWeightNow()">用上次</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="chead">
+        <div class="ctitle">趋势</div>
+        <span class="tag">单日点 + 7 日均线</span>
+      </div>
+      <div class="chartBox"><canvas id="chart"></canvas></div>
+      <div class="legend" id="chartLegend"></div>
+    </div>
+
+    <div class="tiles c3">
+      <div class="tile"><div class="k">最新</div><div class="v" id="wLatest">—</div></div>
+      <div class="tile"><div class="k">7 日均线</div><div class="v" id="wAvg">—</div></div>
+      <div class="tile"><div class="k">较起始</div><div class="v" id="wDelta">—</div></div>
+    </div>
+
+    <div class="sec">历史记录</div>
+    <div class="card" id="wHistory"></div>
+  </section>
+
+  <!-- ══════════════ 进度 ══════════════ -->
+  <section class="view" id="v-progress">
+    <header class="top">
+      <div><div class="kicker">目标追踪</div><h1 class="h1">离目标还有多远</h1></div>
+    </header>
+
+    <div class="card">
+      <div class="chead">
+        <div class="ctitle">主目标</div>
+        <span class="tag ok" id="goalPill">—</span>
+      </div>
+      <div style="display:flex;align-items:baseline;gap:var(--s2)">
+        <span class="guardNum" id="pLost" style="background:var(--grad-accent);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent">0</span>
+        <span style="color:var(--muted);font-size:var(--f-sm)">斤已减 / 共 <b id="pTarget">0</b> 斤</span>
+      </div>
+      <div class="bar mt4"><i id="pBar"></i></div>
+      <div class="hint mt3" id="pRemain">—</div>
+    </div>
+
+    <div class="tiles c2">
+      <div class="tile"><div class="k"><span class="i" data-i="orbit"></span>已进行</div><div class="v" id="pDays">0<sub>天</sub></div></div>
+      <div class="tile"><div class="k"><span class="i" data-i="clock"></span>剩余</div><div class="v" id="pLeft">0<sub>天</sub></div></div>
+    </div>
+    <div class="tiles c2 mt3">
+      <div class="tile"><div class="k">当前速度</div><div class="v" id="pRate">—</div></div>
+      <div class="tile"><div class="k">按此速度达标</div><div class="v" id="pEta">—</div></div>
+    </div>
+
+    <div class="sec">肌肉守护</div>
+    <div class="card">
+      <div class="guardTop">
+        <div>
+          <div class="guardNum" id="gScore">—</div>
+          <div class="hint mt2">守护分 / 100</div>
+        </div>
+        <div>
+          <div class="hint" id="gVerdict" style="line-height:1.7">—</div>
+        </div>
+      </div>
+      <div class="factors" id="gFactors"></div>
+      <div class="hr"></div>
+      <div id="gNotes"></div>
+    </div>
+
+    <div class="card">
+      <div class="chead">
+        <div class="ctitle">掉秤成分</div>
+        <span class="tag gold" id="gSplit">—</span>
+      </div>
+      <div class="tiles c3" style="padding:0;background:none;border:none">
+        <div class="tile"><div class="k">脂肪</div><div class="v" id="cFat">—</div></div>
+        <div class="tile"><div class="k">肌肉</div><div class="v" id="cMuscle">—</div></div>
+        <div class="tile"><div class="k">水 + 糖原</div><div class="v" id="cWater">—</div></div>
+      </div>
+      <div class="hint mt4">水分恢复碳水后 2~3 天会回来 2~3 斤 —— <b>那不是反弹，是生理必然</b>。肌肉那一栏才是你真正要盯的。</div>
+    </div>
+
+    <div class="card tap" onclick="App.go('calendar')">
+      <div class="chead" style="margin-bottom:var(--s2)">
+        <div class="ctitle"><span class="badge dim"><span class="i" data-i="cal"></span></span>30 天打卡日历</div>
+        <span class="tag" id="calEntryPill">—</span>
+      </div>
+      <div class="hint">哪天满勤、哪天断签、连续多少天 —— 点这里进日历</div>
+    </div>
+  </section>
+
+  <!-- ══════════════ 日历 ══════════════ -->
+  <section class="view" id="v-calendar">
+    <header class="top">
+      <div><div class="kicker">30 天总览</div><h1 class="h1">打卡日历</h1></div>
+      <div class="chip"><b id="calDone">0</b> / 30</div>
+    </header>
+    <div class="card">
+      <div class="cal" id="calGrid"></div>
+      <div class="legend mt5">
+        <span><em style="background:var(--accent)"></em>满勤</span>
+        <span><em style="background:var(--warn)"></em>部分</span>
+        <span><em style="background:var(--bad)"></em>断签</span>
+      </div>
+    </div>
+    <div class="tiles c2">
+      <div class="tile"><div class="k">满勤天数</div><div class="v" id="sFull">0</div></div>
+      <div class="tile"><div class="k">最长连续</div><div class="v" id="sBest">0</div></div>
+    </div>
+    <div class="tiles c2 mt3">
+      <div class="tile"><div class="k">断签天数</div><div class="v" id="sMiss">0</div></div>
+      <div class="tile"><div class="k">当前连续</div><div class="v" id="sNow">0</div></div>
+    </div>
+    <div class="hint mt4">断签不用补偿性绝食 —— 回「今日」看补救方案。</div>
+  </section>
+
+  <!-- ══════════════ 模拟 ══════════════ -->
+  <section class="view" id="v-sim">
+    <header class="top">
+      <div><div class="kicker">算法预测</div><h1 class="h1">每个选择的后果</h1></div>
+      <div class="chip"><span class="i" data-i="spark"></span><b id="simDays">30</b> 天</div>
+    </header>
+
+    <div class="card">
+      <div class="chead">
+        <div class="ctitle"><span class="badge"><span class="i" data-i="target"></span></span>预测结果</div>
+        <button class="tag acc" id="simTag" onclick="App.toggleSimMode()">满分计划</button>
+      </div>
+      <div class="tiles c2" style="padding:0;background:none;border:none">
+        <div class="tile">
+          <div class="k">预计减重</div>
+          <div class="v" id="simLost" style="color:var(--accent)">—</div>
+          <div class="d" id="simLostSub">—</div>
+        </div>
+        <div class="tile">
+          <div class="k"><span class="i" data-i="scale"></span>BMI</div>
+          <div class="v" id="simBmi">—</div>
+          <div class="d" id="simBmiSub">—</div>
+        </div>
+      </div>
+      <div class="tiles c3 mt3" style="padding:0;background:none;border:none">
+        <div class="tile"><div class="k">脂肪</div><div class="v" id="simFat" style="font-size:var(--f-lg)">—</div><div class="d">掉的斤数</div></div>
+        <div class="tile"><div class="k">肌肉</div><div class="v" id="simMuscle" style="font-size:var(--f-lg)">—</div><div class="d">掉的斤数</div></div>
+        <div class="tile"><div class="k">体脂率</div><div class="v" id="simBf" style="font-size:var(--f-lg)">—</div><div class="d" id="simBfSub">—</div></div>
+      </div>
+      <div class="hint mt4" id="simNote">—</div>
+    </div>
+
+    <div class="card">
+      <div class="chead">
+        <div class="ctitle">体重与 BMI 预测</div>
+        <span class="tag">虚线 = 预测</span>
+      </div>
+      <div class="chartBox"><canvas id="simChart"></canvas></div>
+      <div class="legend" id="simLegend"></div>
+    </div>
+
+    <div class="card">
+      <div class="chead">
+        <div class="ctitle"><span class="badge gold"><span class="i" data-i="alert"></span></span>今天如果不做</div>
+        <span class="tag">按当前设置推算 30 天</span>
+      </div>
+      <div id="impactList"></div>
+    </div>
+
+    <div class="card">
+      <div class="chead">
+        <div class="ctitle"><span class="badge ink"><span class="i" data-i="chart"></span></span>过去两周实际 vs 满分</div>
+      </div>
+      <div id="accumBlock"></div>
+    </div>
+
+    <div class="card">
+      <div class="chead">
+        <div class="ctitle">模型说明</div>
+      </div>
+      <div class="hint" style="line-height:1.9">
+        <b>BMI</b> = 体重 / 身高²（WHO 标准）。<br>
+        <b>BMR</b> = Mifflin-St Jeor：10×体重 + 6.25×身高 − 5×年龄 + 5。<br>
+        <b>体脂率</b> = Deurenberg：1.20×BMI + 0.23×年龄 − 10.8（男）− 5.4，误差约 ±4%，<b>看趋势别看绝对值</b>。<br>
+        <b>脂肪 / 肌肉分配</b> = 分配系数法（借鉴 Forbes 模型「体脂越低、去脂体重被动用越多」的趋势）：按训练、蛋白、睡眠、当前体脂率算出肌肉占掉秤的比例，从 ~42%（无保护）到 ~5%（完整保护）。<br>
+        <b>热量到体重</b>：7700 kcal ≈ 1kg 脂肪。<br>
+        <b>代谢适应</b>：体重每降一点，BMR 跟着降，再叠加约 5% 的适应性产热下降 —— 所以掉秤会越来越慢，这是模型算出来的，不是你没努力。
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════ 训练 ══════════════ -->
+  <section class="view" id="v-train">
+    <header class="top">
+      <div><div class="kicker">每周 3 次 · 早上 7:40</div><h1 class="h1">12 分钟训练</h1></div>
+      <div class="chip" id="trainDayBadge">—</div>
+    </header>
+
+    <div class="card">
+      <div class="timerWrap">
+        <div class="tRing" id="tRing">
+          <div class="aura"></div>
+          <svg width="224" height="224" viewBox="0 0 224 224">
+            <circle cx="112" cy="112" r="98" fill="none" stroke="var(--track)" stroke-width="12"/>
+            <circle id="tArc" cx="112" cy="112" r="98" fill="none" stroke="url(#gT)" stroke-width="12"
+                    stroke-linecap="round" stroke-dasharray="615.8" stroke-dashoffset="0"/>
+            <defs>
+              <linearGradient id="gT" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0" stop-color="#4fd6c4"/><stop offset="1" stop-color="#2b9186"/>
+              </linearGradient>
+            </defs>
+          </svg>
+          <div class="mid">
+            <div class="ex" id="tEx">准备开始</div>
+            <div class="num" id="tNum">9:50</div>
+            <div class="hint" id="tHint">点开始，自动衔接</div>
+          </div>
+        </div>
+        <button class="btn primary wide" id="tStartBtn" onclick="Timer.toggle()">开始训练</button>
+        <button class="btn ghost" onclick="Timer.reset()">重置</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="chead">
+        <div class="ctitle">今天的动作</div>
+        <span class="tag">每次 +1</span>
+      </div>
+      <div id="exList"></div>
+    </div>
+
+    <div class="sec">动作要领</div>
+    <div id="exGuide"></div>
+  </section>
+
+  <!-- ══════════════ 设置 ══════════════ -->
+  <section class="view" id="v-settings">
+    <header class="top">
+      <div><div class="kicker">全部可以改</div><h1 class="h1">设置</h1></div>
+    </header>
+
+    <div class="sec">目标与身体参数</div>
+    <div class="card">
+      <div class="kv"><span class="k">开始日期</span><span class="v"><input id="setStartDate" type="date"></span></div>
+      <div class="kv"><span class="k">计划天数</span><span class="v"><input id="setDays" type="number">天</span></div>
+      <div class="kv"><span class="k">起始体重</span><span class="v"><input id="setStart" type="number" step="0.1">kg</span></div>
+      <div class="kv"><span class="k">身高</span><span class="v"><input id="setHeight" type="number">cm</span></div>
+      <div class="kv"><span class="k">年龄</span><span class="v"><input id="setAge" type="number">岁</span></div>
+      <div class="kv"><span class="k">性别</span><span class="v" style="gap:0">
+        <select id="setSex" style="text-align:right;font-weight:650">
+          <option value="m">男</option><option value="f">女</option>
+        </select></span></div>
+      <div class="kv"><span class="k">主目标</span><span class="v"><input id="setGoal" type="number" step="0.1">kg</span></div>
+      <div class="kv"><span class="k">参考线</span><span class="v"><input id="setRef" type="number" step="0.1">kg</span></div>
+      <div class="kv"><span class="k">每日热量目标</span><span class="v"><input id="setKcal" type="number">kcal</span></div>
+      <div class="kv"><span class="k">每日蛋白目标</span><span class="v"><input id="setProtein" type="number">g</span></div>
+      <div class="kv"><span class="k">步数目标</span><span class="v"><input id="setSteps" type="number">步</span></div>
+      <button class="btn primary wide mt5" onclick="App.saveSettings()">保存</button>
+      <div class="hint mt3">身高 / 年龄 / 性别是算 BMI 和体脂率用的。改这些不会动到任何历史记录。</div>
+    </div>
+
+    <div class="sec">到点提醒</div>
+    <div class="card">
+      <div class="kv"><span class="k">开启提醒</span><span class="v"><button class="sw" id="swRemind" onclick="Reminder.toggle()"><i></i></button></span></div>
+      <div class="kv"><span class="k">通知权限</span><span class="v" id="notifyState" style="font-size:var(--f-xs)">—</span></div>
+      <div class="row2 mt4">
+        <button class="btn primary" onclick="Reminder.enableNotify()">开启通知</button>
+        <button class="btn" onclick="Reminder.test()">测试</button>
+      </div>
+      <div class="hr"></div>
+      <div class="kv"><span class="k">训练时间</span><span class="v" style="gap:0">
+        <select id="setTrainTime">
+          <option value="09:30">上午 9:30</option>
+          <option value="12:00">中午 12:00</option>
+          <option value="15:00">下午 15:00</option>
+          <option value="19:00">晚上 19:00</option>
+          <option value="21:00">晚上 21:00</option>
+          <option value="custom">自定义…</option>
+        </select></span></div>
+      <div class="kv" id="trainTimeCustomRow" style="display:none">
+        <span class="k">自定义时间</span><span class="v"><input id="setTrainTimeCustom" type="time"></span></div>
+      <div class="kv"><span class="k">第一杯咖啡</span><span class="v"><input id="setCoffee1" type="time"></span></div>
+      <div class="kv"><span class="k">第二杯咖啡</span><span class="v"><input id="setCoffee2" type="time"></span></div>
+      <div class="kv"><span class="k">起床</span><span class="v"><input id="setWake" type="time"></span></div>
+      <div class="kv"><span class="k">就寝</span><span class="v"><input id="setSleep" type="time"></span></div>
+      <div class="hint mt4">
+        网页通知在后台或锁屏时<b>不保证按时弹出</b>（iPhone 尤其严格，还必须先「添加到主屏幕」）。
+        已过点的提醒会在你下次打开时补出来，不会丢。
+      </div>
+      <div class="hint mt3" id="remindPermissionHint"></div>
+      <button class="btn wide mt4" onclick="App.openSheet('抄进手机闹钟 · 每天重复', Reminder.alarmListHTML())">列出提醒时间</button>
+    </div>
+
+    <div class="sec">数据</div>
+    <div class="card">
+      <div class="kv"><span class="k">本地打卡记录</span><span class="v" id="dLocalCount">0 天</span></div>
+      <div class="kv"><span class="k">最后备份</span><span class="v" id="dLastBackup" style="font-size:var(--f-xs)">—</span></div>
+      <div class="kv"><span class="k">自动备份</span><span class="v"><button class="btn ghost" onclick="App.toggleAutoBackup()" id="dAutoBtn">—</button></span></div>
+      <div class="row2 mt4">
+        <button class="btn" onclick="App.exportJSON()">导出 JSON</button>
+        <button class="btn" onclick="App.importJSON()">导入 JSON</button>
+      </div>
+      <div class="hint mt4">
+        数据只存在这台手机里，不上传任何服务器。<b>换手机、清缓存前一定先导出。</b>
+      </div>
+    </div>
+
+    <div class="sec">份量速查</div>
+    <div id="portionGuide"></div>
+
+    <div class="sec">危险信号 · 出现就停</div>
+    <div class="card">
+      <div class="hint" style="line-height:2">
+        心悸 · 站起来眼前发黑 · 持续头晕 · 连续两天无法集中注意力 · 严重乏力 · 掉发明显 · 情绪崩到想暴食<br><br>
+        → 当天热量加到 <b>1600 kcal</b>（加 2 个蛋 + 1 块鸡胸 + 半碗饭），并就医。<br>
+        → 有肾病、痛风史、1 型糖尿病、胆结石、进食障碍史，或服用降糖药（尤其 SGLT2 抑制剂），<b>不要做这套</b>。
+      </div>
+    </div>
+
+    <div class="sec">出关后防线</div>
+    <div class="card">
+      <div class="hint" style="line-height:2">
+        1. 别立刻恢复正常吃：按 <b>每周 +150 kcal</b> 阶梯加回，4 周回到 1800~2000<br>
+        2. 蛋白质长期保持 140g 以上<br>
+        3. <b>训练不能停</b> —— 每周 3 次那 12 分钟继续做，这是代谢的锚<br>
+        4. 出关第一周秤上会涨 2~3 斤（糖原+水），<b>不是胖了，别砍热量</b>
+      </div>
+    </div>
+  </section>
+</div>
+
+<nav class="tabbar">
+  <button class="tab on" data-go="today"><span class="i" data-i="home"></span>今日</button>
+  <button class="tab" data-go="weight"><span class="i" data-i="chart"></span>体重</button>
+  <button class="tab" data-go="progress"><span class="i" data-i="target"></span>进度</button>
+  <button class="tab" data-go="sim"><span class="i" data-i="spark"></span>模拟</button>
+  <button class="tab" data-go="train"><span class="i" data-i="dumbbell"></span>训练</button>
+  <button class="tab" data-go="settings"><span class="i" data-i="gear"></span>设置</button>
+</nav>
+
+<div class="sheet" id="sheet">
+  <div class="scrim" onclick="App.closeSheet()"></div>
+  <div class="panel">
+    <div class="grip"></div>
+    <h3 id="shTitle">标题</h3>
+    <div id="shBody"></div>
+    <div class="row"><button class="btn ghost" onclick="App.closeSheet()">知道了</button></div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+/* ════════════════════════════════════════════════════════════════
+   1 · 常量与工具
+   ════════════════════════════════════════════════════════════════ */
+const JIN = 2;
+const DAY = 86400000;
+const $  = s => document.querySelector(s);
+const $$ = s => Array.from(document.querySelectorAll(s));
+const todayKey = (d = new Date()) => {
+  const x = new Date(d); x.setMinutes(x.getMinutes() - x.getTimezoneOffset());
+  return x.toISOString().slice(0, 10);
+};
+const addDays = (key, n) => { const d = new Date(key + 'T00:00:00'); d.setDate(d.getDate() + n); return todayKey(d); };
+const diffDays = (a, b) => Math.round((new Date(b + 'T00:00:00') - new Date(a + 'T00:00:00')) / DAY);
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const kg2jin = kg => kg * JIN;
+const fmt = (n, d = 1) => Number(n).toFixed(d);
+const toMin = t => String(t).split(':').reduce((a, b) => Number(a) * 60 + Number(b), 0);
+
+/* ── 图标：线条 SVG，统一 currentColor，不用 emoji ── */
+const ICONS = {
+  train:'<path d="M5.5 8.5v7M18.5 8.5v7M3 11v2M21 11v2M8.5 12h7"/>',
+  meal:'<path d="M1.8 11h20.4a10.2 10.2 0 0 1-20.4 0Z"/><path d="M12 1.8v1.4M6.8 3.6l.7 1.2M17.2 3.6l-.7 1.2"/>',
+  coffee:'<path d="M4.2 8h12v6.5a5 5 0 0 1-5 5H9.2a5 5 0 0 1-5-5V8Z"/><path d="M16.2 9.5h1.4a2.6 2.6 0 0 1 0 5.2h-1.4"/><path d="M8 4.6V2.4M12 4.6V2.4"/>',
+  nap:'<path d="M20.4 14.3A8.4 8.4 0 1 1 9.7 3.6a6.9 6.9 0 0 0 10.7 10.7Z"/>',
+  sleep:'<path d="M12 3.2 13.9 9l5.9 1.9-5.9 1.9L12 18.7l-1.9-5.9L4.2 10.9 10.1 9Z"/>',
+  water:'<path d="M12 2.9c3.4 4.2 5.7 7.1 5.7 10.1A5.7 5.7 0 0 1 6.3 13c0-3 2.3-5.9 5.7-10.1Z"/>',
+  scale:'<path d="M12 4.4v15.2M6 19.6h12"/><path d="m4 9.5 8-4.6 8 4.6"/><path d="M8.6 9.5 10.4 15M15.4 9.5 13.6 15"/>',
+  steps:'<path d="M7 20.5c-1.2-1.6-1.6-3.7-1.4-6l.5-3.2c.2-1.3 1-2.3 2.1-2.8M7.2 4.6a2.1 2.1 0 1 0 0 4.2 2.1 2.1 0 0 0 0-4.2Z"/><path d="M17 20.5c-1.2-1.6-1.6-3.7-1.4-6l.5-3.2c.2-1.3 1-2.3 2.1-2.8M17.2 4.6a2.1 2.1 0 1 0 0 4.2 2.1 2.1 0 0 0 0-4.2Z"/>',
+  orbit:'<circle cx="12" cy="12" r="3.2"/><ellipse cx="12" cy="12" rx="10" ry="4.4" transform="rotate(-28 12 12)"/>',
+  target:'<circle cx="12" cy="12" r="8.4"/><circle cx="12" cy="12" r="3.4"/><path d="M12 3.6v2.6M12 17.8v2.6M3.6 12h2.6M17.8 12h2.6"/>',
+  clock:'<circle cx="12" cy="12" r="8.6"/><path d="M12 7.4V12l3.2 2.2"/>',
+  check:'<path d="m4.5 12.6 5 5L19.5 6.8"/>',
+  shield:'<path d="M12 2.8 4.8 6v6c0 4.4 3 8.1 7.2 9.2 4.2-1.1 7.2-4.8 7.2-9.2V6Z"/>',
+  muscle:'<path d="M4.6 13.8c1-3.4 4-5.2 6.6-4.4 1.5-1.8 4.2-1.5 5.3.3 1.6-.2 3 .9 3.2 2.5v3.2c0 2.4-1.9 4.3-4.3 4.3h-6c-2.6 0-4.8-2.2-4.8-4.9Z"/>',
+  flame:'<path d="M12 2.9c3.4 3.3 5.6 5.9 5.6 9.2A5.6 5.6 0 0 1 6.4 12c0-2.3 1.2-4.2 3.2-6.4"/><path d="M12 18.4a2.9 2.9 0 0 0 2.9-2.9c0-1.2-.7-2.3-1.8-3.6-1.1 1.3-1.8 2.4-1.8 3.6A2.9 2.9 0 0 0 12 18.4Z"/>',
+  home:'<path d="M4 10.6 12 4l8 6.6"/><path d="M6.2 10v9.4h11.6V10"/>',
+  chart:'<path d="M4 20V9.6M9.4 20V4.4M14.8 20v-7M20.2 20V7.4"/>',
+  dumbbell:'<path d="M5.5 8.5v7M18.5 8.5v7M3 11v2M21 11v2M8.5 12h7"/>',
+  gear:'<circle cx="12" cy="12" r="3"/><path d="M12 2.6v2.3M12 19.1v2.3M4.5 7.2l2 1.2M17.5 15.6l2 1.2M4.5 16.8l2-1.2M17.5 8.4l2-1.2"/>',
+  cal:'<rect x="3.6" y="5.2" width="16.8" height="15.2" rx="2.4"/><path d="M3.6 9.6h16.8M8.4 3.4v3.4M15.6 3.4v3.4"/>',
+  alert:'<path d="M12 4.2 2.8 19.8h18.4Z"/><path d="M12 10v4.2M12 17.2h.01"/>',
+  spark:'<path d="M12 3.2 13.7 9l5.8 1.7-5.8 1.7L12 18.2l-1.7-5.8L4.5 10.7 10.3 9Z"/>',
+  moon:'<path d="M20.4 14.3A8.4 8.4 0 1 1 9.7 3.6a6.9 6.9 0 0 0 10.7 10.7Z"/>',
+  sun:'<circle cx="12" cy="12" r="4"/><path d="M12 2.8v2M12 19.2v2M4.6 4.6 6 6M18 18l1.4 1.4M2.8 12h2M19.2 12h2M4.6 19.4 6 18M18 6l1.4-1.4"/>',
+  leaf:'<path d="M20 4.4c-8.4 0-14 3.8-14 10.2 0 1.6.4 3.1 1.2 4.4C9.6 15.6 13.6 13 20 12.4"/>',
+  arrow:'<path d="M5 12h13M12.6 6.4 18.6 12l-6 5.6"/>',
+  down:'<path d="M12 4.6v13.8M6.4 12.6 12 18.6l5.6-6"/>',
+  up:'<path d="M12 19.4V5.6M6.4 11.4 12 5.4l5.6 6"/>',
+  brain:'<path d="M12 5.2A3.2 3.2 0 0 0 5.8 4a3.4 3.4 0 0 0-1.2 5.8A3.6 3.6 0 0 0 5.6 16a3.2 3.2 0 0 0 6.4 1.6Z"/><path d="M12 5.2A3.2 3.2 0 0 1 18.2 4a3.4 3.4 0 0 1 1.2 5.8A3.6 3.6 0 0 1 18.4 16a3.2 3.2 0 0 1-6.4 1.6Z"/>',
+};
+const icon = (name, cls) => `<svg class="i${cls ? ' ' + cls : ''}" viewBox="0 0 24 24" aria-hidden="true">${ICONS[name] || ICONS.spark}</svg>`;
+/* 把 HTML 里所有 data-i="xxx" 占位替换成真 SVG */
+function paintIcons(root) {
+  (root || document).querySelectorAll('[data-i]').forEach(el => {
+    const n = el.getAttribute('data-i');
+    el.insertAdjacentHTML('afterbegin', icon(n));
+    el.removeAttribute('data-i');
+  });
+}
+
+/* ════════════════════════════════════════════════════════════════
+   2 · 内容常量
+   ════════════════════════════════════════════════════════════════ */
+const EXERCISES = [
+  { id:'squat', name:'深蹲',     secs:45, unit:'个', base:15, tip:'像往后坐椅子，膝盖跟脚尖方向' },
+  { id:'push',  name:'俯卧撑',   secs:45, unit:'个', base:10, tip:'身体一条直线，胸真的沉下去' },
+  { id:'bird',  name:'鸟狗式',   secs:45, unit:'次', base:10, tip:'对侧手脚伸直，身体不歪' },
+  { id:'plank', name:'平板支撑', secs:35, unit:'秒', base:30, tip:'收腹夹臀，别塌腰别憋气', countUp:true },
+];
+const REST = 60, WARMUP = 120, COOLDOWN = 120;
+
+const MEAL_TEMPLATE = [
+  { id:'m1', name:'早餐' }, { id:'m2', name:'午餐' }, { id:'m3', name:'下午加餐' },
+  { id:'m4', name:'晚餐' }, { id:'m5', name:'睡前半勺' },
+];
+const MISC_TEMPLATE = [
+  { id:'coffee1', name:'第一杯咖啡' }, { id:'coffee2', name:'第二杯咖啡' },
+  { id:'nap', name:'午睡 60 分钟' }, { id:'chia', name:'核桃 10g' },
+  { id:'spinach', name:'菠菜 300g' },
+];
+/* 蛋白只在鸡胸和虾之间隔天换 */
+const PROTEIN_ROTATION = ['鸡胸 250g','虾 250g','鸡胸 250g','虾 250g','鸡胸 250g','虾 250g','鸡胸 250g'];
+
+const PORTION_GUIDE = [
+  { q:'鸡胸 / 虾 250g 长什么样？', a:'一个手掌大（不含手指）、厚度约 2 指。<br>最省事：1kg 鸡胸分 4 袋，一袋就是 250g；虾 500g 一袋，<b>半袋就是 250g</b>。' },
+  { q:'为什么称生重？', a:'250g 生鸡胸煮熟只剩约 190g。称熟重会每天少吃 25% 蛋白质 —— 而蛋白质是你保肌肉的命根子。<br>米饭是唯一例外，称熟重。' },
+  { q:'半碗米饭是多少？', a:'100g 熟重。普通饭碗装满约 200g，吃一半。<br>更准：煮一锅分成 7 份冷冻，每天拿一盒。' },
+  { q:'菠菜 300g 怎么凑？', a:'煮熟装满一个普通饭碗约 150g。中午一碗 + 晚上一碗 = 300g。<br>技巧：早上蛋白粉里加一把冷冻菠菜打匀，完全尝不出来。' },
+  { q:'不吃镁片行吗？', a:'行，但菠菜必须吃满。你这套饮食镁的缺口大约一半，<b>300g 熟菠菜能补回约 240mg，刚好够</b>，还顺带 1600mg 钾。<br>缺镁的表现：半夜腿抽筋、眼皮跳、入睡难、便秘 —— 出现就说明菠菜没吃够。' },
+  { q:'不吃鱼油怎么办？Omega-3 从哪来？', a:'靠早餐那一项：<b>核桃 10g（约 1 个完整的）</b>。<br>鸡胸和虾几乎不含 Omega-3，这是你这套饮食唯一的营养缺口。<br><br>核桃换算：10g ≈ 0.9g ALA / 65 kcal；<b>20g（2 个）≈ 1.8g ALA / 130 kcal</b>。<br>买得到的话，<b>奇亚籽或亚麻籽粉 10g 也约 1.8g ALA，只要 49 kcal</b> —— 热量省一半多。<br><br>⚠ 植物 ALA 转化成 EPA/DHA 的效率只有 5~10%，不如鱼油直接 —— 但比不吃好得多，而且超市就能买到。' },
+  { q:'虾怎么选？', a:'优先<b>冷冻生虾或鲜虾</b>，别买泡发的「虾仁」—— 那种用磷酸盐保水，钠极高，吃了第二天脸和眼皮就肿，秤上也会虚涨。' },
+  { q:'没秤怎么估？', a:'鸡胸/虾：一个手掌 + 2 指厚 ≈ 200~250g。米饭：一个拳头 ≈ 半碗。油：一个拇指尖 ≈ 5g。' },
+  { q:'估错 20% 会怎样？', a:'基本没事。多吃 100g 鸡胸 = 多 130 kcal。<br>真正毁掉一天的是一碗面（600 kcal）或一次火锅（2000+ kcal）。方向对就行。' },
+  { q:'水 8 杯是多少？', a:'每杯 300ml，共 2.4L。20:00 后停止喝水 —— 不是为了上镜，是为了不半夜起夜、睡够。' },
+];
+
+/* ════════════════════════════════════════════════════════════════
+   3 · 数据层：localStorage + 版本迁移 + 备份
+   ════════════════════════════════════════════════════════════════ */
+const DB = {
+  KEY: 'ran_fit_v1',
+  BACKUP_KEY: 'ran_fit_backup_v1',
+  VERSION: 1,
+  data: null,
+
+  defaults() {
+    /* 默认从「今年十月一日」开始 —— 过完十月就取明年 */
+    const now = new Date();
+    const y = now.getMonth() >= 9 ? now.getFullYear() + 1 : now.getFullYear();
+    return {
+      version: this.VERSION,
+      createdAt: new Date().toISOString(),
+      settings: {
+        startWeight: 80, goalLoss: 8, refLoss: 10, planDays: 30,
+        startDate: `${y}-10-01`,
+        stepGoal: 2500,
+        autoBackup: true,
+        wakeTime: '08:30', sleepTime: '01:30',
+        remindOn: true, coffee1: '09:00', coffee2: '13:00',
+        trainTime: '19:00',
+        /* 算法需要的身体参数 */
+        heightCm: 178, age: 20, sex: 'm',
+        targetKcal: 1000, targetProtein: 150,
+      },
+      records: {},
+    };
+  },
+
+  load() {
+    try {
+      const raw = localStorage.getItem(this.KEY);
+      this.data = raw ? JSON.parse(raw) : this.defaults();
+      this.migrate();
+    } catch (e) { this.data = this.defaults(); }
+    return this.data;
+  },
+
+  migrate() {
+    const d = this.data, def = this.defaults();
+    d.settings = Object.assign({}, def.settings, d.settings || {});
+    d.records = d.records || {};
+    Object.keys(d.records).forEach(k => {
+      const r = d.records[k]; if (!r) return;
+      if ('note' in r) delete r.note;
+      if ('gist' in r) delete r.gist;
+    });
+    if ('github' in d.settings) delete d.settings.github;
+    if ('gist' in d.settings) delete d.settings.gist;
+    d.version = this.VERSION;
+    this.save(true);
+  },
+
+  save(silent) {
+    try {
+      localStorage.setItem(this.KEY, JSON.stringify(this.data));
+      if (this.data.settings.autoBackup) {
+        localStorage.setItem(this.BACKUP_KEY, JSON.stringify({ savedAt: new Date().toISOString(), payload: this.data }));
+      }
+    } catch (e) { alert('保存失败：手机存储可能满了。请先导出 JSON 备份。'); }
+  },
+
+  rec(key) {
+    const k = key || todayKey();
+    if (!this.data.records[k]) {
+      this.data.records[k] = { weight:null, meals:{}, water:0, misc:{}, steps:null, train:null };
+    }
+    const r = this.data.records[k];
+    if (!r.meals) r.meals = {};
+    if (!r.misc) r.misc = {};
+    if (r.water == null) r.water = 0;
+    if (!r.remindOff) r.remindOff = {};
+    if ('note' in r) delete r.note;
+    return r;
+  },
+  get(key) { return this.data.records[key || todayKey()] || null; },
+
+  /* 评分：饮食 5 项 40% · 水 8 杯 20% · 其他 4 项 20% · 步数 10% · 训练 10% */
+  score(key) {
+    const r = this.get(key);
+    if (!r) return 0;
+    let s = 0;
+    s += (Object.values(r.meals || {}).filter(Boolean).length / MEAL_TEMPLATE.length) * 40;
+    s += (clamp(r.water || 0, 0, 8) / 8) * 20;
+    s += (Object.values(r.misc || {}).filter(Boolean).length / MISC_TEMPLATE.length) * 20;
+    s += ((r.steps || 0) >= this.data.settings.stepGoal ? 10 : clamp((r.steps || 0) / this.data.settings.stepGoal, 0, 1) * 10);
+    s += r.train ? 10 : 0;
+    return Math.round(s);
+  },
+
+  streak() {
+    let n = 0, k = todayKey();
+    if (this.score(k) < 60) k = addDays(k, -1);
+    while (this.score(k) >= 60) { n++; k = addDays(k, -1); }
+    return n;
+  },
+  bestStreak() {
+    const keys = Object.keys(this.data.records).sort();
+    let best = 0, cur = 0, prev = null;
+    for (const k of keys) {
+      if (this.score(k) >= 60) { cur = (prev && diffDays(prev, k) === 1) ? cur + 1 : 1; best = Math.max(best, cur); prev = k; }
+      else { cur = 0; prev = null; }
+    }
+    return best;
+  },
+
+  weights() {
+    return Object.keys(this.data.records)
+      .filter(k => this.data.records[k].weight != null).sort()
+      .map(k => ({ date:k, kg:this.data.records[k].weight }));
+  },
+  movingAvg(list, win = 7) {
+    return list.map((p, i) => {
+      const s = list.slice(Math.max(0, i - win + 1), i + 1);
+      return { date:p.date, kg: s.reduce((a, b) => a + b.kg, 0) / s.length, n:s.length };
+    });
+  },
+
+  /* ── 统一时间轴 ──
+     五个时段：上午 / 中午 / 下午 / 晚上 / 睡前
+     就寝在午夜之后，但它属于一天的结尾，所以 07:00 之前的项排到最后 */
+  blockOf(t) {
+    const m = toMin(t);
+    if (m < 7 * 60) return '睡前';
+    if (m < 12 * 60) return '上午';
+    if (m < 14 * 60 + 30) return '中午';
+    if (m < 18 * 60) return '下午';
+    if (m < 23 * 60) return '晚上';
+    return '睡前';
+  },
+
+  timeline() {
+    const s = this.data.settings;
+    const dow = new Date().getDay();
+    const dayNum = diffDays(s.startDate, todayKey()) + 1;
+    const carb = (dayNum === 10 || dayNum === 20);
+    const L = [];
+
+    L.push({ id:'train', time:s.trainTime || '19:00', ic:'dumbbell', kind:'action', go:'train',
+      name:'训练 12 分钟', sub:'4 个动作 · 自动计时',
+      tip:'深蹲 → 俯卧撑 → 鸟狗式 → 平板支撑。每个动作 1 组，组间歇 60 秒，全程自动衔接。<br><br><b>时机</b>：关掉电脑后立刻做 —— 别先坐下、别先刷手机、别先吃饭。一旦坐下来，这 12 分钟就永远没有了。<br><br>累到不行那天，<b>只做 10 个深蹲，30 秒也算完成</b>。保住「我还是在练的人」这条线，比练满 12 分钟重要得多。<br><br>训练时间可以在设置页改。' });
+    L.push({ id:'m1', time:'08:30', ic:'meal', kind:'check', group:'meals',
+      name:'早餐', sub:'蛋白粉 + 豆浆 · 水煮蛋 2 个',
+      tip:'蛋白粉 1 勺 + 无糖豆浆 400ml；水煮蛋 2 个；复合维生素 1 片。<br>再加下面那一项奇亚籽 —— 泡进豆浆里就行。' });
+    L.push({ id:'chia', time:'08:30', ic:'leaf', kind:'check', group:'misc',
+      name:'核桃 10g', sub:'约 1 个 · 补 Omega-3',
+      tip:'<b>核桃 10g ≈ 1 个完整的核桃仁（掰开是两瓣）。</b>早餐时吃掉，最省事。<br><br><b>为什么必须吃这一项</b>：你不吃鱼油，而鸡胸和虾几乎不含 Omega-3 —— 这是你这套饮食唯一的营养缺口。核桃是最日常、超市随便买的补法。<br><br>换算：<br>· 核桃 10g ≈ 0.9g ALA，65 kcal<br>· 核桃 20g（约 2 个）≈ 1.8g ALA，130 kcal ← 想补足就吃 2 个<br>· 奇亚籽 / 亚麻籽粉 10g 也约 1.8g ALA，只花 49 kcal（买得到就用这个，热量省一半）<br><br>⚠ 植物 ALA 转化成 EPA/DHA 的效率只有 5~10%，不如鱼油直接 —— 但比不吃好得多。' });
+    L.push({ id:'coffee1', time:s.coffee1, ic:'coffee', kind:'check', group:'misc',
+      name:'第一杯咖啡', sub:'黑咖啡 · 补 200ml 水',
+      tip:'只喝黑咖啡 / 美式。拿铁、卡布、加了奶糖的一杯 150~250 kcal，等于吃掉半顿饭。<br>每喝一杯咖啡额外补 200ml 水 —— 咖啡利尿，不补会头晕。' });
+
+    L.push({ id:'coffee2', time:s.coffee2, ic:'coffee', kind:'check', group:'misc',
+      name:'第二杯咖啡', sub:'最后一杯',
+      tip:'这是最后一杯。14:00 之后一滴都不碰（茶、可乐、奶茶也算）。<br>咖啡因半衰期 5~6 小时，你 01:30 睡，下午那杯会吃掉你本就不多的深睡 —— 你会睡着，但那 6 小时只顶 4 小时。' });
+    L.push({ id:'m2', time:'12:30', ic:'meal', kind:'check', group:'meals',
+      name:'午餐', sub:`${PROTEIN_ROTATION[dow]} · 2 把菜 · ${carb ? '米饭整碗' : '米饭半碗'}`,
+      tip:`${PROTEIN_ROTATION[dow]}（白灼/清蒸）；冷冻蔬菜 2 把（微波 4 分钟）；${carb ? '<b>今天是补碳日，米饭吃整碗</b>' : '白米饭半碗（100g 熟重）'}。<br>调味随便用辣椒面、花椒粉、醋、蒜末 —— 几乎零热量。` });
+    L.push({ id:'spinach', time:'12:30', ic:'leaf', kind:'check', group:'misc',
+      name:'菠菜 150g', sub:'一碗 · 补镁钾',
+      tip:'煮熟装满一个普通饭碗约 150g。<br><b>这 300g 菠菜（午晚各一碗）是你唯一的镁和钾来源。</b>300g 约提供 240mg 镁 + 1600mg 钾，只花 70 kcal。<br>缺镁的表现：半夜腿抽筋、眼皮跳、入睡难、便秘 —— 出现就说明没吃满。<br>技巧：早上蛋白粉里加一把冷冻菠菜打匀，完全尝不出来。' });
+    L.push({ id:'nap', time:'13:00', ic:'moon', kind:'check', group:'misc',
+      name:'午睡 60 分钟', sub:'闹钟 14:00 · 窗帘拉上',
+      tip:'13:00 躺下，闹钟定 14:00。<br><b>60 分钟是完整的睡眠周期，醒来正好在浅睡期。</b>千万别睡成 45 分钟 —— 那是深睡被强行打断，醒来比不睡更困，一下午废掉。<br>窗帘拉上、眼罩戴上。睡不着也算，闭眼安静躺 20 分钟同样能降皮质醇。' });
+
+    L.push({ id:'m3', time:'16:00', ic:'meal', kind:'check', group:'meals',
+      name:'下午加餐', sub:'水煮蛋 2 个',
+      tip:'水煮蛋 2 个，或者水浸金枪鱼半罐。<br>这一餐是为了防晚饭失控 —— 1000 kcal 的饮食里，下午 4 点这一口能救你晚上不点外卖。' });
+    L.push({ id:'weigh', time:'17:00', ic:'scale', kind:'action', go:'weight',
+      name:'称重 + 打卡', sub:'只看 7 日均线',
+      tip:'称之前先去趟厕所、把水杯放下。<br>下午 5 点的体重天生比早上重 1~2 斤（一天的水和饭），而且更容易被「今天吃咸了」影响。<br><b>所以永远只看 7 日均线，绝不看单日数字。</b>某天虚涨 2 斤不是胖，是水，两天就回去。' });
+
+    L.push({ id:'m4', time:'18:30', ic:'meal', kind:'check', group:'meals',
+      name:'晚餐', sub:'蛋白粉 1 勺 · 菠菜 150g',
+      tip:'蛋白粉 1 勺 + 水 300ml，加晚餐那碗菠菜（150g）。<br><b>晚餐不放盐</b>，只放醋、柠檬、辣椒面 —— 盐只放早餐和午餐。这条比断水更有效，而且安全。<br>不饿的话可以只喝蛋白粉，但<b>这一勺不能省</b>：去掉它全天蛋白从 150g 掉到 125g，对 80kg 的你不就够保肌肉了。' });
+    L.push({ id:'stopwater', time:'20:00', ic:'water', kind:'info',
+      name:'停止喝水', sub:'之后一口都不喝',
+      tip:'之后一口都不喝。<br>不是为了上镜，是为了不半夜起夜 —— 你只睡 6 小时，起一次夜就毁掉一半深睡。<br>白天已经喝够 2.4L，晚间断水不会脱水。' });
+    L.push({ id:'m5', time:'23:00', ic:'meal', kind:'check', group:'meals',
+      name:'睡前半勺蛋白粉', sub:'防深夜点外卖',
+      tip:'蛋白粉半勺 + 少量水（100ml 以内）。<br>熬夜的人这半勺作用比不熬夜的人更大：压住深夜饥饿激素，防你 23:30 点外卖，同时给夜间提供氨基酸、减少肌肉分解。<br>如果还是饿得受不了，只允许加：水煮蛋 1 个、或冷冻蔬菜一把。别开别的口子。' });
+    L.push({ id:'sleep', time:s.sleepTime, ic:'moon', kind:'info',
+      name:'熄灯睡觉', sub:'固定在 ' + s.sleepTime,
+      tip:'固定这个点，周末也一样。<br><b>规律 6 小时 > 忽长忽短</b>（工作日 5 小时 + 周末补到 10 小时，对代谢比规律 6 小时更差，补觉补不回脂肪）。<br>睡前 60 分钟把大灯换成暖光小灯、屏幕调暗 —— 深睡期尽量压缩进这 6 小时里。' });
+
+    const key = it => (it.time < '07:00' ? '9' : '0') + it.time;
+    return L.map(it => Object.assign({}, it, { block: this.blockOf(it.time) }))
+            .sort((a, b) => key(a).localeCompare(key(b)));
+  },
+
+  reminderList() { return this.timeline().filter(it => it.kind !== 'info'); },
+};
+
+/* ════════════════════════════════════════════════════════════════
+   4 · 算法引擎
+   ────────────────────────────────────────────────────────────────
+   目标：让每一个选择都能算出后果 —— 体重、BMI、体脂、脂肪、肌肉。
+   用到的模型（均为公开文献模型，非自创）：
+     · Mifflin-St Jeor 1989  → BMR 基础代谢
+     · Forbes 1987/2000      → 减重时脂肪 vs 去脂体重的分配
+     · BMI (WHO)             → 体重 / 身高²
+     · Deurenberg 1991       → 体脂率（仅需 BMI / 年龄 / 性别）
+     · 7700 kcal ≈ 1 kg 脂肪 → 热量到体重的换算
+     · 代谢适应              → 长期赤字下 TDEE 的下调
+   ════════════════════════════════════════════════════════════════ */
+const Engine = {
+  /* ══ 能量密度：不再硬编码 7700 ══
+     7700 kcal/kg 是 Wishnofsky 1958 的「混合组织」近似（≈3500 kcal/lb）。
+     它只在初始脂肪约 35kg 时成立 —— 用 Forbes 的瞬时 FFM 占比
+       p_FFM = 10.4/(FM+10.4)
+     加权两种组织的真实能量密度就能推出：
+       纯脂肪 9440.7 kcal/kg（Hall EBMM 常数 39.5 MJ/kg）
+       去脂体 1816.4 kcal/kg（7.6 MJ/kg）
+       ED(FM) = 9440.7 − 7624.3 × 10.4/(FM + 10.4)
+     验算：FM=35.2kg → 7700（恰好等价）；FM=20kg → 6832；FM=10kg → 5553。
+     这一行同时解释了：① 7700 ≈ 77% 脂肪 + 23% 去脂；② Hall 2008 的结论
+     「该规则只对初始体脂 >30kg 者近似成立」（PMID 17848938）；
+     ③ 为什么越瘦的人掉同样体重需要的缺口越小、也越容易掉肌肉。 */
+  KCAL_PER_KG_FAT: 9440.7,
+  KCAL_PER_KG_LEAN: 1816.4,
+  K_FORBES: 10.4,
+  energyDensity(fmKg) {
+    const fm = Math.max(fmKg, 1);
+    return this.KCAL_PER_KG_FAT
+      - (this.KCAL_PER_KG_FAT - this.KCAL_PER_KG_LEAN) * this.K_FORBES / (fm + this.K_FORBES);
+  },
+  STATIC_ED: 7700,          // 仅用于显示对照
+
+  /* ── BMR：Mifflin-St Jeor 1989 ── 男 = 10W + 6.25H − 5A + 5，女同式 − 166 */
+  bmr(kg, cm, age, sex) {
+    const base = 10 * kg + 6.25 * cm - 5 * (age || 20);
+    return Math.round(sex === 'f' ? base - 161 : base + 5);
+  },
+  /* 居家办公 PAL 1.35；走路多/有训练 1.45 */
+  tdee(kg, cm, age, sex, active) {
+    return Math.round(this.bmr(kg, cm, age, sex) * (active ? 1.45 : 1.35));
+  },
+
+  /* ── BMI ── */
+  bmi(kg, cm) { const m = cm / 100; return kg / (m * m); },
+  bmiBand(v) {
+    if (v < 18.5) return { k:'偏瘦', c:'var(--ink-400)' };
+    if (v < 24) return { k:'正常', c:'var(--ok)' };
+    if (v < 28) return { k:'超重', c:'var(--warn)' };
+    return { k:'肥胖', c:'var(--bad)' };
+  },
+
+  /* ── 体脂率：Deurenberg 1991 ──
+     BF% = 1.20·BMI + 0.23·age − 10.8·sex − 5.4
+     已核实原文摘要（PMID 2043597）：R²=0.79，SEE=4.1%。
+     自检：男/40岁/BMI25 → 23.0%；女 → 33.8%（写成 +10.8 会得 44.6%，荒谬）
+     ⚠ 估算值 ±4%，看趋势别看绝对值 */
+  bodyFat(kg, cm, age, sex) {
+    const v = 1.20 * this.bmi(kg, cm) + 0.23 * (age || 20) - 10.8 * (sex === 'f' ? 0 : 1) - 5.4;
+    return clamp(v, 3, 60);
+  },
+
+  /* ── US Navy 围度法（有腰围时更准，SEE 3~4%）──
+     ⚠ 单位 cm。混用单位会差 6 个百分点，所以参数名里写死单位。
+     男：495/(1.0324 − 0.19077·log10(腰−颈) + 0.15456·log10(身高)) − 450
+     女：495/(1.29579 − 0.35004·log10(腰+臀−颈) + 0.22100·log10(身高)) − 450 */
+  bodyFatNavy(waistCm, neckCm, heightCm, hipCm, sex) {
+    if (!waistCm || !neckCm || !heightCm) return null;
+    if (sex === 'f') {
+      if (!hipCm) return null;
+      const d = waistCm + hipCm - neckCm;
+      if (d <= 0) return null;
+      return clamp(495 / (1.29579 - 0.35004 * Math.log10(d) + 0.22100 * Math.log10(heightCm)) - 450, 3, 65);
+    }
+    const d = waistCm - neckCm;
+    if (d <= 0) return null;
+    return clamp(495 / (1.0324 - 0.19077 * Math.log10(d) + 0.15456 * Math.log10(heightCm)) - 450, 2, 60);
+  },
+  /* ── RFM（Woolcott & Bergman 2018, PMID 30030479）──
+     64 − 20×(身高/腰围) + 12×sex（女=1 男=0）。必须 clamp */
+  bodyFatRFM(waistCm, heightCm, sex) {
+    if (!waistCm || !heightCm) return null;
+    return clamp(64 - 20 * (heightCm / waistCm) + 12 * (sex === 'f' ? 1 : 0), 3, 65);
+  },
+
+  /* ══ Forbes 模型（Thomas 2010 对 NHANES 男性拟合）══
+     男 FFM = 13.8·ln(FM) + 16.9 ／ 女 FFM = 10.4·ln(FM) + 14.2
+     微分形式 dFFM/dBW = 10.4/(10.4+FM)
+     ⚠ Thomas 2010（PMID 20459692）提醒：个体纵向变化走的是平行平移曲线，
+       斜率相同 → 用 Forbes 估 ΔFFM 是对的，但别用它推绝对 FFM */
+  FFMcurve(fm, sex) {
+    const fm1 = Math.max(fm, 1.5);
+    return (sex === 'f' ? 10.4 : 13.8) * Math.log(fm1) + (sex === 'f' ? 14.2 : 16.9);
+  },
+  /* dBw > 0 表示减重若干 kg，返回对应的 FFM 流失（未扣保护） */
+  dFfmForbes(fm0, dBw, sex) {
+    if (Math.abs(dBw) < 1e-9) return 0;
+    const fm1 = Math.max(fm0, 1.5);
+    const fm2 = Math.max(fm1 - dBw, 1.5);
+    return this.FFMcurve(fm1, sex) - this.FFMcurve(fm2, sex);
+  },
+  split(kg, bfPct) {
+    const fat = kg * bfPct / 100;
+    return { fat, ffm: kg - fat, bf: bfPct };
+  },
+
+  /* ══ 保护系数（直接来自 meta 分析，不自造连续剂量反应）══
+     · 抗阻训练 Sardeli 2018（PMID 29596307）：RT 消除 CR 引起 LBM 损失的 93.5%（0.819kg）
+                Deller 2026（34 RCT / n=1455）：运动阻止 45.7% FFM 流失（MD +0.87kg）
+     · 蛋白     Krieger 2006（PMID 16469983）：87 研究 / 165 组 meta 回归
+                >1.05 g/kg 比 ≤1.05 多保留 0.60kg FFM（>12 周增至 1.21kg）
+                ⚠ 蛋白只调「成分」不调「总量」—— 对总体重与脂肪量无显著影响
+     · 睡眠     Nedeltcheva 2010（PMID 20921542）：同样赤字下睡 5.5h vs 8.5h，
+                脂肪损失减少 55%，FFM 损失增加 60%。方向共识，幅度不照搬
+     · 缺口     Murphy & Koehler 2022（PMID 34623696）meta 回归：
+                约 500 kcal/日 的缺口即阻止瘦体重增长 → 减脂保肌应避免缺口 >500
+     返回「能挡住多少比例的 Forbes 基础 FFM 流失」，0.15~0.78 */
+  protection(trained, proteinPerKg, sleepH, deficit) {
+    let p = 0.25;                                     // 基础（自发活动等）
+    if (trained) p += 0.33;
+    if (proteinPerKg >= 1.05) p += 0.14;              // Krieger 阈值
+    if (proteinPerKg >= 1.6) p += 0.05;
+    if (sleepH >= 7) p += 0.05;
+    if (sleepH >= 7.5) p += 0.04;
+    if (deficit > 500) p -= Math.min(0.12, (deficit - 500) / 100 * 0.02);
+    return clamp(p, 0.15, 0.78);
+  },
+
+  /* ══════════════════════════════════════════════════════════
+     核心：给定「今天怎么过」，预测 N 天后的身体
+     opts = { kcal, proteinG, trained, steps, sleepH, days, weightKg }
+     ══════════════════════════════════════════════════════════ */
+  project(o) {
+    const s = DB.data.settings;
+    const cm = s.heightCm || 178, age = s.age || 20, sex = s.sex || 'm';
+    const days = o.days || s.planDays || 30;
+    const kcal = o.kcal == null ? s.targetKcal : o.kcal;
+    const proteinG = o.proteinG == null ? s.targetProtein : o.proteinG;
+    const trained = !!o.trained;
+    const sleepH = o.sleepH == null ? 7 : o.sleepH;
+
+    let kg = o.weightKg != null ? o.weightKg : s.startWeight;
+    let sp = this.split(kg, this.bodyFat(kg, cm, age, sex));
+    let bmr = this.bmr(kg, cm, age, sex);
+    let at = 0;                                        // 适应性产热 AT
+
+    const stepKcal = clamp((o.steps || 0) / 1000 * 45, 0, 500);
+    const trainKcal = trained ? 50 * 3 / 7 : 0;         // 每周 3 次折算日均
+
+    const start = { kg, bmi:this.bmi(kg, cm), bf:this.bodyFat(kg, cm, age, sex), fat:sp.fat, ffm:sp.ffm };
+    const trace = [];
+
+    for (let d = 1; d <= days; d++) {
+      const scale = kg / start.kg;                      // 活动耗能随体重缩放
+      const tdee = bmr * 1.35 + stepKcal * scale + trainKcal - at;
+      const deficit = tdee - kcal;
+
+      /* 代谢适应：dAT/dt = (0.14·ΔEI − AT)/14（Hall EBMM；R bw 包与 Health-GPS 常数一致）*/
+      at += (0.14 * deficit - at) / 14;
+
+      if (deficit > 0) {
+        /* 用当前脂肪量处的能量密度把缺口换算成体重变化，再按 Forbes 分配 */
+        const dBw = deficit / this.energyDensity(sp.fat);
+        const p = this.protection(trained, proteinG / Math.max(kg, 1), sleepH, deficit);
+        let dFfm = this.dFfmForbes(sp.fat, dBw, sex) * (1 - p);
+        dFfm = clamp(dFfm, 0, dBw * 0.6);
+        const dFat = dBw - dFfm;
+        sp.fat = Math.max(2, sp.fat - dFat);
+        sp.ffm = Math.max(kg * 0.5, sp.ffm - dFfm);
+      } else {
+        const gain = -deficit / this.energyDensity(sp.fat);
+        sp.fat += gain * 0.78;                          // 盈余更偏向长脂肪
+        sp.ffm += gain * 0.22;
+      }
+      kg = sp.fat + sp.ffm;
+      bmr = this.bmr(kg, cm, age, sex);
+      trace.push({ day:d, kg, bmi:this.bmi(kg, cm), bf:(sp.fat / kg) * 100, fat:sp.fat, ffm:sp.ffm, at });
+    }
+
+    const end = { kg, bmi:this.bmi(kg, cm), bf:(sp.fat / kg) * 100, fat:sp.fat, ffm:sp.ffm };
+    const dW = start.kg - end.kg;
+    return {
+      start, end, trace, days,
+      lostKg: dW, lostJin: kg2jin(dW),
+      lostFat: start.fat - end.fat, lostFfm: start.ffm - end.ffm,
+      kcal, proteinG, trained, sleepH,
+      ed0: this.energyDensity(start.fat),
+      adaptEnd: at,
+      tdee0: this.tdee(start.kg, cm, age, sex, false),
+      proteinPerKg: proteinG / start.kg,
+      musclePct: dW > 0 ? clamp((start.ffm - end.ffm) / dW, 0, 1) : 0,
+    };
+  },
+
+  /* 对照：完全不执行（不控制饮食、不训练）会怎样 */
+  baseline(o) {
+    const s = DB.data.settings;
+    return this.project(Object.assign({}, o, {
+      kcal: this.tdee(o.weightKg != null ? o.weightKg : s.startWeight,
+                      s.heightCm || 178, s.age || 20, s.sex || 'm', false),
+      proteinG: 70, trained:false, steps:1500, sleepH:6,
+    }));
+  },
+};
+
+/* ════════════════════════════════════════════════════════════════
+   4.1 · 行为影响引擎 —— 每个打卡项的「做 vs 不做」
+   ════════════════════════════════════════════════════════════════ */
+const Impact = {
+  /* 每项行为在「满分计划」里的定位 */
+  SPEC: {
+    train:   { kcal:0,   protein:0,  kind:'train', label:'训练 12 分钟' },
+    m1:      { kcal:400, protein:44, kind:'meal',  label:'早餐' },
+    m2:      { kcal:400, protein:55, kind:'meal',  label:'午餐' },
+    m3:      { kcal:100, protein:12, kind:'meal',  label:'下午加餐' },
+    m4:      { kcal:110, protein:25, kind:'meal',  label:'晚餐' },
+    m5:      { kcal:55,  protein:12, kind:'meal',  label:'睡前半勺' },
+    spinach: { kcal:70,  protein:5,  kind:'micro', label:'菠菜 300g' },
+    coffee1: { kcal:0,   protein:0,  kind:'micro', label:'第一杯咖啡' },
+    coffee2: { kcal:0,   protein:0,  kind:'micro', label:'第二杯咖啡' },
+    nap:     { kcal:0,   protein:0,  kind:'sleep', label:'午睡 60 分钟' },
+  },
+  TARGET: { kcal:1000, protein:150 },
+
+  /* 把某一天的记录拆成模拟器需要的参数 */
+  fromRecord(r, base) {
+    r = r || {};
+    const done = id => (Impact.SPEC[id] && Impact.SPEC[id].kind === 'meal')
+      ? !!(r.meals && r.meals[id])
+      : !!(r.misc && r.misc[id]);
+    let kcal = 0, protein = 0;
+    Object.keys(Impact.SPEC).forEach(id => {
+      const sp = Impact.SPEC[id];
+      if (sp.kind !== 'meal') return;
+      if (done(id)) { kcal += sp.kcal; protein += sp.protein; }
+    });
+    const steps = r.steps != null ? r.steps : 0;
+    /* 睡觉时长：夜睡 6 小时 + 午睡（记了算 1 小时） */
+    const sleepH = 6 + (done('nap') ? 1 : 0);
+    return Object.assign({
+      kcal, proteinG: protein,
+      trained: !!(r.train && r.train.done),
+      steps, sleepH,
+    }, base || {});
+  },
+
+  /* 满分执行的样子 */
+  perfect(base) {
+    let kcal = 0, protein = 0;
+    Object.keys(this.SPEC).forEach(id => {
+      const sp = this.SPEC[id];
+      if (sp.kind !== 'meal') return;
+      kcal += sp.kcal; protein += sp.protein;
+    });
+    return Object.assign({ kcal, proteinG:protein, trained:true, steps:2500, sleepH:7 }, base || {});
+  },
+
+  /* 每项不做的后果：按「危害」排序 = |肌肉多掉| + |体重偏离| */
+  perItem() {
+    const s = DB.data.settings;
+    const perfect = this.perfect();
+    const base = Engine.project(perfect);
+    const startKg = s.startWeight;
+    const baseJin = kg2jin(startKg - base.end.kg);
+    const baseMuscle = kg2jin(base.lostFfm);
+
+    return Object.keys(this.SPEC).map(id => {
+      const sp = this.SPEC[id];
+      if (id === 'coffee1' || id === 'coffee2') return null;   // 零热量，对体重无影响
+
+      const o = Object.assign({}, perfect);
+      if (sp.kind === 'meal' || id === 'spinach') { o.kcal -= sp.kcal; o.proteinG -= sp.protein; }
+      else if (id === 'train') o.trained = false;
+      else if (id === 'nap') o.sleepH = 6;
+
+      const p = Engine.project(o);
+      const lostJin = kg2jin(startKg - p.end.kg);
+      const muscleJin = kg2jin(p.lostFfm);
+
+      return {
+        id, label: sp.label, kind: sp.kind,
+        dJin: +(lostJin - baseJin).toFixed(2),            // 正 = 掉更多（少吃），负 = 掉更少
+        dMuscle: +(muscleJin - baseMuscle).toFixed(2),    // 正 = 肌肉多掉
+        kcal: sp.kcal, protein: sp.protein,
+        harm: Math.abs(muscleJin - baseMuscle) * 2 + Math.abs(lostJin - baseJin) * 0.25,
+      };
+    }).filter(Boolean).sort((a, b) => b.harm - a.harm);
+  },
+
+  /* 过去 N 天的累计影响：你实际做的 vs 满分计划 */
+  accumulated(days) {
+    const s = DB.data.settings;
+    const cm = s.heightCm || 178;
+    const n = days || 14;
+    const perfect = this.perfect();
+    let sumKcal = 0, sumProtein = 0, trainedDays = 0, sumSteps = 0, count = 0;
+    const rows = [];
+
+    for (let i = n - 1; i >= 0; i--) {
+      const k = addDays(todayKey(), -i);
+      const r = DB.get(k);
+      if (!r) continue;
+      const f = this.fromRecord(r, {});
+      const sc = DB.score(k);
+      if (sc === 0) continue;
+      count++;
+      sumKcal += f.kcal; sumProtein += f.proteinG;
+      if (f.trained) trainedDays++;
+      sumSteps += f.steps;
+      rows.push({ date:k, kcal:f.kcal, protein:f.proteinG, trained:f.trained, steps:f.steps, score:sc });
+    }
+    if (!count) return { count:0, rows:[], perfect, real:null, delta:null };
+
+    const real = {
+      kcal: sumKcal / count,
+      proteinG: sumProtein / count,
+      trained: trainedDays >= count * 0.5,
+      steps: sumSteps / count,
+      sleepH: 6 + (rows.filter(r => r.score >= 60).length / count) * 1,
+    };
+    return {
+      count, rows, perfect, real,
+      trainedDays,
+      kcalGap: real.kcal - perfect.kcal,
+      proteinGap: real.proteinG - perfect.proteinG,
+      projPerfect: Engine.project(perfect),
+      projReal: Engine.project(real),
+    };
+  },
+};
+
+
+const MuscleModel = {
+  WINDOW: 14,
+
+  trainCount(days) {
+    const n = days || this.WINDOW; let c = 0;
+    for (let i = 0; i < n; i++) {
+      const r = DB.get(addDays(todayKey(), -i));
+      if (r && r.train && r.train.done) c++;
+    }
+    return c;
+  },
+  proteinRatio(days) {
+    const n = days || this.WINDOW; let hit = 0, seen = 0;
+    for (let i = 0; i < n; i++) {
+      const r = DB.get(addDays(todayKey(), -i));
+      if (!r) continue; seen++;
+      if (r.meals && (r.meals.m1 || r.meals.m5)) hit++;
+    }
+    return seen ? hit / seen : 0;
+  },
+  sleepHoursToday() {
+    const r = DB.get();
+    if (!r) return 6;
+    return (r.misc && r.misc.nap) ? 7 : 6;
+  },
+  sleepScore() {
+    const h = this.sleepHoursToday();
+    if (h >= 7.5) return 100; if (h >= 7) return 82;
+    if (h >= 6.5) return 66; if (h >= 6) return 52;
+    return 34;
+  },
+
+  detail() {
+    const s = DB.data.settings;
+    const cur = (DB.weights().slice(-1)[0] || { kg:s.startWeight }).kg;
+    const lostKg = Math.max(0, s.startWeight - cur);
+    const rate = lostKg / Math.max(1, diffDays(s.startDate, todayKey()) + 1);
+
+    const tc = this.trainCount();
+    const ts = Math.round(Math.min(6, tc) / 6 * 100);
+    const pr = this.proteinRatio();
+    const ps = Math.round(pr * 100);
+    const ss = this.sleepScore();
+
+    const steps = [];
+    for (let i = 1; i <= 7; i++) { const r = DB.get(addDays(todayKey(), -i)); if (r && r.steps != null) steps.push(r.steps); }
+    const avgSteps = steps.length ? steps.reduce((a, b) => a + b, 0) / steps.length : 0;
+    const sts = steps.length ? Math.round(clamp(avgSteps / 8000 * 100, 0, 100)) : 0;
+    const rs = Math.round(clamp((0.35 - rate) / 0.20, 0, 1) * 100);
+
+    return [
+      { key:'train',   name:'抗阻训练', weight:.40, score:ts, value:`两周 ${tc} 次`,
+        why:'这是保肌的第一变量 —— 单独它就能决定你掉的一半是脂肪还是肌肉。' },
+      { key:'protein', name:'蛋白吃够', weight:.25, score:ps, value:`达标 ${Math.round(pr * 100)}%`,
+        why:'150g 蛋白 / 天（约 1.9g/kg）是保肌区间，少一天就少一层保护。' },
+      { key:'sleep',   name:'睡眠',     weight:.15, score:ss, value:`约 ${this.sleepHoursToday()} 小时`,
+        why:'睡不够 6 小时，皮质醇升、生长激素降 —— 同样赤字下肌肉流失接近翻倍。' },
+      { key:'steps',   name:'日常活动', weight:.10, score:sts, value: steps.length ? `均 ${Math.round(avgSteps)} 步` : '暂无',
+        why:'NEAT 影响赤字总量，也影响肌肉是「用着」还是「闲着」。' },
+      { key:'rate',    name:'减重速度', weight:.10, score:rs, value: rate > 0 ? `${fmt(kg2jin(rate), 2)} 斤/天` : '暂无',
+        why:'掉得越快，肌肉占比越高。每周 2~3 斤是安全上限。' },
+    ];
+  },
+
+  score() { return Math.round(this.detail().reduce((a, x) => a + x.score * x.weight, 0)); },
+
+  coeff() { return 0.42 - (0.42 - 0.05) * (this.score() / 100); },
+
+  breakdown(lostJin) {
+    const c = this.coeff();
+    return { coeff:c, muscle: lostJin * c, fat: lostJin * (1 - c),
+             musclePct: Math.round(c * 100), fatPct: Math.round((1 - c) * 100) };
+  },
+  worstCase(lostJin) { return { muscle: lostJin * 0.42, fat: lostJin * 0.58 }; },
+
+  bottleneck() { return this.detail().slice().sort((a, b) => a.score - b.score)[0]; },
+  strongest()  { return this.detail().slice().sort((a, b) => b.score - a.score)[0]; },
+
+  /* 激励：给具体数字和对比，不灌鸡汤 */
+  encourage(lostJin) {
+    const out = [];
+    const bd = this.breakdown(lostJin);
+    const worst = this.worstCase(lostJin);
+    const saved = Math.max(0, worst.muscle - bd.muscle);
+    const s = this.score();
+    const bn = this.bottleneck(), st = this.strongest();
+    const tc = this.trainCount();
+
+    if (lostJin < 0.3) {
+      out.push({ tone:'wait', ic:'orbit', title:'数据还没开始积累',
+        body:'记录 5 天体重和打卡之后，这里会算出<b>你掉的到底是脂肪还是肌肉</b>。现在先去把每一天点满。' });
+      return out;
+    }
+    if (s >= 80) {
+      out.push({ tone:'great', ic:'shield', title:'守护得很好',
+        body:`按你最近两周的执行度，掉下来的 <b>${fmt(lostJin, 1)} 斤</b>里 <b>${fmt(bd.fat, 1)} 斤是脂肪</b>、只有 <b>${fmt(bd.muscle, 1)} 斤是肌肉</b>（肌肉占比 ${bd.musclePct}%）。<br>同样这 ${fmt(lostJin, 1)} 斤，如果完全不练、蛋白也不吃够，肌肉会掉 <b>${fmt(worst.muscle, 1)} 斤</b> —— 你已经替自己保住了 <b>${fmt(saved, 1)} 斤肌肉</b>。` });
+    } else if (s >= 60) {
+      out.push({ tone:'good', ic:'shield', title:'及格，但还有肌肉可以保住',
+        body:`目前这 <b>${fmt(lostJin, 1)} 斤</b>里，脂肪 <b>${fmt(bd.fat, 1)} 斤</b>、肌肉 <b>${fmt(bd.muscle, 1)} 斤</b>（肌肉占比 ${bd.musclePct}%）。<br>把「${bn.name}」补上，肌肉占比能再往下压 —— 每压 5 个点，等于白赚回约 <b>${fmt(lostJin * 0.05, 1)} 斤肌肉</b>。` });
+    } else {
+      out.push({ tone:'warn', ic:'alert', title:'现在掉得偏多是肌肉',
+        body:`按目前执行度，这 <b>${fmt(lostJin, 1)} 斤</b>里肌肉占了 <b>${bd.musclePct}%</b>（约 <b>${fmt(bd.muscle, 1)} 斤</b>），脂肪只有 <b>${fmt(bd.fat, 1)} 斤</b>。<br>秤上数字一样，但体脂率反而更高，代谢也会跟着掉。<br><b>只改一件事就够：${bn.key === 'train' ? '每周 3 次、每次 12 分钟的抗阻训练' : bn.name}。</b>` });
+    }
+    if (st.score >= 60) {
+      out.push({ tone:'info', ic:'spark', title:`你现在做得最好的是「${st.name}」`,
+        body:`${st.value}。${st.why}<br>这一项就是你在同样体重下比别人更「紧」的原因，别停。` });
+    }
+    if (tc >= 6) {
+      out.push({ tone:'great', ic:'muscle', title:`两周练了 ${tc} 次，全勤`,
+        body:'6 次就是这套方案的满配。抗阻刺激到位，肌肉分解信号基本被压住了 —— 这部分不是「努力」，是「有效」。' });
+    } else if (tc >= 3) {
+      out.push({ tone:'info', ic:'dumbbell', title:`两周练了 ${tc} 次`,
+        body:`离满配还差 ${6 - tc} 次。再加 ${6 - tc} 次，肌肉占比大约能再降 ${Math.round((6 - tc) / 6 * 8)} 个点 —— 换算成肉约 <b>${fmt(lostJin * (6 - tc) / 6 * 0.08, 1)} 斤</b>。` });
+    } else if (tc >= 1) {
+      out.push({ tone:'warn', ic:'dumbbell', title:`两周只练了 ${tc} 次`,
+        body:`再练 ${6 - tc} 次就到满配。别想着「补课」—— 只要每次比上次多 1 个、累到不行做 10 个深蹲也算完成，把线连起来就行。` });
+    } else {
+      out.push({ tone:'warn', ic:'alert', title:'还没开始训练',
+        body:'12 分钟、4 个动作、不用器械、在你房间地板上。<br>这是整套方案里唯一能把「掉脂肪」和「掉肌肉」分开的开关 —— 不做它，其余全做到也只有 58 分。' });
+    }
+    return out;
+  },
+};
+
+/* ════════════════════════════════════════════════════════════════
+   5 · 云端同步 —— 按要求关闭
+   数据仍只存在本机，可一键导出 / 导入 JSON（设置页）。
+   ════════════════════════════════════════════════════════════════ */
+const Sync = { disabled: true, todo() { App.toast('云端同步已关闭，请用「导出 JSON」备份'); } };
+
+/* ════════════════════════════════════════════════════════════════
+   6 · 通知与到点提醒
+   能力边界：网页在后台/锁屏时不保证按时弹出；已过点的会在下次打开时补发。
+   ════════════════════════════════════════════════════════════════ */
+const Notification_ = {
+  supported() { return typeof Notification !== 'undefined'; },
+  secure() { return typeof isSecureContext !== 'undefined' ? isSecureContext : (location.protocol === 'https:' || location.hostname === 'localhost'); },
+  granted() { return this.supported() && Notification.permission === 'granted'; },
+  permission() { return this.supported() ? Notification.permission : 'unsupported'; },
+  async request() {
+    if (!this.supported()) return 'unsupported';
+    if (!this.secure()) return 'insecure';
+    try { return await Notification.requestPermission(); } catch (e) { return 'error'; }
+  },
+  send(title, body) {
+    if (!this.granted()) return false;
+    try {
+      const n = new Notification(title, { body, tag:'ran-fit', renotify:true,
+        icon:"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%23070a10'/%3E%3Ccircle cx='32' cy='32' r='17' fill='none' stroke='%234fd6c4' stroke-width='4'/%3E%3C/svg%3E" });
+      n.onclick = () => { try { window.focus(); } catch (e) {} n.close(); };
+      return true;
+    } catch (e) { return false; }
+  },
+};
+
+const Reminder = {
+  timers: {},
+  key(id) { return id + '@' + todayKey(); },
+  firedMap() { try { return JSON.parse(localStorage.getItem('ran_fit_fired') || '{}'); } catch (e) { return {}; } },
+  firedId(id) { return !!this.firedMap()[this.key(id)]; },
+  markFired(id) {
+    const m = this.firedMap(); m[this.key(id)] = Date.now();
+    const cut = todayKey(new Date(Date.now() - 3 * DAY));
+    Object.keys(m).forEach(k => { const d = k.split('@')[1]; if (d && d < cut) delete m[k]; });
+    try { localStorage.setItem('ran_fit_fired', JSON.stringify(m)); } catch (e) {}
+  },
+
+  dueNow() {
+    if (!DB.data || !DB.data.settings.remindOn) return [];
+    const r = DB.rec();
+    const hhmm = (() => { const n = new Date(); return String(n.getHours()).padStart(2,'0') + ':' + String(n.getMinutes()).padStart(2,'0'); })();
+    return DB.reminderList().filter(it => {
+      if (toMin(it.time) > toMin(hhmm)) return false;
+      if (it.kind === 'check' && App.isDone(it, r)) return false;
+      if (it.id === 'train' && r.train) return false;
+      if (r.remindOff && r.remindOff[it.id]) return false;
+      return true;
+    });
+  },
+
+  schedule() {
+    Object.values(this.timers).forEach(clearTimeout); this.timers = {};
+    if (!DB.data || !DB.data.settings.remindOn) return;
+    const now = new Date();
+    DB.reminderList().forEach(it => {
+      if (this.firedId(it.id)) return;
+      const [h, m] = it.time.split(':').map(Number);
+      const t = new Date(now); t.setHours(h, m, 0, 0);
+      const delay = t - now;
+      if (delay > 0 && delay < 12 * 3600 * 1000) this.timers[it.id] = setTimeout(() => this.fire(it), delay);
+    });
+    this.check();
+  },
+
+  check() {
+    const due = this.dueNow();
+    due.forEach(it => { if (!this.firedId(it.id)) this.fire(it); });
+    if (due.length) App.showOverdueBadge(due);
+  },
+
+  fire(it) {
+    if (!DB.data.settings.remindOn) return;
+    const r = DB.rec();
+    if (it.kind === 'check' && App.isDone(it, r)) return;
+    if (r.remindOff && r.remindOff[it.id]) return;
+    this.markFired(it.id);
+    const label = { train:'该训练了', m1:'该吃早餐了', m2:'该吃午餐了', m3:'该加餐了',
+      m4:'该喝晚餐那勺蛋白粉了', m5:'睡前半勺蛋白粉', coffee1:'第一杯咖啡时间',
+      coffee2:'第二杯咖啡，也是最后一杯', nap:'该午睡了，60 分钟',
+      spinach:'该吃午餐那碗菠菜了', weigh:'该称重打卡了' }[it.id] || it.name;
+    Notification_.send(label, `${it.time} · ${it.sub}`);
+    Timer.buzz([90, 50, 90]);
+    if (document.visibilityState === 'visible') App.toast(label);
+    App.showOverdueBadge(this.dueNow());
+  },
+
+  toggle() {
+    DB.data.settings.remindOn = !DB.data.settings.remindOn;
+    DB.save(true);
+    if (DB.data.settings.remindOn) this.schedule();
+    else { Object.values(this.timers).forEach(clearTimeout); this.timers = {}; App.hideOverdueBadge(); }
+    App.renderSettings(); App.renderTimeline();
+  },
+
+  async enableNotify() {
+    if (!Notification_.secure()) {
+      App.openSheet('需要 HTTPS', '<p>手机浏览器只在 <b>HTTPS</b> 页面才允许发通知。<br>你现在用的是本地预览地址，所以系统通知用不了。<br><br><b>部署到 Vercel 或 GitHub Pages 之后，这里就能一键开启。</b>在那之前，App 内的到点提醒、震动、顶部横幅都正常工作 —— 只要把 App 开着。</p>');
+      return;
+    }
+    const p = await Notification_.request();
+    App.renderSettings();
+    if (p === 'granted') { App.toast('通知已开启'); this.schedule(); }
+    else if (p === 'denied') App.toast('被拒绝了，要去浏览器设置里改');
+    else App.toast('没有授权');
+  },
+
+  test() {
+    if (Notification_.granted()) { Notification_.send('测试通知', '能看到这条，说明到点提醒能正常工作。'); App.toast('已发送测试通知'); }
+    else App.toast('还没授权通知，先点「开启通知」');
+    Timer.buzz([80, 40, 80]);
+  },
+
+  alarmListHTML() {
+    const rows = DB.reminderList().map(it =>
+      `<div class="kv"><span class="k" style="font-family:var(--mono)">${it.time}</span><span class="v" style="font-size:var(--f-xs)">${it.name}</span></div>`).join('');
+    return `<p>网页通知在锁屏时不可靠。<b>最稳的办法：把下面这些时间也在手机自带闹钟里定一份</b>（重复选「每天」）。</p>${rows}`;
+  },
+};
+
+/* ════════════════════════════════════════════════════════════════
+   7 · 训练计时器
+   ════════════════════════════════════════════════════════════════ */
+const Timer = {
+  seq: [], idx: 0, running: false, endAt: 0, raf: null, countUp: false, elapsed: 0, wakeLock: null,
+
+  build() {
+    const t = [{ label:'热身', hint:'原地踏步，活动关节', secs:WARMUP, kind:'warm' }];
+    EXERCISES.forEach((ex, i) => {
+      t.push({ label:ex.name, hint:`目标 ${App.exTarget(ex)} ${ex.unit}`, secs:ex.secs, kind:'work', ex });
+      if (i < EXERCISES.length - 1) t.push({ label:'休息', hint:`下一个：${EXERCISES[i + 1].name}`, secs:REST, kind:'rest' });
+    });
+    t.push({ label:'拉伸', hint:'放松，今天完成', secs:COOLDOWN, kind:'cool' });
+    return t;
+  },
+  total() { return this.build().reduce((a, b) => a + b.secs, 0); },
+  /* 圆环内中文安全线：最多 8 个字 */
+  clip(s, max) { s = String(s || ''); const n = max || 8; return s.length > n ? s.slice(0, n - 1) + '…' : s; },
+
+  toggle() { this.running ? this.pause() : this.start(); },
+
+  start() {
+    if (!this.seq.length || this.idx >= this.seq.length) { this.seq = this.build(); this.idx = 0; }
+    this.running = true;
+    const cur = this.seq[this.idx];
+    this.countUp = !!(cur.ex && cur.ex.countUp);
+    this.elapsed = 0;
+    this.endAt = Date.now() + cur.secs * 1000;
+    $('#tStartBtn').textContent = '暂停';
+    this.requestWake();
+    this.tick();
+  },
+  pause() { this.running = false; cancelAnimationFrame(this.raf); $('#tStartBtn').textContent = '继续'; this.releaseWake(); },
+  reset() {
+    this.running = false; cancelAnimationFrame(this.raf); this.seq = []; this.idx = 0;
+    $('#tStartBtn').textContent = '开始训练';
+    $('#tEx').textContent = '准备开始';
+    $('#tNum').textContent = '9:50';
+    $('#tHint').textContent = '点开始，自动衔接';
+    $('#tArc').setAttribute('stroke-dashoffset', 0);
+    $('#tRing').classList.remove('rest');
+    this.releaseWake();
+  },
+
+  tick() {
+    if (!this.running) return;
+    const left = this.countUp ? this.elapsed : Math.max(0, Math.ceil((this.endAt - Date.now()) / 1000));
+    this.paint(left);
+    if (!this.countUp && left <= 0) { this.next(); return; }
+    if (this.countUp) this.elapsed = Math.round((Date.now() - (this.endAt - this.seq[this.idx].secs * 1000)) / 1000);
+    this.raf = requestAnimationFrame(() => this.tick());
+  },
+
+  paint(left) {
+    const cur = this.seq[this.idx] || { label:'完成', hint:'', secs:1 };
+    const m = Math.floor(Math.abs(left) / 60), s = Math.abs(left) % 60;
+    $('#tEx').textContent = this.clip(cur.label, 8);
+    $('#tNum').textContent = `${m}:${String(s).padStart(2, '0')}`;
+    $('#tHint').textContent = this.clip(cur.hint, 8);
+    $('#tRing').classList.toggle('rest', cur.kind === 'rest');
+    const ratio = cur.secs ? clamp(left / cur.secs, 0, 1) : 0;
+    $('#tArc').setAttribute('stroke-dashoffset', String(615.8 * (1 - ratio)));
+  },
+
+  next() {
+    this.buzz([120, 60, 120]);
+    this.idx++;
+    if (this.idx >= this.seq.length) {
+      this.running = false;
+      $('#tStartBtn').textContent = '再来一次';
+      $('#tEx').textContent = '今天完成';
+      $('#tNum').textContent = '0:00';
+      $('#tHint').textContent = '下次每个动作 +1';
+      App.finishTrain();
+      this.releaseWake();
+      return;
+    }
+    const cur = this.seq[this.idx];
+    this.countUp = !!(cur.ex && cur.ex.countUp);
+    this.elapsed = 0;
+    this.endAt = Date.now() + cur.secs * 1000;
+    this.tick();
+  },
+
+  stopCountUp() { if (!this.countUp) return; App.savePlank(this.elapsed); this.next(); },
+  buzz(p) { try { navigator.vibrate && navigator.vibrate(p); } catch (e) {} },
+  async requestWake() { try { if ('wakeLock' in navigator) this.wakeLock = await navigator.wakeLock.request('screen'); } catch (e) {} },
+  releaseWake() { try { this.wakeLock && this.wakeLock.release(); } catch (e) {} this.wakeLock = null; },
+};
+
+/* ════════════════════════════════════════════════════════════════
+   8 · 主应用
+   ════════════════════════════════════════════════════════════════ */
+const App = {
+  view: 'today',
+  marchTimer: null,
+
+  init() {
+    DB.load();
+    paintIcons();
+    this.bind();
+    this.renderAll();
+    Reminder.schedule();
+    setInterval(() => { if (this.view === 'today') this.renderToday(); }, 60000);
+    setInterval(() => Reminder.check(), 30000);
+  },
+
+  bind() {
+    $$('.tab').forEach(b => b.addEventListener('click', () => this.go(b.dataset.go)));
+    /* 训练时间选「自定义」时显示时间输入框 */
+    const selTT = $('#setTrainTime');
+    if (selTT) selTT.addEventListener('change', () => {
+      const row = $('#trainTimeCustomRow');
+      if (row) row.style.display = selTT.value === 'custom' ? '' : 'none';
+    });
+    $('#stepsInput').addEventListener('input', e => {
+      const r = DB.rec(); const v = e.target.value === '' ? null : Number(e.target.value);
+      if (r.steps !== v) { r.steps = v; DB.save(true); this.renderHero(); this.renderSteps(); }
+    });
+    $('#wInput').addEventListener('input', e => {
+      const v = Number(e.target.value);
+      $('#wConvert').textContent = v > 0
+        ? `= ${fmt(kg2jin(v), 1)} 斤　·　比起始 ${v - DB.data.settings.startWeight >= 0 ? '+' : ''}${fmt(kg2jin(v - DB.data.settings.startWeight), 1)} 斤`
+        : '—';
+    });
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') { this.renderAll(); Reminder.schedule(); Sky.play(); }
+      else Sky.pause();
+    });
+  },
+
+  go(v) {
+    this.view = v;
+    $$('.view').forEach(s => s.classList.toggle('on', s.id === 'v-' + v));
+    $$('.tab').forEach(b => b.classList.toggle('on', b.dataset.go === v));
+    window.scrollTo({ top:0, behavior:'smooth' });
+    if (v === 'weight') this.drawChart();
+    if (v === 'progress') this.renderProgress();
+    if (v === 'sim') this.renderSim();
+    if (v === 'calendar') this.renderCalendar();
+    if (v === 'train') this.renderTrain();
+    if (v === 'settings') this.renderSettings();
+  },
+
+  renderAll() {
+    this.renderToday(); this.renderWeightTop(); this.renderProgress();
+    this.renderSim(); this.renderCalendar(); this.renderTrain(); this.renderSettings();
+  },
+
+  toggleSimMode() {
+    this.simMode = this.simMode === 'perfect' ? 'real' : 'perfect';
+    this.renderSim();
+  },
+
+  toast(msg) {
+    const t = $('#toast');
+    t.innerHTML = icon('spark') + '<span>' + msg + '</span>';
+    t.classList.add('on');
+    clearTimeout(this._tt);
+    this._tt = setTimeout(() => t.classList.remove('on'), 1900);
+  },
+  sheet(title, html) {
+    $('#shTitle').textContent = title;
+    $('#shBody').innerHTML = html;
+    $('#sheet').classList.add('on');
+  },
+  openSheet(title, html) { this.sheet(title, html); },
+  closeSheet() { $('#sheet').classList.remove('on'); },
+
+  /* ── 今日 ── */
+  renderToday() {
+    const now = new Date();
+    const dn = ['周日','周一','周二','周三','周四','周五','周六'][now.getDay()];
+    $('#todayDate').textContent = `${now.getMonth() + 1} 月 ${now.getDate()} 日 · ${dn}`;
+    const s = DB.data.settings;
+    const rawDay = diffDays(s.startDate, todayKey()) + 1;
+    const notStarted = rawDay < 1;
+    const dayNum = clamp(rawDay, 1, s.planDays);
+    $('#dayNum').textContent = notStarted ? `还有 ${1 - rawDay} 天` : `DAY ${dayNum}`;
+
+    const nb = $('#notStartedBar');
+    if (notStarted) {
+      const d = new Date(s.startDate + 'T00:00:00');
+      nb.style.display = '';
+      nb.innerHTML = `${icon('orbit')}<span><b>${d.getMonth() + 1} 月 ${d.getDate()} 日</b> 开始 · 距规划开始还有 <b>${1 - rawDay}</b> 天</span><span class="go">改日期</span>`;
+      nb.onclick = () => this.go('settings');
+    } else nb.style.display = 'none';
+
+    this.renderCups();
+    this.renderHero();
+    this.renderSteps();
+    this.renderRecover();
+    this.renderTimeline();
+
+    const r = DB.rec();
+    if (document.activeElement !== $('#stepsInput')) $('#stepsInput').value = r.steps ?? '';
+
+    const tag = $('#trainTag');
+    if (tag) { tag.textContent = r.train ? '已完成' : '未完成'; tag.className = 'tag' + (r.train ? ' ok' : ''); }
+    $('#marchState').textContent = r.steps ? `今天已记录 ${r.steps} 步` : '绑在刷手机/看剧上，20 分钟，不用出门。';
+  },
+
+  renderHero() {
+    const r = DB.rec(), s = DB.data.settings;
+    const pct = DB.score(todayKey());
+    $('#heroPct').textContent = pct;
+    $('#heroArc').setAttribute('stroke-dashoffset', String(358.1 * (1 - pct / 100)));
+    const meals = Object.values(r.meals || {}).filter(Boolean).length;
+    $('#hKcal').innerHTML = (meals * 200) + '<sub>/1000 kcal</sub>';
+    $('#hWater').innerHTML = (r.water || 0) + '<sub>/8 杯</sub>';
+    $('#hSteps').innerHTML = (r.steps || 0) + `<sub>/${s.stepGoal}</sub>`;
+    $('#hStreak').innerHTML = DB.streak() + '<sub>天</sub>';
+  },
+
+  /* ── 时间轴 ── */
+  renderTimeline() {
+    const list = DB.timeline();
+    const r = DB.rec();
+    const now = new Date();
+    const hhmm = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
+    const doneCount = list.filter(it => it.kind !== 'info' &&
+      ((it.kind === 'check' && this.isDone(it, r)) || (it.id === 'train' && r.train))).length;
+    const totalCount = list.filter(it => it.kind !== 'info').length;
+
+    let html = '', lastBlock = '';
+    list.forEach(it => {
+      if (it.block !== lastBlock) {
+        const idxs = list.map((x, i) => x.block === it.block ? i : -1).filter(i => i >= 0);
+        const seg = list.slice(idxs[0], idxs[idxs.length - 1] + 1);
+        const bT = seg.filter(x => x.kind === 'check').length;
+        const bD = seg.filter(x => x.kind === 'check' && this.isDone(x, r)).length;
+        html += `<div class="tlBlock">${it.block}${bT ? `<span class="cnt${bD === bT ? ' all' : ''}">${bD}/${bT}</span>` : ''}</div>`;
+        lastBlock = it.block;
+      }
+      const done = it.kind === 'check' && this.isDone(it, r);
+      const trainDone = it.id === 'train' && r.train;
+      const actionable = it.kind !== 'info';                    // 固定时间项不参与"当前"判定
+      const overdue = !done && !trainDone && actionable && toMin(it.time) < toMin(hhmm);
+      const isNow = !done && !trainDone && actionable
+        && toMin(it.time) <= toMin(hhmm) && toMin(hhmm) < toMin(this.nextTime(list, it));
+      const cls = ['tlRow', it.kind];
+      if (done || trainDone) cls.push('done');
+      if (overdue) cls.push('overdue');
+      if (isNow) cls.push('now');
+
+      let mark = '';
+      if (done || trainDone) mark = icon('check');
+      else if (it.kind === 'action') mark = it.id === 'train' ? '开始' + icon('arrow') : '记录' + icon('arrow');
+
+      const onclick = it.kind === 'check' ? `App.toggleItem('${it.id}','${it.group}')`
+        : it.kind === 'action' ? `App.go('${it.go}')` : `App.showTip('${it.id}')`;
+
+      html += `<button class="${cls.join(' ')}" onclick="${onclick}">
+        <span class="tlTime">${it.time}</span>
+        <span class="tlDot"></span>
+        <span class="tlMain">
+          <span class="tlName">${icon(it.ic)}<span class="nm">${it.name}</span></span>
+          <span class="tlSub">${it.sub}</span>
+        </span>
+        <span class="tlMark">${mark}</span>
+      </button>`;
+    });
+    $('#timeline').innerHTML = html;
+    $('#timelinePill').textContent = `${doneCount} / ${totalCount}`;
+
+    const todayIdx = new Date().getDay();
+    const dayNum = diffDays(DB.data.settings.startDate, todayKey()) + 1;
+    const isCarb = dayNum === 10 || dayNum === 20;
+    $('#mealHint').innerHTML = isCarb
+      ? '<b style="color:var(--gold)">今天是补碳日</b>：中午米饭吃整碗。'
+      : `今天中午的蛋白：<b>${PROTEIN_ROTATION[todayIdx]}</b>　·　鸡胸和虾隔天换着来`;
+  },
+
+  isDone(it, r) {
+    if (it.group === 'meals') return !!(r.meals && r.meals[it.id]);
+    if (it.group === 'misc')  return !!(r.misc  && r.misc[it.id]);
+    return false;
+  },
+  /* 只**执行下一步**这一个选择，不做时间比较。
+     曾经的 bug：用 "后一项时间 > 本项时间" 找下一项，而 01:30 的熄灯被排到最后，
+     于是它下一项变成 07:30，导致 01:30~07:30 之间「熄灯睡觉」被判定成"当前"，
+     圆点自己亮起来，看起来像被勾选了。 */
+  nextTime(list, cur) {
+    const i = list.indexOf(cur);
+    return list[i + 1] ? list[i + 1].time : '24:00';
+  },
+
+  toggleItem(id, group) {
+    const r = DB.rec();
+    if (group === 'meals') { r.meals = r.meals || {}; r.meals[id] = !r.meals[id]; }
+    else { r.misc = r.misc || {}; r.misc[id] = !r.misc[id]; }
+    if (r.remindOff && r.remindOff[id]) delete r.remindOff[id];
+    DB.save(); this.renderTimeline(); this.renderHero(); Timer.buzz(12);
+    const it = DB.timeline().find(x => x.id === id);
+    if (it && this.isDone(it, r)) this.toast(it.name + ' 完成');
+  },
+
+  listenFixed(id) {
+    const r = DB.rec();
+    r.remindOff = r.remindOff || {};
+    r.remindOff[id] = true;
+    DB.save(true); this.renderTimeline();
+    this.toast('这一项今天不再提醒');
+  },
+
+  showTip(id) {
+    const it = DB.timeline().find(x => x.id === id);
+    if (!it) return;
+    this.sheet(`${it.time} · ${it.name}`,
+      `<p>${it.tip || it.sub || '按固定时间执行。'}</p>
+       <button class="btn wide mt2" onclick="App.listenFixed('${it.id}');App.closeSheet()">今天不再提醒这一项</button>`);
+  },
+
+  /* ── 补水 / 步数 ── */
+  renderCups() {
+    const r = DB.rec();
+    $('#cups').innerHTML = Array.from({ length:8 }, (_, i) =>
+      `<button class="cup ${i < (r.water || 0) ? 'full' : ''}" onclick="App.setWater(${i + 1})" aria-label="第 ${i + 1} 杯"></button>`).join('');
+    $('#cupCount').textContent = `${r.water || 0} / 8`;
+  },
+  setWater(n) {
+    const r = DB.rec();
+    r.water = (r.water === n) ? n - 1 : n;
+    DB.save(); this.renderCups(); this.renderHero(); Timer.buzz(12);
+    if (r.water >= 8) this.toast('今天的水喝够了');
+  },
+  renderSteps() {
+    const s = DB.data.settings, r = DB.rec();
+    const v = r.steps || 0;
+    const tag = $('#stepTag');
+    if (!tag) return;
+    tag.textContent = v >= s.stepGoal ? '达标' : `${v} / ${s.stepGoal}`;
+    tag.className = 'tag' + (v >= s.stepGoal ? ' ok' : '');
+  },
+
+  /* ── 断签补救 ── */
+  renderRecover() {
+    const s = DB.data.settings;
+    const dayNum = diffDays(s.startDate, todayKey()) + 1;
+    if (dayNum < 2) { $('#recoverCard').style.display = 'none'; return; }
+    const missing = [];
+    for (let i = 1; i <= Math.min(dayNum - 1, 30); i++) {
+      const k = addDays(s.startDate, i - 1);
+      if (DB.score(k) < 40) missing.push(k);
+    }
+    if (!missing.length) { $('#recoverCard').style.display = 'none'; return; }
+    const last = missing[missing.length - 1];
+    const gap = diffDays(last, todayKey());
+    $('#recoverCard').style.display = '';
+    $('#recoverText').textContent = gap <= 1
+      ? `昨天（${last}）完成度偏低。别补偿性绝食 —— 按今天的正常量吃，把训练补上就行。`
+      : `从 ${last} 起有 ${gap} 天没打满。断签不等于失败，但补偿性绝食一定会让你在第 3 天暴食。`;
+  },
+  openRecover() {
+    this.sheet('断签补救 · 三步', `
+      <p><b>第一步：今天按原方案正常吃，不要少吃。</b><br>
+      「昨天吃多了今天就不吃」是减脂里最经典的坑 —— 它会把你推进「暴食 → 绝食 → 暴食」的循环。你这套方案本来就只有 1000 kcal，再往下砍只会掉肌肉、掉代谢。</p>
+      <p><b>第二步：训练补上，饮食不补。</b><br>
+      今天正常做那 12 分钟。训练是唯一能「补」的东西，热量不要补。</p>
+      <p><b>第三步：多喝水，把钠冲掉。</b><br>
+      吃咸了、吃油了，第二天秤上大概率涨 1~2 斤 —— <b>那是水，不是脂肪</b>。今天喝到 3L，20:00 前喝完，两天就回去。</p>
+      <p style="color:var(--faint)">参考：一顿火锅 ≈ 2000~2500 kcal，需要 2 天正常执行才能抹平。<b>抹平就行，不要加倍惩罚自己。</b></p>`);
+  },
+
+  /* ── 体重 ── */
+  renderWeightTop() {
+    const r = DB.get();
+    const has = r && r.weight != null;
+    $('#wTodayBadge').innerHTML = has ? `${fmt(kg2jin(r.weight), 1)} 斤` : '未记录';
+    if (!document.activeElement.matches('input')) $('#wInput').value = has ? r.weight : '';
+    if (has) $('#wConvert').textContent = `= ${fmt(kg2jin(r.weight), 1)} 斤　·　比起始 ${r.weight - DB.data.settings.startWeight >= 0 ? '+' : ''}${fmt(kg2jin(r.weight - DB.data.settings.startWeight), 1)} 斤`;
+    this.renderWeightStats();
+    this.renderWeightHistory();
+  },
+  renderWeightStats() {
+    const list = DB.weights();
+    if (!list.length) { $('#wLatest').textContent = $('#wAvg').textContent = $('#wDelta').textContent = '—'; return; }
+    const last = list[list.length - 1];
+    const avg = DB.movingAvg(list);
+    const a = avg[avg.length - 1];
+    $('#wLatest').innerHTML = fmt(kg2jin(last.kg), 1) + '<sub>斤</sub>';
+    $('#wAvg').innerHTML = fmt(kg2jin(a.kg), 1) + '<sub>斤</sub>';
+    const d = kg2jin(last.kg - DB.data.settings.startWeight);
+    $('#wDelta').innerHTML = `<span style="color:${d <= 0 ? 'var(--accent)' : 'var(--bad)'}">${d >= 0 ? '+' : ''}${fmt(d, 1)}</span><sub>斤</sub>`;
+  },
+  renderWeightHistory() {
+    const list = DB.weights().slice().reverse().slice(0, 14);
+    $('#wHistory').innerHTML = list.length
+      ? list.map(p => `<div class="kv"><span class="k" style="font-family:var(--mono);font-size:var(--f-xs)">${p.date}</span><span class="v">${fmt(kg2jin(p.kg), 1)} 斤</span></div>`).join('')
+      : '<div class="hint">还没有记录。每天 17:00 称一次，填上面那个框就行。</div>';
+  },
+  saveWeight() {
+    const v = Number($('#wInput').value);
+    if (!v || v < 30 || v > 200) return this.toast('请输入合理的体重');
+    DB.rec().weight = v;
+    DB.save(); this.renderWeightTop(); this.drawChart();
+    this.renderHero(); this.renderProgress();
+    this.toast('已记录 ' + fmt(kg2jin(v), 1) + ' 斤');
+  },
+  fillWeightNow() {
+    const list = DB.weights();
+    if (!list.length) return this.toast('还没有历史记录');
+    $('#wInput').value = list[list.length - 1].kg;
+    $('#wInput').dispatchEvent(new Event('input'));
+  },
+
+  drawChart() {
+    const cv = $('#chart'); if (!cv) return;
+    const box = cv.parentElement.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+    cv.width = box.width * dpr; cv.height = box.height * dpr;
+    const g = cv.getContext('2d'); g.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const W = box.width, H = box.height;
+    g.clearRect(0, 0, W, H);
+
+    const list = DB.weights();
+    if (list.length < 2) {
+      g.fillStyle = 'rgba(200,215,235,.26)';
+      g.font = '12px -apple-system,sans-serif'; g.textAlign = 'center';
+      g.fillText('记录 2 天以上就会画出趋势', W / 2, H / 2);
+      $('#chartLegend').innerHTML = ''; return;
+    }
+    const avg = DB.movingAvg(list);
+    const all = list.concat(avg);
+    let lo = Math.min(...all.map(p => p.kg)), hi = Math.max(...all.map(p => p.kg));
+    const pad = Math.max(0.4, (hi - lo) * 0.22); lo -= pad; hi += pad;
+    const L = 6, R = W - 6, T = 16, B = H - 20;
+    const X = i => L + (R - L) * (list.length === 1 ? .5 : i / (list.length - 1));
+    const Y = kg => B - (B - T) * ((kg - lo) / (hi - lo));
+
+    /* 目标线 */
+    const target = DB.data.settings.startWeight - DB.data.settings.goalLoss;
+    if (target > lo && target < hi) {
+      g.setLineDash([4, 4]); g.strokeStyle = 'rgba(79,214,196,.42)'; g.lineWidth = 1;
+      g.beginPath(); g.moveTo(L, Y(target)); g.lineTo(R, Y(target)); g.stroke(); g.setLineDash([]);
+      g.fillStyle = 'rgba(79,214,196,.7)'; g.font = '10px ui-monospace,monospace'; g.textAlign = 'left';
+      g.fillText('目标 ' + fmt(kg2jin(target), 1) + ' 斤', L + 2, Y(target) - 5);
+    }
+    /* 网格 */
+    g.strokeStyle = 'rgba(200,215,235,.05)'; g.lineWidth = 1;
+    for (let i = 0; i <= 3; i++) { const y = T + (B - T) * i / 3; g.beginPath(); g.moveTo(L, y); g.lineTo(R, y); g.stroke(); }
+
+    /* 面积 */
+    const grad = g.createLinearGradient(0, T, 0, B);
+    grad.addColorStop(0, 'rgba(79,214,196,.2)'); grad.addColorStop(1, 'rgba(79,214,196,0)');
+    g.beginPath(); g.moveTo(X(0), Y(list[0].kg));
+    list.forEach((p, i) => g.lineTo(X(i), Y(p.kg)));
+    g.lineTo(X(list.length - 1), B); g.lineTo(X(0), B); g.closePath();
+    g.fillStyle = grad; g.fill();
+
+    /* 单日点 */
+    g.strokeStyle = 'rgba(200,215,235,.28)'; g.lineWidth = 1.2;
+    g.beginPath(); list.forEach((p, i) => i ? g.lineTo(X(i), Y(p.kg)) : g.moveTo(X(i), Y(p.kg))); g.stroke();
+    list.forEach((p, i) => { g.beginPath(); g.arc(X(i), Y(p.kg), 2.2, 0, Math.PI * 2); g.fillStyle = 'rgba(200,215,235,.5)'; g.fill(); });
+
+    /* 7 日均线 */
+    g.strokeStyle = '#4fd6c4'; g.lineWidth = 2.4; g.lineJoin = 'round'; g.lineCap = 'round';
+    g.beginPath(); avg.forEach((p, i) => i ? g.lineTo(X(i), Y(p.kg)) : g.moveTo(X(i), Y(p.kg))); g.stroke();
+    const li = avg.length - 1;
+    g.beginPath(); g.arc(X(li), Y(avg[li].kg), 4, 0, Math.PI * 2); g.fillStyle = '#4fd6c4'; g.fill();
+    g.strokeStyle = 'rgba(7,10,16,.9)'; g.lineWidth = 2; g.stroke();
+
+    $('#chartLegend').innerHTML =
+      `<span><em style="background:#4fd6c4"></em>7 日均线 ${fmt(kg2jin(avg[li].kg), 1)} 斤</span>
+       <span><em style="background:rgba(200,215,235,.35)"></em>单日波动（不用管）</span>
+       <span>共 ${list.length} 条记录</span>`;
+  },
+
+  /* ── 进度 + 肌肉守护 ── */
+  renderProgress() {
+    const s = DB.data.settings;
+    const list = DB.weights();
+    const start = s.startWeight;
+    const cur = list.length ? list[list.length - 1].kg : start;
+    const lost = start - cur, lostJin = kg2jin(lost);
+    const pct = clamp(lost / s.goalLoss * 100, 0, 100);
+
+    $('#pLost').textContent = fmt(Math.max(0, lostJin), 1);
+    $('#pTarget').textContent = fmt(kg2jin(s.goalLoss), 0);
+    $('#pBar').style.width = pct + '%';
+    $('#goalPill').textContent = pct >= 100 ? '已达成' : fmt(pct, 0) + '%';
+    $('#goalPill').className = 'tag ' + (pct >= 100 ? 'ok' : pct >= 50 ? 'acc' : '');
+
+    const remain = Math.max(0, s.goalLoss - lost);
+    $('#pRemain').innerHTML = remain <= 0
+      ? '主目标已达成。现在是守住成果的阶段 —— 训练千万别停。'
+      : `还差 <b>${fmt(kg2jin(remain), 1)} 斤</b>（目标体重 ${fmt(kg2jin(start - s.goalLoss), 1)} 斤）`;
+
+    const dayNum = clamp(diffDays(s.startDate, todayKey()) + 1, 1, s.planDays);
+    $('#pDays').innerHTML = dayNum + '<sub>天</sub>';
+    $('#pLeft').innerHTML = Math.max(0, s.planDays - dayNum) + '<sub>天</sub>';
+
+    const span = list.length >= 2 ? Math.max(1, diffDays(list[0].date, list[list.length - 1].date)) : 0;
+    const rateJin = span ? kg2jin(list[0].kg - cur) / span : 0;
+    $('#pRate').innerHTML = span && rateJin > 0 ? fmt(rateJin, 2) + '<sub>斤/天</sub>' : '—';
+    if (rateJin > 0.02 && remain > 0) {
+      const days = Math.ceil(remain / (rateJin / JIN));
+      const eta = addDays(todayKey(), days);
+      const within = diffDays(todayKey(), eta) <= (s.planDays - dayNum);
+      $('#pEta').innerHTML = `<span style="font-size:var(--f-md);color:${within ? 'var(--accent)' : 'var(--warn)'}">${eta.slice(5)}</span><sub>${days}天后</sub>`;
+    } else $('#pEta').innerHTML = '—';
+
+    /* 肌肉守护 */
+    const gs = MuscleModel.score();
+    const bd = MuscleModel.breakdown(Math.max(0, lostJin));
+    $('#gScore').textContent = gs;
+    $('#gScore').style.color = gs >= 80 ? 'var(--accent)' : gs >= 60 ? 'var(--text)' : 'var(--warn)';
+    $('#gVerdict').innerHTML = gs >= 80 ? '执行度很好，肌肉基本被按住了。'
+      : gs >= 60 ? '及格，但还有肌肉可以保住 —— 看下面哪一项拖后腿。'
+      : '现在掉的偏多是肌肉。只改一件事就能翻盘。';
+
+    const bn = MuscleModel.bottleneck(), st = MuscleModel.strongest();
+    $('#gFactors').innerHTML = MuscleModel.detail().map(f => `
+      <div class="factor ${f.key === bn.key ? 'low' : f.key === st.key ? 'top' : ''}">
+        <span class="fn">${f.name}</span>
+        <span class="bar thin"><i style="width:${f.score}%;background:${f.key === bn.key ? 'var(--grad-warm)' : 'var(--grad-accent)'}"></i></span>
+        <span class="fv">${f.score}</span>
+      </div>`).join('');
+
+    $('#gNotes').innerHTML = MuscleModel.encourage(Math.max(0, lostJin)).map(n =>
+      `<div class="note ${n.tone}"><span class="ni">${icon(n.ic)}</span><span><span class="nt">${n.title}</span><span class="nb">${n.body}</span></span></div>`).join('');
+
+    $('#gSplit').textContent = `肌肉占比 ${bd.musclePct}%`;
+    $('#cFat').innerHTML = fmt(bd.fat, 1) + '<sub>斤</sub>';
+    $('#cMuscle').innerHTML = fmt(bd.muscle, 1) + '<sub>斤</sub>';
+    $('#cWater').innerHTML = fmt(Math.max(0, lostJin * 0.17), 1) + '<sub>斤</sub>';
+
+    let full = 0;
+    for (let i = 0; i < s.planDays; i++) if (DB.score(addDays(s.startDate, i)) >= 80) full++;
+    const pill = $('#calEntryPill');
+    if (pill) {
+      pill.textContent = `满勤 ${full} · 连续 ${DB.streak()}`;
+      pill.className = 'tag ' + (full >= s.planDays * .8 ? 'ok' : full >= s.planDays * .5 ? 'warn' : '');
+    }
+  },
+
+  /* ── 日历 ── */
+  renderCalendar() {
+    const s = DB.data.settings;
+    let html = '', full = 0, miss = 0;
+    for (let i = 0; i < s.planDays; i++) {
+      const k = addDays(s.startDate, i);
+      const sc = DB.score(k);
+      const today = k === todayKey();
+      const future = diffDays(todayKey(), k) > 0;
+      let cls = 'cell';
+      if (future) cls += ' future';
+      else if (sc >= 80) { cls += ' full'; full++; }
+      else if (sc >= 40) cls += ' part';
+      else { cls += ' miss'; miss++; }
+      if (today) cls += ' today';
+      html += `<div class="${cls}">${i + 1}</div>`;
+    }
+    $('#calGrid').innerHTML = html;
+    $('#calDone').textContent = full;
+    $('#sFull').textContent = full;
+    $('#sMiss').textContent = miss;
+    $('#sBest').textContent = DB.bestStreak();
+    $('#sNow').textContent = DB.streak();
+  },
+
+  /* ── 模拟 ── */
+  renderSim() {
+    const s = DB.data.settings;
+    const days = s.planDays || 30;
+    const perfect = Impact.perfect();
+    const real = Impact.fromRecord(DB.rec(), {});
+    const mode = this.simMode || 'real';
+    const o = mode === 'real' ? real : perfect;
+
+    const P = Engine.project(o);
+    const base = Engine.project(perfect);
+    const worst = Engine.baseline({ weightKg:s.startWeight });
+
+    const cm = s.heightCm || 178;
+    $('#simDays').textContent = days;
+    $('#simTag').textContent = mode === 'real' ? '按今天实际' : '满分计划';
+
+    $('#simLost').innerHTML = fmt(kg2jin(P.lostKg), 1) + '<sub>斤</sub>';
+    $('#simLostSub').innerHTML = `${fmt(P.start.kg, 1)} → <b>${fmt(P.end.kg, 1)}</b> kg`;
+    $('#simBmi').innerHTML = fmt(P.end.bmi, 1);
+    const band = Engine.bmiBand(P.end.bmi);
+    $('#simBmiSub').innerHTML = `<span style="color:${band.c}">${band.k}</span> · 现在 ${fmt(P.start.bmi, 1)}`;
+
+    $('#simFat').innerHTML = fmt(kg2jin(P.lostFat), 1) + '<sub>斤</sub>';
+    $('#simMuscle').innerHTML = fmt(kg2jin(P.lostFfm), 1) + '<sub>斤</sub>';
+    $('#simBf').innerHTML = fmt(P.end.bf, 1) + '<sub>%</sub>';
+    $('#simBfSub').innerHTML = `现在 ${fmt(P.start.bf, 1)}%`;
+
+    const musclePct = Math.round(P.musclePct * 100);
+    $('#simNote').innerHTML = P.lostKg <= 0
+      ? '按这个吃法<b>不会掉秤</b> —— 热量没有缺口。要减重必须让「吃进去」小于「消耗掉」。'
+      : `掉的 ${fmt(kg2jin(P.lostKg), 1)} 斤里，<b>脂肪 ${fmt(kg2jin(P.lostFat), 1)} 斤</b>、肌肉 ${fmt(kg2jin(P.lostFfm), 1)} 斤（肌肉占 ${musclePct}%）。<br>
+         满分计划是 ${fmt(kg2jin(base.lostKg), 1)} 斤 / 肌肉 ${Math.round(base.musclePct * 100)}%；什么都不做的话是 ${fmt(kg2jin(worst.lostKg), 1)} 斤 / 肌肉 ${Math.round(worst.musclePct * 100)}%。`;
+
+    this.drawSimChart(P, base);
+    this.renderImpact();
+    this.renderAccum();
+  },
+
+  drawSimChart(P, base) {
+    const cv = $('#simChart'); if (!cv) return;
+    const box = cv.parentElement.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+    cv.width = box.width * dpr; cv.height = box.height * dpr;
+    const g = cv.getContext('2d'); g.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const W = box.width, H = box.height;
+    g.clearRect(0, 0, W, H);
+
+    const s = DB.data.settings;
+    const cm = s.heightCm || 178;
+    const hist = DB.weights();
+    const histPts = hist.slice(-14).map(p => ({ x: p.date, kg: p.kg }));
+
+    const projPts = P.trace.map(t => ({ x: 'D' + t.day, kg: t.kg, bmi: t.bmi }));
+    const baseProj = base.trace.map(t => ({ x: 'D' + t.day, kg: t.kg }));
+
+    const allKg = histPts.map(p => p.kg)
+      .concat(projPts.map(p => p.kg))
+      .concat([baseProj[baseProj.length - 1].kg, s.startWeight]);
+    let lo = Math.min(...allKg), hi = Math.max(...allKg);
+    const pad = Math.max(0.5, (hi - lo) * .2); lo -= pad; hi += pad;
+
+    const nH = histPts.length, nP = projPts.length;
+    const total = Math.max(1, nH + nP - 1);
+    const L = 6, R = W - 6, T = 16, B = H - 22;
+    const X = i => L + (R - L) * (i / total);
+    const Y = kg => B - (B - T) * ((kg - lo) / (hi - lo));
+
+    /* BMI 分区底色（按 WHO：24 / 28 两条线换算成体重） */
+    const m2 = Math.pow(cm / 100, 2);
+    [[28, 'rgba(226,121,140,.06)'], [24, 'rgba(224,169,79,.06)']].forEach(([b, col]) => {
+      const w = b * m2;
+      if (w > lo) {
+        g.fillStyle = col;
+        g.fillRect(L, Y(hi), R - L, Math.max(0, Y(Math.max(w, lo)) - Y(hi)));
+      }
+    });
+    /* 网格 */
+    g.strokeStyle = 'rgba(200,215,235,.05)'; g.lineWidth = 1;
+    for (let i = 0; i <= 3; i++) { const y = T + (B - T) * i / 3; g.beginPath(); g.moveTo(L, y); g.lineTo(R, y); g.stroke(); }
+
+    /* 历史实测 */
+    if (nH >= 1) {
+      g.strokeStyle = 'rgba(200,215,235,.5)'; g.lineWidth = 1.6;
+      g.beginPath(); histPts.forEach((p, i) => i ? g.lineTo(X(i), Y(p.kg)) : g.moveTo(X(i), Y(p.kg))); g.stroke();
+      histPts.forEach((p, i) => { g.beginPath(); g.arc(X(i), Y(p.kg), 2.2, 0, Math.PI * 2); g.fillStyle = 'rgba(200,215,235,.6)'; g.fill(); });
+    }
+    /* 满分计划（灰虚线） */
+    g.setLineDash([4, 4]); g.strokeStyle = 'rgba(200,215,235,.28)'; g.lineWidth = 1.4;
+    g.beginPath();
+    baseProj.forEach((p, i) => { const x = X(nH - 1 + i + 1); i ? g.lineTo(x, Y(p.kg)) : g.moveTo(x, Y(p.kg)); });
+    g.stroke(); g.setLineDash([]);
+
+    /* 本次预测（青色实线） */
+    g.strokeStyle = '#4fd6c4'; g.lineWidth = 2.4; g.lineJoin = 'round'; g.lineCap = 'round';
+    g.beginPath();
+    if (nH) g.moveTo(X(nH - 1), Y(histPts[nH - 1].kg));
+    else g.moveTo(X(0), Y(P.start.kg));
+    projPts.forEach((p, i) => g.lineTo(X(nH - 1 + i + 1), Y(p.kg)));
+    g.stroke();
+
+    /* 终点 + 标注 */
+    const lastX = X(nH - 1 + nP), lastY = Y(P.end.kg);
+    g.beginPath(); g.arc(lastX, lastY, 4, 0, Math.PI * 2); g.fillStyle = '#4fd6c4'; g.fill();
+    g.strokeStyle = 'rgba(7,10,16,.9)'; g.lineWidth = 2; g.stroke();
+    g.fillStyle = '#4fd6c4'; g.font = '10.5px ui-monospace,monospace'; g.textAlign = 'right';
+    g.fillText(`${fmt(P.end.kg, 1)}kg · ${fmt(P.end.bmi, 1)}`, R - 2, lastY - 8);
+    /* 目标线 */
+    const tgt = s.startWeight - s.goalLoss;
+    if (tgt > lo && tgt < hi) {
+      g.setLineDash([3, 3]); g.strokeStyle = 'rgba(216,173,106,.5)'; g.lineWidth = 1;
+      g.beginPath(); g.moveTo(L, Y(tgt)); g.lineTo(R, Y(tgt)); g.stroke(); g.setLineDash([]);
+      g.fillStyle = 'rgba(216,173,106,.8)'; g.textAlign = 'left';
+      g.fillText('目标 ' + fmt(kg2jin(tgt), 1) + ' 斤', L + 2, Y(tgt) - 4);
+    }
+
+    $('#simLegend').innerHTML =
+      `<span><em style="background:rgba(200,215,235,.5)"></em>实测</span>
+       <span><em style="background:#4fd6c4"></em>${this.simMode === 'perfect' ? '满分计划' : '按今天实际'}</span>
+       <span><em style="background:rgba(200,215,235,.28)"></em>满分对照</span>
+       <span>底色 = BMI 超重/肥胖区</span>`;
+  },
+
+  renderImpact() {
+    const items = Impact.perItem();
+    const rows = items.map(it => {
+      const parts = [];
+      /* 训练 / 午睡：不影响热量，只影响肌肉分配 */
+      if (it.kind === 'train' || it.kind === 'sleep') {
+        if (Math.abs(it.dMuscle) >= 0.05) parts.push(`肌肉多掉 <b>${fmt(it.dMuscle, 1)} 斤</b>`);
+        if (Math.abs(it.dJin) >= 0.05) parts.push(it.dJin > 0 ? `体重多掉 ${fmt(it.dJin, 1)} 斤` : `体重少掉 ${fmt(-it.dJin, 1)} 斤`);
+        if (!parts.length) parts.push('影响很小');
+        return `<div class="note warn">
+          <span class="ni">${icon(it.kind === 'train' ? 'dumbbell' : 'moon')}</span>
+          <span><span class="nt">不做「${it.label}」</span>
+          <span class="nb">${parts.join(' · ')}（30 天累计）</span></span></div>`;
+      }
+      /* 饮食项：少吃会掉更多秤，但肌肉会多掉 */
+      if (Math.abs(it.dJin) >= 0.05) parts.push(it.dJin > 0 ? `体重多掉 <b>${fmt(it.dJin, 1)} 斤</b>` : `体重少掉 <b>${fmt(-it.dJin, 1)} 斤</b>`);
+      if (Math.abs(it.dMuscle) >= 0.05) parts.push(`但肌肉多掉 <b>${fmt(it.dMuscle, 1)} 斤</b>`);
+      if (!parts.length) parts.push('影响很小');
+      const bad = it.dMuscle >= 0.1;
+      return `<div class="note ${bad ? 'warn' : 'info'}">
+        <span class="ni">${icon(it.kind === 'meal' ? 'meal' : 'leaf')}</span>
+        <span><span class="nt">漏掉「${it.label}」</span>
+        <span class="nb">${parts.join(' · ')}（30 天累计）</span></span></div>`;
+    }).join('');
+    $('#impactList').innerHTML = rows +
+      `<div class="hint mt4">注意看：<b>漏掉一餐会让秤掉得更多</b>（吃得少），但代价是肌肉多掉 ——
+       这正是「掉秤 ≠ 减脂」最直观的例子。漏两项的后果不是简单相加。</div>`;
+  },
+
+  renderAccum() {
+    const a = Impact.accumulated(14);
+    if (!a.count) {
+      $('#accumBlock').innerHTML = '<div class="hint">还没有足够打卡记录。累计 3 天以上就能算出「你的实际执行」和「满分计划」差多少。</div>';
+      return;
+    }
+    const dJin = kg2jin(a.projPerfect.lostKg - a.projReal.lostKg);
+    const dMuscle = kg2jin(a.projReal.lostFfm - a.projPerfect.lostFfm);
+    $('#accumBlock').innerHTML = `
+      <div class="kv"><span class="k">统计天数</span><span class="v">${a.count} 天</span></div>
+      <div class="kv"><span class="k">平均热量</span><span class="v">${Math.round(a.real.kcal)} <span style="color:var(--dim);font-size:var(--f-2xs)">/ 满分 ${a.perfect.kcal}</span></span></div>
+      <div class="kv"><span class="k">平均蛋白</span><span class="v">${Math.round(a.real.proteinG)}g <span style="color:var(--dim);font-size:var(--f-2xs)">/ 满分 ${a.perfect.proteinG}g</span></span></div>
+      <div class="kv"><span class="k">训练天数</span><span class="v">${a.trainedDays} 天</span></div>
+      <div class="hr"></div>
+      <div class="hint">
+        按这两周的实际水平推 30 天：<b>${fmt(kg2jin(a.projReal.lostKg), 1)} 斤</b>（满分是 ${fmt(kg2jin(a.projPerfect.lostKg), 1)} 斤）。
+        ${dJin > 0.2 ? `差 <b style="color:var(--warn)">${fmt(dJin, 1)} 斤</b>` : '基本追平满分'}${dMuscle > 0.1 ? `，肌肉会多掉 <b style="color:var(--warn)">${fmt(dMuscle, 1)} 斤</b>` : ''}。
+      </div>`;
+  },
+
+  /* ── 训练 ── */
+  exTarget(ex) { return ex.base + Object.values(DB.data.records).filter(r => r.train).length; },
+  renderTrain() {
+    const dow = new Date().getDay();
+    $('#trainDayBadge').textContent = ['周日','周一','周二','周三','周四','周五','周六'][dow];
+    $('#exList').innerHTML = EXERCISES.map(ex => `
+      <div class="kv">
+        <span class="k" style="display:flex;align-items:center;gap:8px;font-size:var(--f-sm);color:var(--text-2)">
+          ${icon(ex.countUp ? 'clock' : 'dumbbell')}<span><b style="color:var(--text)">${ex.name}</b><br>
+          <span style="font-size:var(--f-2xs);color:var(--dim)">${ex.tip}</span></span>
+        </span>
+        <span class="v" style="font-family:var(--mono);font-size:var(--f-sm)">${this.exTarget(ex)} <span style="font-size:var(--f-3xs);color:var(--dim)">${ex.unit}${ex.countUp ? '起' : ''}</span></span>
+      </div>`).join('');
+
+    $('#exGuide').innerHTML = [
+      { n:'深蹲', b:'双脚与肩同宽，脚尖稍朝外。像往后坐椅子一样把屁股往后下方坐，膝盖跟着脚尖方向走。蹲到大腿接近与地面平行，用脚跟发力站起，站直时夹一下屁股。<br><b>常见错误：</b>膝盖往内夹（想象把膝盖往小脚趾方向推）、脚跟离地、蹲得太浅。' },
+      { n:'俯卧撑', b:'先选难度：撑墙 → 跪姿 → 上斜（撑床沿）→ 地面标准。手比肩略宽，身体从头到脚一条直线，收腹夹臀。往下时胸部真的沉下去，手肘往身体后方斜 45°。<br><b>常见错误：</b>塌腰、撅屁股、只点头不降身体。' },
+      { n:'鸟狗式', b:'四足跪姿，手在肩下、膝在髋下。同时伸直右臂和左腿，身体保持水平不歪，停 2 秒，收回，换另一侧。左右各算 1 次。<br><b>常见错误：</b>腿抬太高导致塌腰 —— 抬到和身体齐平就够，重点是「不歪」。' },
+      { n:'平板支撑', b:'手肘在肩膀正下方，身体从头到脚一条直线，收紧腹部和屁股，正常呼吸别憋气。<br><b>常见错误：</b>塌腰（最常见，会腰痛）、抬臀太高、憋气。宁可时间短，也别塌腰。' },
+    ].map(x => `<details><summary>${x.n}</summary><div class="body">${x.b}</div></details>`).join('');
+  },
+  finishTrain() {
+    const r = DB.rec();
+    r.train = r.train || {};
+    r.train.done = true;
+    r.train.at = new Date().toISOString();
+    DB.save(); this.renderToday(); this.renderTrain(); this.renderProgress();
+    this.toast('训练完成 · 下次每个动作 +1');
+    Timer.buzz([100, 60, 100, 60, 200]);
+  },
+  savePlank(secs) { const r = DB.rec(); r.train = r.train || {}; r.train.plank = secs; DB.save(true); },
+
+  startMarch() {
+    if (this.marchTimer) {
+      clearInterval(this.marchTimer); this.marchTimer = null;
+      $('#marchBtn').innerHTML = icon('steps') + '原地踏步 20 分钟';
+      $('#marchState').textContent = '已取消';
+      return;
+    }
+    let left = 20 * 60;
+    const tick = () => {
+      left--;
+      const m = Math.floor(left / 60), s = left % 60;
+      $('#marchState').textContent = `踏步中… 还剩 ${m}:${String(s).padStart(2, '0')} · 约 ${Math.round((20 * 60 - left) / 60 * 100)} 步`;
+      if (left <= 0) {
+        clearInterval(this.marchTimer); this.marchTimer = null;
+        const r = DB.rec(); r.steps = (r.steps || 0) + 2000;
+        $('#stepsInput').value = r.steps;
+        $('#marchBtn').innerHTML = icon('steps') + '原地踏步 20 分钟';
+        DB.save(); this.renderHero(); this.renderSteps();
+        this.toast('踏步完成 +2000 步'); Timer.buzz([100, 60, 100, 60, 200]);
+        $('#marchState').textContent = `完成，已 +2000 步，今天共 ${r.steps} 步`;
+      }
+    };
+    tick();
+    $('#marchBtn').innerHTML = icon('clock') + '取消踏步';
+    this.marchTimer = setInterval(tick, 1000);
+  },
+
+  /* ── 设置 ── */
+  renderSettings() {
+    const s = DB.data.settings;
+    $('#setStartDate').value = s.startDate;
+    $('#setDays').value = s.planDays;
+    $('#setStart').value = s.startWeight;
+    $('#setHeight').value = s.heightCm || 178;
+    $('#setAge').value = s.age || 20;
+    $('#setSex').value = s.sex || 'm';
+    $('#setKcal').value = s.targetKcal || 1000;
+    $('#setProtein').value = s.targetProtein || 150;
+    $('#setGoal').value = s.goalLoss;
+    $('#setRef').value = s.refLoss;
+    $('#setSteps').value = s.stepGoal;
+    $('#setCoffee1').value = s.coffee1;
+    $('#setCoffee2').value = s.coffee2;
+    $('#setWake').value = s.wakeTime;
+    $('#setSleep').value = s.sleepTime;
+    /* 训练时间：预设里能对上就用预设，对不上走「自定义」 */
+    const tt = s.trainTime || '19:00';
+    const sel = $('#setTrainTime');
+    const presets = (sel && sel.options) ? Array.from(sel.options).map(o => o.value) : [];
+    if (presets.includes(tt)) { sel.value = tt; $('#trainTimeCustomRow').style.display = 'none'; }
+    else { sel.value = 'custom'; $('#trainTimeCustomRow').style.display = ''; $('#setTrainTimeCustom').value = tt; }
+
+    const sw = $('#swRemind');
+    if (sw) sw.className = 'sw' + (s.remindOn ? ' on' : '');
+    const ns = $('#notifyState');
+    if (ns) {
+      const p = Notification_.permission();
+      ns.innerHTML = !Notification_.supported() ? '<span style="color:var(--bad)">不支持</span>'
+        : !Notification_.secure() ? '<span style="color:var(--warn)">需要 HTTPS</span>'
+        : p === 'granted' ? '<span style="color:var(--accent)">已授权</span>'
+        : p === 'denied' ? '<span style="color:var(--bad)">被拒绝</span>'
+        : '<span style="color:var(--warn)">未授权</span>';
+    }
+    const rh = $('#remindPermissionHint');
+    if (rh) rh.innerHTML = Notification_.secure() ? ''
+      : '当前是本地预览地址（http），浏览器不允许发系统通知。<b>部署到 https 之后这里就能一键开启。</b>在那之前，App 内的到点提醒、震动、顶部横幅都正常工作 —— 只要 App 开着。';
+
+    $('#dLocalCount').textContent = Object.keys(DB.data.records).length + ' 天';
+    const b = localStorage.getItem(DB.BACKUP_KEY);
+    $('#dLastBackup').textContent = b ? new Date(JSON.parse(b).savedAt).toLocaleString('zh-CN') : '—';
+    $('#dAutoBtn').textContent = s.autoBackup ? '已开启' : '已关闭';
+    $('#dAutoBtn').className = 'btn ghost' + (s.autoBackup ? '' : ' danger');
+
+    $('#portionGuide').innerHTML = PORTION_GUIDE.map(p =>
+      `<details><summary>${p.q}</summary><div class="body">${p.a}</div></details>`).join('');
+  },
+
+  saveSettings(silent) {
+    const s = DB.data.settings;
+    if (!silent) {
+      const st = Number($('#setStart').value), gl = Number($('#setGoal').value);
+      if (st > 20 && st < 300) s.startWeight = st;
+      if (gl > 0 && gl < 60) s.goalLoss = gl;
+      const h = Number($('#setHeight').value); if (h > 120 && h < 230) s.heightCm = h;
+      const ag = Number($('#setAge').value); if (ag > 10 && ag < 90) s.age = ag;
+      if ($('#setSex').value) s.sex = $('#setSex').value;
+      const kc = Number($('#setKcal').value); if (kc >= 600 && kc < 5000) s.targetKcal = kc;
+      const pr = Number($('#setProtein').value); if (pr >= 40 && pr < 400) s.targetProtein = pr;
+      if (Number($('#setRef').value) > 0) s.refLoss = Number($('#setRef').value);
+      if (Number($('#setDays').value) > 0) s.planDays = Number($('#setDays').value);
+      if ($('#setStartDate').value) s.startDate = $('#setStartDate').value;
+      if (Number($('#setSteps').value) > 0) s.stepGoal = Number($('#setSteps').value);
+      if ($('#setCoffee1').value) s.coffee1 = $('#setCoffee1').value;
+      if ($('#setCoffee2').value) s.coffee2 = $('#setCoffee2').value;
+      if ($('#setWake').value) s.wakeTime = $('#setWake').value;
+      if ($('#setSleep').value) s.sleepTime = $('#setSleep').value;
+      /* 训练时间：选了自定义就读第二个输入框 */
+      const selTT = $('#setTrainTime') ? $('#setTrainTime').value : '';
+      if (selTT === 'custom') {
+        const c = $('#setTrainTimeCustom') ? $('#setTrainTimeCustom').value : '';
+        if (c) s.trainTime = c;
+      } else if (selTT) s.trainTime = selTT;
+    }
+    DB.save(true);
+    Reminder.schedule();
+    this.renderAll();
+    if (!silent) this.toast('已保存，历史记录没动');
+  },
+  toggleAutoBackup() { DB.data.settings.autoBackup = !DB.data.settings.autoBackup; DB.save(true); this.renderSettings(); },
+
+  exportJSON() {
+    const blob = new Blob([JSON.stringify(DB.data, null, 2)], { type:'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `减脂打卡备份-${todayKey()}.json`;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 3000);
+    this.toast('已导出，请存好这个文件');
+  },
+  importJSON() {
+    const inp = document.createElement('input');
+    inp.type = 'file'; inp.accept = '.json,application/json';
+    inp.onchange = () => {
+      const f = inp.files[0]; if (!f) return;
+      const rd = new FileReader();
+      rd.onload = () => { try { this.mergeRemote(JSON.parse(rd.result)); this.toast('导入成功，已合并'); } catch (e) { this.toast('文件格式不对'); } };
+      rd.readAsText(f);
+    };
+    inp.click();
+  },
+
+  /* 合并：同一天保留完成度更高的那条，本地历史永不丢 */
+  mergeRemote(remote) {
+    if (!remote || !remote.records) return this.toast('这份数据里没有打卡记录');
+    if (!confirm('把这份数据与本地记录合并？\n同一天会保留完成度更高的那条，本地不会丢。')) return;
+    const local = DB.data.records;
+    let added = 0, kept = 0;
+    for (const k of Object.keys(remote.records)) {
+      if (!local[k]) { local[k] = remote.records[k]; added++; continue; }
+      const rs = (() => { const bak = DB.data.records; DB.data.records = remote.records; const v = DB.score(k); DB.data.records = bak; return v; })();
+      if (rs > DB.score(k)) { local[k] = remote.records[k]; added++; } else kept++;
+    }
+    if (remote.settings) {
+      Object.keys(remote.settings).forEach(k => {
+        const v = remote.settings[k];
+        if (v !== '' && v != null && k !== 'github' && k !== 'gist') DB.data.settings[k] = v;
+      });
+    }
+    DB.save(true); this.renderAll();
+    this.toast(`合并完成：新增 ${added} 天，保留本地 ${kept} 天`);
+  },
+};
+
+/* ════════════════════════════════════════════════════════════════
+   9 · 星空（生态感来源，不用图片）
+   ════════════════════════════════════════════════════════════════ */
+const Sky = {
+  cv: null, g: null, stars: [], w: 0, h: 0, t: 0, raf: null, shooting: null, alive: false,
+
+  init() {
+    this.cv = $('#sky'); if (!this.cv) return;
+    this.resize();
+    window.addEventListener('resize', () => this.resize());
+    this.build();
+    this.play();
+  },
+  resize() {
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    this.w = window.innerWidth; this.h = window.innerHeight;
+    this.cv.width = this.w * dpr; this.cv.height = this.h * dpr;
+    this.cv.style.width = this.w + 'px'; this.cv.style.height = this.h + 'px';
+    this.g = this.cv.getContext('2d');
+    this.g.setTransform(dpr, 0, 0, dpr, 0, 0);
+    this.build();
+  },
+  build() {
+    const n = Math.round(clamp(this.w * this.h / 9000, 40, 150));
+    this.stars = Array.from({ length:n }, () => {
+      const depth = Math.random();
+      return {
+        x: Math.random() * this.w, y: Math.random() * this.h,
+        r: 0.35 + depth * 1.25,
+        a: 0.12 + depth * 0.5,
+        vx: (Math.random() - .5) * (0.006 + depth * 0.02),
+        vy: (Math.random() - .5) * (0.006 + depth * 0.02),
+        ph: Math.random() * Math.PI * 2,
+        sp: 0.4 + Math.random() * 1.1,
+      };
+    });
+  },
+  play() { if (this.alive) return; this.alive = true; this.loop(); },
+  pause() { this.alive = false; cancelAnimationFrame(this.raf); },
+  loop() {
+    if (!this.alive) return;
+    this.t += 0.016;
+    const g = this.g; if (!g) return;
+    g.clearRect(0, 0, this.w, this.h);
+
+    for (const s of this.stars) {
+      s.x += s.vx; s.y += s.vy;
+      if (s.x < -2) s.x = this.w + 2; if (s.x > this.w + 2) s.x = -2;
+      if (s.y < -2) s.y = this.h + 2; if (s.y > this.h + 2) s.y = -2;
+      const tw = 0.62 + 0.38 * Math.sin(this.t * s.sp + s.ph);
+      g.beginPath(); g.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+      g.fillStyle = `rgba(214,228,245,${(s.a * tw).toFixed(3)})`;
+      g.fill();
+    }
+    /* 偶尔一颗流星 */
+    if (!this.shooting && Math.random() < 0.0022) {
+      this.shooting = { x: Math.random() * this.w * .6 + this.w * .2, y: Math.random() * this.h * .35,
+                        vx: 2.6 + Math.random() * 1.4, vy: 1.1 + Math.random() * .7, life: 1 };
+    }
+    if (this.shooting) {
+      const m = this.shooting;
+      const grd = g.createLinearGradient(m.x, m.y, m.x - m.vx * 15, m.y - m.vy * 15);
+      grd.addColorStop(0, `rgba(214,236,245,${(0.6 * m.life).toFixed(3)})`);
+      grd.addColorStop(1, 'rgba(214,236,245,0)');
+      g.strokeStyle = grd; g.lineWidth = 1.4; g.lineCap = 'round';
+      g.beginPath(); g.moveTo(m.x, m.y); g.lineTo(m.x - m.vx * 15, m.y - m.vy * 15); g.stroke();
+      m.x += m.vx * 2.6; m.y += m.vy * 2.6; m.life -= 0.018;
+      if (m.life <= 0 || m.x > this.w + 40 || m.y > this.h + 40) this.shooting = null;
+    }
+    this.raf = requestAnimationFrame(() => this.loop());
+  },
+};
+
+/* ════════════════════════════════════════════════════════════════
+   启动
+   ════════════════════════════════════════════════════════════════ */
+window.addEventListener('load', () => { Sky.init(); App.init(); });
+window.addEventListener('resize', () => {
+  clearTimeout(window._rz);
+  window._rz = setTimeout(() => { if (App.view === 'weight') App.drawChart(); }, 180);
+});
+/* 平板支撑时点圆环 = 手动停并记录实际秒数 */
+document.addEventListener('click', e => {
+  if (App.view === 'train' && Timer.countUp && Timer.running && e.target.closest('#tRing')) Timer.stopCountUp();
+});
+</script>
+</body>
+</html>
