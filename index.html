@@ -111,7 +111,7 @@ button{cursor:pointer}
 #env .vig{position:absolute;inset:0;
   background:radial-gradient(120% 78% at 50% 0%,transparent 42%,rgba(0,0,0,.55) 100%)}
 
-#app{position:relative;z-index:1;max-width:600px;margin:0 auto;padding:0 var(--s4) 156px}
+#app{position:relative;z-index:1;max-width:600px;margin:0 auto;padding:0 var(--s4) 92px}
 
 /* ════════════ 图标（内联 SVG，不用 emoji） ════════════
    ⚠️ 这个选择器必须覆盖图标里用到的**所有**形状标签。
@@ -135,7 +135,8 @@ button{cursor:pointer}
 .view.on>*:nth-child(7){animation-delay:.27s}
 .view.on>*:nth-child(8){animation-delay:.315s}
 .view.on>*:nth-child(n+9){animation-delay:.36s}
-@keyframes rise{from{opacity:0;transform:translate3d(0,16px,0)}to{opacity:1;transform:none}}
+/* 视图入场：只做透明度和轻微位移，不做缩放 —— 缩放会让用户觉得字体在变大变小 */
+@keyframes rise{from{opacity:0;transform:translate3d(0,10px,0)}to{opacity:1;transform:none}}
 
 /* ════════════ 顶栏：锁死在屏幕顶部，滚动时不走 ════════════ */
 .top{
@@ -224,6 +225,13 @@ button{cursor:pointer}
 .tlBlock{padding:var(--s6) 0 var(--s2) 58px;
   font-size:var(--f-3xs);letter-spacing:.22em;text-transform:uppercase;color:var(--dim);font-weight:650}
 .tlBlock:first-child{padding-top:var(--s1)}
+/* 每个时段右侧的水分点阵 —— 点一下加一杯；咖啡和牛奶也算进总液体量 */
+.tlBlock .water{display:flex;align-items:center;gap:5px;margin-left:auto;padding-right:var(--s3)}
+.tlBlock .wcup{width:9px;height:9px;border-radius:50%;border:1.3px solid rgba(124,192,255,.45);
+  background:transparent;padding:0;flex:none;transition:all var(--d2) var(--e-out)}
+.tlBlock .wcup.full{background:var(--ink-400);border-color:transparent}
+.tlBlock .wcup:active{opacity:.6}
+.tlBlock .wlabel{font-size:8.5px;color:var(--dim);letter-spacing:.04em;text-transform:none;margin-left:2px}
 .tlRow{display:grid;grid-template-columns:44px minmax(0,1fr);
   column-gap:12px;align-items:baseline;
   padding:12px var(--s3);width:100%;text-align:left;
@@ -258,10 +266,16 @@ button{cursor:pointer}
 @keyframes halo{0%,100%{box-shadow:0 0 0 0 rgba(79,214,196,.32)}55%{box-shadow:0 0 0 4px rgba(79,214,196,0)}}
 .tlSub{font-size:var(--f-2xs);color:var(--dim);margin-top:4px;line-height:1.6;
   overflow-wrap:anywhere;overflow:hidden}
-.tlRow.done .tlName{color:var(--dim);font-weight:500}
-.tlRow.done .tlName .nm{text-decoration:line-through;text-decoration-thickness:1px;
-  text-decoration-color:rgba(200,215,235,.18)}
-.tlRow.done .tlSub{opacity:.36}
+/* ⚠️ 勾选与否必须一眼分清：
+   未勾选 = 空心环 + 明亮的标题 + 右侧无标记
+   已勾选 = 实心青色圆点 + 标题变暗加删除线 + 右侧一个青色对勾 */
+.tlRow.done .tlName{color:var(--faint);font-weight:500}
+.tlRow.done .tlName .nm{text-decoration:line-through;text-decoration-thickness:1.5px;
+  text-decoration-color:rgba(200,215,235,.35)}
+.tlRow.done .tlName .i{opacity:.5}
+/* 已完成的行不加背景色 —— 加了反而比未完成更显眼，和「该quiet下去」相反 */
+.tlRow.done{background:none}
+.tlRow.done .tlSub{opacity:.4}
 /* 右侧状态：绝对定位在行的右内侧，不再占网格列 */
 .tlMark{position:absolute;right:var(--s3);top:12px;
   font-size:var(--f-2xs);color:var(--dim);white-space:nowrap;
@@ -294,7 +308,7 @@ button{cursor:pointer}
   transition:opacity var(--d2) var(--e-out),transform var(--d2) var(--e-spring)}
 .cup.full{border-color:transparent}
 .cup.full::after{opacity:1;transform:none}
-.cup:active{transform:scale(.84)}
+.cup:active{opacity:.6}
 
 /* ════════════ 极简单行：输入 + 标签并排 ════════════ */
 .rowline{display:flex;align-items:center;justify-content:space-between;gap:var(--s3);min-height:34px}
@@ -392,13 +406,13 @@ button{cursor:pointer}
 .chartBox{position:relative;width:100%;height:216px}
 canvas{display:block;width:100%;height:100%}
 
-/* ════════════ 底部导航 ════════════ */
-.tabbar{position:fixed;left:50%;transform:translateX(-50%);
-  bottom:calc(env(safe-area-inset-bottom) + 14px);
-  width:min(580px - 32px,100% - 32px);z-index:50;
-  display:grid;grid-template-columns:repeat(6,1fr);gap:3px;padding:9px;
-  background:rgba(10,14,22,.78);border:1px solid var(--line);border-radius:var(--r4);
-  box-shadow:var(--shadow-2);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur)}
+/* ════════════ 底部导航 ════════════
+   贴屏幕底边、撑满宽度 —— 不做悬浮小胶囊。手指好按，也不会压住内容。 */
+.tabbar{position:fixed;left:0;right:0;bottom:0;z-index:50;
+  display:grid;grid-template-columns:repeat(6,1fr);gap:0;
+  padding:7px 4px calc(env(safe-area-inset-bottom) + 7px);
+  background:rgba(9,12,18,.93);border-top:1px solid var(--line);
+  backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur)}
 .tab{display:flex;flex-direction:column;align-items:center;gap:6px;padding:11px 4px;
   border-radius:var(--r2);color:var(--dim);font-size:var(--f-3xs);font-weight:600;
   letter-spacing:.08em;position:relative;transition:color var(--d2) var(--e-out)}
@@ -407,7 +421,7 @@ canvas{display:block;width:100%;height:100%}
 .tab.on .i{color:var(--accent)}
 .tab.on::before{content:"";position:absolute;inset:0;border-radius:var(--r2);
   background:var(--surface-hi);z-index:-1;animation:tabin var(--d2) var(--e-spring)}
-@keyframes tabin{from{opacity:0;transform:scale(.86)}to{opacity:1;transform:none}}
+@keyframes tabin{from{opacity:0}to{opacity:1}}
 
 /* ════════════ 弹层 / 提示 ════════════ */
 .sheet{position:fixed;inset:0;z-index:80;display:none}
@@ -551,9 +565,8 @@ details .body b{color:var(--text);font-weight:650}
 
   <!-- ══════════════ 今日 ══════════════ -->
   <section class="view on" id="v-today">
-    <div id="lateBar" class="banner" style="display:none" onclick="App.openLate()"></div>
-    <div id="overdueBadge" class="banner" style="display:none" onclick="App.scrollToTimeline()"></div>
-    <div id="notStartedBar" class="banner info" style="display:none"></div>
+    <!-- 顶部不再放任何横幅条：到点提醒 / 距离开始 都改成时间轴里的内联提示，
+         用户要的是一眼看懂今天做什么，不是先看三条通知 -->
 
     <header class="top">
       <div>
@@ -606,15 +619,14 @@ details .body b{color:var(--text);font-weight:650}
       <div class="hint mt4" id="mealHint"></div>
     </div>
 
+    <!-- 水分并进时间轴了（见每个时段右侧的点阵）；这里只留步数 -->
     <div class="card">
       <div class="chead">
-        <div class="ctitle"><span class="badge ink"><span class="i" data-i="water"></span></span>补水 · 步数</div>
-        <span class="tag" id="cupCount">0 / 8</span>
-      </div>
-      <div class="cups" id="cups"></div>
-      <div class="rowline mt4">
-        <input id="stepsInput" type="number" inputmode="numeric" placeholder="走了多少步" class="plainIn">
+        <div class="ctitle"><span class="badge ink"><span class="i" data-i="steps"></span></span>步数</div>
         <span class="tag" id="stepTag">—</span>
+      </div>
+      <div class="rowline">
+        <input id="stepsInput" type="number" inputmode="numeric" placeholder="走了多少步" class="plainIn">
       </div>
       <div class="rowline mt3">
         <button class="btn ghost" onclick="App.startMarch()" id="marchBtn">
@@ -1069,7 +1081,7 @@ function paintIcons(root) {
 const EXERCISES = [
   { id:'squat', name:'深蹲',     secs:45, unit:'个', base:15, tip:'像往后坐椅子，膝盖跟脚尖方向' },
   { id:'push',  name:'俯卧撑',   secs:45, unit:'个', base:10, tip:'身体一条直线，胸真的沉下去' },
-  { id:'bird',  name:'鸟狗式',   secs:45, unit:'次', base:10, tip:'对侧手脚伸直，身体不歪' },
+  { id:'kick',  name:'站姿后踢腿', short:'后踢腿', secs:45, unit:'次', base:12, tip:'扶墙站直，夹臀抬腿，别甩腰' },
   { id:'plank', name:'平板支撑', secs:35, unit:'秒', base:30, tip:'收腹夹臀，别塌腰别憋气', countUp:true },
 ];
 const REST = 60, WARMUP = 120, COOLDOWN = 120;
@@ -1330,6 +1342,36 @@ const DB = {
   /* 今天的顺延分钟数（起晚了用）*/
   shiftMinutes() { const r = this.get(); return (r && r.shift) || 0; },
 
+  /* ══ 水分：拆到每个时段里，跟日程一起完成。
+        咖啡、牛奶都算进当天的总液体量（白水 + 咖啡 + 牛奶 ≈ 2.4L）。
+        各时段目标杯数之和 = 8 杯（每杯 300ml）。 ══ */
+  WATER_BLOCKS: {
+    '上午': { cups:3, when:'起床 1 杯 + 早餐 1 杯（牛奶/豆浆）+ 咖啡 1 杯' },
+    '中午': { cups:3, when:'午餐 1 杯 + 咖啡 1 杯 + 菠菜后 1 杯' },
+    '下午': { cups:2, when:'加餐 1 杯 + 训练前后 1 杯' },
+    '晚上': { cups:0, when:'晚餐那勺蛋白粉用 300ml 水冲 —— 这就是最后一杯' },
+    '睡前': { cups:0, when:'20:00 后停止喝水' },
+  },
+  waterCupsFor(block) { const b = this.WATER_BLOCKS[block]; return b ? b.cups : 0; },
+
+  /* 时段标题右侧的水分点阵：点一下加一杯。咖啡 / 牛奶也算进总液体量。
+     ⚠️ 这个方法必须放在 DB 里 —— renderTimeline 是 DB 的方法，this 指向 DB。 */
+  waterBar(block, r) {
+    const need = this.waterCupsFor(block);
+    if (!need) return '';
+    const done = clamp(r.water || 0, 0, 8);
+    const order = ['上午','中午','下午','晚上','睡前'];
+    const idx = order.indexOf(block);
+    let before = 0;
+    for (let i = 0; i < idx; i++) before += this.waterCupsFor(order[i]);
+    const inBlock = clamp(done - before, 0, need);
+    let cups = '';
+    for (let i = 0; i < need; i++) {
+      cups += `<button class="wcup${i < inBlock ? ' full' : ''}" onclick="App.bumpWater(event,${before + i + 1})" aria-label="喝一杯水"></button>`;
+    }
+    return `<span class="water">${cups}</span>`;
+  },
+
   timeline(shiftMin) {
     const s = this.data.settings;
     const shift = shiftMin != null ? shiftMin : this.shiftMinutes();
@@ -1343,7 +1385,7 @@ const DB = {
 
     add({ id:'train', time:s.trainTime || '19:00', ic:'dumbbell', kind:'action', go:'train',
       name:'训练 12 分钟', sub:'4 个动作 · 自动计时',
-      tip:'深蹲 → 俯卧撑 → 鸟狗式 → 平板支撑。每个动作 1 组，组间歇 60 秒，全程自动衔接。<br><br><b>时机</b>：关掉电脑后立刻做 —— 别先坐下、别先刷手机、别先吃饭。一旦坐下来，这 12 分钟就永远没有了。<br><br>累到不行那天，<b>只做 10 个深蹲，30 秒也算完成</b>。保住「我还是在练的人」这条线，比练满 12 分钟重要得多。<br><br>训练时间可以在设置页改。' });
+      tip:'深蹲 → 俯卧撑 → 站姿后踢腿 → 平板支撑。每个动作 1 组，组间歇 60 秒，全程自动衔接。<br><br><b>时机</b>：关掉电脑后立刻做 —— 别先坐下、别先刷手机、别先吃饭。一旦坐下来，这 12 分钟就永远没有了。<br><br>累到不行那天，<b>只做 10 个深蹲，30 秒也算完成</b>。保住「我还是在练的人」这条线，比练满 12 分钟重要得多。<br><br>训练时间可以在设置页改。' });
     add({ id:'m1', time:'08:30', ic:'meal', kind:'check', group:'meals',
       name:'早餐', sub:'水煮蛋 2 个 · 蛋白粉',
       tip:'水煮蛋 2 个；蛋白粉 1 勺，<b>用家里那盒牛奶冲，250ml 就行</b>。复合维生素 1 片。<br><br><b>牛奶怎么选</b>：全脂奶 250ml ≈ 165 kcal / 8g 蛋白；<b>脱脂奶 250ml ≈ 85 kcal / 8.5g 蛋白</b> —— 同样是 8g 蛋白，脱脂省 80 kcal。有脱脂就买脱脂，没有就全脂，别为这个纠结。<br><br><b>蛋白粉会不会长胖</b>：一勺约 100 kcal / 25g 蛋白，它就是蛋白质，跟鸡胸里的同一种东西 —— <b>热量赤字下不会让你长胖</b>。<br>⚠️ 唯一要停的情况：包装上每 100g 蛋白质 <b>低于 30g</b>，那是「增肌粉」（加了麦芽糊精和糖），那个才会胖。' });
@@ -2067,7 +2109,7 @@ const Timer = {
   build() {
     const t = [{ label:'热身', hint:'原地踏步，活动关节', secs:WARMUP, kind:'warm' }];
     EXERCISES.forEach((ex, i) => {
-      t.push({ label:ex.name, hint:`目标 ${App.exTarget(ex)} ${ex.unit}`, secs:ex.secs, kind:'work', ex });
+      t.push({ label:ex.short || ex.name, hint:`目标 ${App.exTarget(ex)} ${ex.unit}`, secs:ex.secs, kind:'work', ex });
       if (i < EXERCISES.length - 1) t.push({ label:'休息', hint:`下一个：${EXERCISES[i + 1].name}`, secs:REST, kind:'rest' });
     });
     t.push({ label:'拉伸', hint:'放松，今天完成', secs:COOLDOWN, kind:'cool' });
@@ -2169,7 +2211,7 @@ const App = {
     /* 每分钟只刷新「会随时间变化」的部分，不再整页重渲染（滑动的卡顿来源之一）*/
     setInterval(() => {
       if (this.view !== 'today') return;
-      this.renderHero(); this.renderCups(); this.renderSteps();
+      this.renderHero(); this.renderSteps();
       if (this.lateInfo()) this.renderLate();
     }, 60000);
     setInterval(() => Reminder.check(), 30000);
@@ -2257,19 +2299,7 @@ const App = {
     const dayNum = clamp(rawDay, 1, s.planDays);
     $('#dayNum').textContent = notStarted ? `还有 ${1 - rawDay} 天` : `DAY ${dayNum}`;
 
-    const nb = $('#notStartedBar');
-    if (notStarted) {
-      const d = new Date(s.startDate + 'T00:00:00');
-      nb.style.display = '';
-      nb.innerHTML = `${icon('orbit')}<span><b>${d.getMonth() + 1} 月 ${d.getDate()} 日</b> 开始 · 距规划开始还有 <b>${1 - rawDay}</b> 天</span><span class="go">改日期</span>`;
-      nb.onclick = () => this.go('settings');
-    } else nb.style.display = 'none';
-
-    this.renderCups();
     this.renderHero();
-    this.renderSteps();
-    this.renderRecover();
-    this.renderLate();
     this.renderTimeline();
 
     const r = DB.rec();
@@ -2306,7 +2336,7 @@ const App = {
         const seg = list.slice(idxs[0], idxs[idxs.length - 1] + 1);
         const bT = seg.filter(x => x.kind === 'check').length;
         const bD = seg.filter(x => x.kind === 'check' && this.isDone(x, r)).length;
-        html += `<div class="tlBlock">${it.block}</div>`;
+        html += `<div class="tlBlock">${it.block}${DB.waterBar(it.block, r)}</div>`;
         lastBlock = it.block;
       }
       const done = it.kind === 'check' && this.isDone(it, r);
@@ -2352,6 +2382,16 @@ const App = {
       : `今天中午的蛋白：<b>${PROTEIN_ROTATION[todayIdx]}</b>　·　鸡胸和虾隔天换着来`;
   },
 
+
+  /* 点时段里的水杯：把总杯数设到 n（再点同一杯则退回 n-1） */
+  bumpWater(ev, n) {
+    if (ev) ev.stopPropagation();
+    const r = DB.rec();
+    r.water = (r.water === n) ? n - 1 : n;
+    DB.save(); this.renderTimeline(); this.renderHero();
+    if (r.water >= 8) this.toast('今天的水喝够了');
+  },
+
   isDone(it, r) {
     if (it.group === 'meals') return !!(r.meals && r.meals[it.id]);
     if (it.group === 'misc')  return !!(r.misc  && r.misc[it.id]);
@@ -2392,19 +2432,7 @@ const App = {
        <button class="btn wide mt2" onclick="App.listenFixed('${it.id}');App.closeSheet()">今天不再提醒这一项</button>`);
   },
 
-  /* ── 补水 / 步数 ── */
-  renderCups() {
-    const r = DB.rec();
-    $('#cups').innerHTML = Array.from({ length:8 }, (_, i) =>
-      `<button class="cup ${i < (r.water || 0) ? 'full' : ''}" onclick="App.setWater(${i + 1})" aria-label="第 ${i + 1} 杯"></button>`).join('');
-    $('#cupCount').textContent = `${r.water || 0} / 8`;
-  },
-  setWater(n) {
-    const r = DB.rec();
-    r.water = (r.water === n) ? n - 1 : n;
-    DB.save(); this.renderCups(); this.renderHero(); Timer.buzz(12);
-    if (r.water >= 8) this.toast('今天的水喝够了');
-  },
+  /* ── 步数（补水已经移到时间轴各时段里了） ── */
   renderSteps() {
     const s = DB.data.settings, r = DB.rec();
     const v = r.steps || 0;
@@ -2441,16 +2469,10 @@ const App = {
   },
 
   /* ── 到点未完成的横幅 ── */
-  showOverdueBadge(due) {
-    const el = $('#overdueBadge');
-    if (!el) return;
-    if (!due || !due.length) { el.style.display = 'none'; return; }
-    const names = due.slice(0, 3).map(x => x.name).join(' · ');
-    const more = due.length > 3 ? ` 等 ${due.length} 项` : '';
-    el.style.display = '';
-    el.innerHTML = `${icon('alert')}<span>到点还没做：<b>${names}</b>${more}</span><span class="go">去打卡</span>`;
-  },
-  hideOverdueBadge() { const el = $('#overdueBadge'); if (el) el.style.display = 'none'; },
+  /* ══ 顶部横幅全部取消（用户要求：不要通知条堆在顶上）
+        到点未完成 → 时间轴那一行自己变黄 + 左侧小竖条，不再另开横幅 ══ */
+  showOverdueBadge() { /* 已改为在时间轴内联显示，见 renderTimeline 的 overdue 状态 */ },
+  hideOverdueBadge() {},
   scrollToTimeline() {
     const el = $('#timeline');
     if (el) el.scrollIntoView({ behavior:'smooth', block:'start' });
@@ -2470,17 +2492,9 @@ const App = {
     return { first, lateMin: toMin(hhmm) - toMin(first.time) };
   },
 
-  renderLate() {
-    const el = $('#lateBar');
-    if (!el) return;
-    const s = DB.data.settings;
-    const info = (diffDays(s.startDate, todayKey()) + 1 >= 1) ? this.lateInfo() : null;
-    if (!info || this._lateOff === todayKey()) { el.style.display = 'none'; return; }
-    const h = Math.floor(info.lateMin / 60), m = info.lateMin % 60;
-    const ago = h ? `${h} 小时 ${m} 分钟` : `${m} 分钟`;
-    el.style.display = '';
-    el.innerHTML = `${icon('clock')}<span>「${info.first.name}」已经过了 <b>${ago}</b> —— 起晚了？点这里处理</span><span class="go">处理</span>`;
-  },
+  /* 起晚了的横幅也取消 —— 改成时间轴里那一行的内联标记（见 renderTimeline）。
+     openLate() 还保留，从时间轴那一行点进去。 */
+  renderLate() { /* 已在时间轴内联显示 */ },
 
   openLate() {
     const info = this.lateInfo();
@@ -2963,7 +2977,7 @@ const App = {
     $('#exGuide').innerHTML = [
       { n:'深蹲', b:'双脚与肩同宽，脚尖稍朝外。像往后坐椅子一样把屁股往后下方坐，膝盖跟着脚尖方向走。蹲到大腿接近与地面平行，用脚跟发力站起，站直时夹一下屁股。<br><b>常见错误：</b>膝盖往内夹（想象把膝盖往小脚趾方向推）、脚跟离地、蹲得太浅。' },
       { n:'俯卧撑', b:'先选难度：撑墙 → 跪姿 → 上斜（撑床沿）→ 地面标准。手比肩略宽，身体从头到脚一条直线，收腹夹臀。往下时胸部真的沉下去，手肘往身体后方斜 45°。<br><b>常见错误：</b>塌腰、撅屁股、只点头不降身体。' },
-      { n:'鸟狗式', b:'四足跪姿，手在肩下、膝在髋下。同时伸直右臂和左腿，身体保持水平不歪，停 2 秒，收回，换另一侧。左右各算 1 次。<br><b>常见错误：</b>腿抬太高导致塌腰 —— 抬到和身体齐平就够，重点是「不歪」。' },
+      { n:'站姿后踢腿', b:'<b>站着做，不用趴地上。</b>侧身扶墙或扶椅背，身体站直。<br>一条腿向后伸直抬起，<b>抬到和身体差不多齐平就停 1~2 秒</b>，感受臀部收紧，慢慢放回。左右各算 1 次。<br><b>常见错误：</b>甩腰借力（要夹紧屁股，用臀发力不是用腰）、抬太高导致腰反弓、身体跟着转。<br>做腻了可以换成：徒手深蹲慢放（3 秒下 1 秒上）、椅子深蹲（坐一下再站起）。' },
       { n:'平板支撑', b:'手肘在肩膀正下方，身体从头到脚一条直线，收紧腹部和屁股，正常呼吸别憋气。<br><b>常见错误：</b>塌腰（最常见，会腰痛）、抬臀太高、憋气。宁可时间短，也别塌腰。' },
     ].map(x => `<details><summary>${x.n}</summary><div class="body">${x.b}</div></details>`).join('');
   },
