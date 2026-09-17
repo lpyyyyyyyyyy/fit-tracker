@@ -411,14 +411,14 @@ canvas{display:block;width:100%;height:100%}
 /* ════════════ 底部导航 ════════════
    贴屏幕底边、撑满宽度 —— 不做悬浮小胶囊。手指好按，也不会压住内容。 */
 .tabbar{position:fixed;left:0;right:0;bottom:0;z-index:50;
-  display:grid;grid-template-columns:repeat(6,1fr);gap:0;
-  padding:7px 4px calc(env(safe-area-inset-bottom) + 7px);
+  display:grid;grid-template-columns:repeat(5,1fr);gap:0;   /* M3 / iOS 规范：Tab 不超过 5 个 */
+  padding:9px 4px calc(env(safe-area-inset-bottom) + 9px);
   background:rgba(9,12,18,.93);border-top:1px solid var(--line);
   backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur)}
-.tab{display:flex;flex-direction:column;align-items:center;gap:6px;padding:11px 4px;
-  border-radius:var(--r2);color:var(--dim);font-size:var(--f-3xs);font-weight:600;
+.tab{display:flex;flex-direction:column;align-items:center;gap:4px;padding:6px 4px;
+  border-radius:var(--r2);color:var(--dim);font-size:12px;font-weight:600;   /* M3：标签 12sp */
   letter-spacing:.08em;position:relative;transition:color var(--d2) var(--e-out)}
-.tab .i{font-size:20px;transition:color var(--d2) var(--e-out)}
+.tab .i{font-size:23px;transition:color 150ms ease-out}   /* M3：图标 24dp */
 .tab.on{color:var(--text)}
 .tab.on .i{color:var(--accent)}
 .tab.on::before{content:"";position:absolute;inset:0;border-radius:var(--r2);
@@ -439,6 +439,16 @@ canvas{display:block;width:100%;height:100%}
 @keyframes up{from{transform:translateY(26px);opacity:.5}to{transform:none;opacity:1}}
 .sheet .grip{width:38px;height:4px;border-radius:2px;background:var(--line-hi);margin:-8px auto var(--s5)}
 .sheet h3{margin:0 0 var(--s3);font-size:var(--f-lg);font-weight:600;letter-spacing:-.01em}
+/* 今日页顶部的训练入口条 —— 一个不抖的整行按压目标 */
+.trainEntry{display:flex;align-items:center;gap:10px;width:100%;text-align:left;
+  padding:12px var(--s3);margin-bottom:var(--s2);border-radius:var(--r2);
+  background:rgba(200,215,235,.05);border:1px solid var(--line);
+  transition:background 120ms ease-out}
+.trainEntry:active{background:rgba(200,215,235,.1)}
+.trainEntry .i{font-size:16px;color:var(--accent);flex:none}
+.trainEntry .te-t{flex:1;min-width:0;font-size:var(--f-sm);font-weight:600;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
 /* ════════════ 弹层里的「做法」区块 ════════════ */
 .howto{background:rgba(200,215,235,.045);border-radius:var(--r2);
   padding:var(--s4);margin:0 0 var(--s3)}
@@ -617,6 +627,13 @@ details .body b{color:var(--text);font-weight:650}
         <div class="ctitle"><span class="badge"><span class="i" data-i="orbit"></span></span>今日时间轴</div>
         <button class="tag acc" id="timelinePill" onclick="App.toggleSub()">—</button>
       </div>
+      <!-- 训练入口放在时间轴上面：底部 Tab 只放 5 个（M3 / iOS 规范上限），
+           训练收进今日页，而且必须在首屏就能看到 -->
+      <button class="trainEntry" onclick="App.go('train')">
+        <span class="i" data-i="dumbbell"></span>
+        <span class="te-t">今天的 12 分钟训练</span>
+        <span class="tag" id="trainTag">开始 ›</span>
+      </button>
       <div id="timeline" class="tl hideSub"></div>
       <div class="hint mt4" id="mealHint"></div>
     </div>
@@ -1012,7 +1029,6 @@ details .body b{color:var(--text);font-weight:650}
   <button class="tab" data-go="weight"><span class="i" data-i="chart"></span>体重</button>
   <button class="tab" data-go="progress"><span class="i" data-i="target"></span>进度</button>
   <button class="tab" data-go="sim"><span class="i" data-i="spark"></span>模拟</button>
-  <button class="tab" data-go="train"><span class="i" data-i="dumbbell"></span>训练</button>
   <button class="tab" data-go="settings"><span class="i" data-i="gear"></span>设置</button>
 </nav>
 
@@ -1032,7 +1048,7 @@ details .body b{color:var(--text);font-weight:650}
    1 · 常量与工具
    ════════════════════════════════════════════════════════════════ */
 /* App 版本 —— 每次改完内容把它 +1，设置页会显示，用来确认看到的是不是最新版 */
-const APP_VER = '2026.09.17-4';
+const APP_VER = '2026.09.17-5';
 
 const JIN = 2;
 const DAY = 86400000;
@@ -2417,6 +2433,8 @@ const App = {
     const r = DB.rec();
     if (document.activeElement !== $('#stepsInput')) $('#stepsInput').value = r.steps ?? '';
     $('#marchState').textContent = r.steps ? `今天已记录 ${r.steps} 步` : '绑在刷手机/看剧上，20 分钟。';
+    const tt2 = $('#trainTag');
+    if (tt2) { tt2.textContent = r.train ? '已完成 ✓' : '开始 ›'; tt2.className = 'tag' + (r.train ? ' ok' : ''); }
   },
 
   renderHero() {
@@ -3268,7 +3286,7 @@ const App = {
     r.train.at = new Date().toISOString();
     DB.save(); this.renderToday(); this.renderTrain(); this.renderProgress();
     this.toast('训练完成 · 下次每个动作 +1');
-    Timer.buzz([100, 60, 100, 60, 200]);
+    Timer.buzz([60, 40, 60]);   /* 调研建议：成功后两下短震，别太长 */
   },
   savePlank(secs) { const r = DB.rec(); r.train = r.train || {}; r.train.plank = secs; DB.save(true); },
 
@@ -3290,7 +3308,7 @@ const App = {
         $('#stepsInput').value = r.steps;
         $('#marchBtn').innerHTML = icon('steps') + '原地踏步 20 分钟';
         DB.save(); this.renderHero(); this.renderSteps();
-        this.toast('踏步完成 +2000 步'); Timer.buzz([100, 60, 100, 60, 200]);
+        this.toast('踏步完成 +2000 步'); Timer.buzz([60, 40, 60]);   /* 调研建议：成功后两下短震，别太长 */
         $('#marchState').textContent = `完成，已 +2000 步，今天共 ${r.steps} 步`;
       }
     };
