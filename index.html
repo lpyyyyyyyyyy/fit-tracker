@@ -562,6 +562,9 @@ canvas{display:block;width:100%;height:100%}
 .stepRow .sr-go{font-size:var(--f-2xs);color:var(--dim);flex:none}
 
 /* ════════════ 忍不住嘴 ════════════ */
+#extraTruth .hsub{font-size:var(--f-2xs);font-weight:650;color:var(--accent);margin:var(--s4) 0 var(--s2)}
+#extraTruth .hw{font-size:var(--f-2xs);color:var(--dim);line-height:1.85}
+#extraTruth .hw b{color:var(--text-2)}
 .chips{display:flex;flex-wrap:wrap;gap:7px}
 .chipBtn{display:inline-flex;align-items:center;gap:6px;padding:8px 11px;border-radius:var(--rf);
   background:var(--n-900);border:1px solid var(--line);color:var(--text-2);
@@ -897,6 +900,10 @@ details .body b{color:var(--text);font-weight:650}
 
       <div id="extraList" class="mt4"></div>
       <div class="hint mt3" id="extraImpact">—</div>
+
+      <!-- ⭐ 吃多了到底会怎样：把「一顿 vs 一周」讲清楚，避免误判和补偿性绝食 -->
+      <div class="hr"></div>
+      <div id="extraTruth"></div>
     </div>
 
     <div class="sec">肌肉守护</div>
@@ -1146,6 +1153,16 @@ details .body b{color:var(--text);font-weight:650}
       <div class="kv"><span class="k">每日热量</span><span class="v"><input id="setKcal" type="number">kcal</span></div>
       <div class="kv"><span class="k">每日蛋白</span><span class="v"><input id="setProtein" type="number">g</span></div>
       <div class="kv"><span class="k">步数目标</span><span class="v"><input id="setSteps" type="number">步</span></div>
+      <div class="kv"><span class="k">16+8 轻断食</span><span class="v">
+        <button class="sw" id="setFasting" onclick="App.toggleFasting()"><i></i></button></span></div>
+      <details class="mt3" id="fastingDetail">
+        <summary>16+8 的时间窗口</summary>
+        <div class="body">
+          <div class="kv"><span class="k">开始吃</span><span class="v"><input id="setFastStart" type="time"></span></div>
+          <div class="kv"><span class="k">停止吃</span><span class="v"><input id="setFastEnd" type="time"></span></div>
+          <div class="hint mt3" id="fastWindowHint">—</div>
+        </div>
+      </details>
       <details class="mt4">
         <summary>身体参数（算 BMI / 体脂率用）</summary>
         <div class="body">
@@ -1284,7 +1301,7 @@ details .body b{color:var(--text);font-weight:650}
    1 · 常量与工具
    ════════════════════════════════════════════════════════════════ */
 /* App 版本 —— 每次改完内容把它 +1，设置页会显示，用来确认看到的是不是最新版 */
-const APP_VER = '2026.09.17-20';
+const APP_VER = '2026.09.17-23';
 
 const JIN = 2;
 const DAY = 86400000;
@@ -1447,7 +1464,7 @@ const REST = 60, WARMUP = 120, COOLDOWN = 120;
    总热量和蛋白没变，只是少了一个时段。 */
 const MEAL_TEMPLATE = [
   { id:'m1', name:'早餐' }, { id:'m2', name:'午餐' },
-  { id:'m4', name:'晚餐' }, { id:'m5', name:'睡前半勺' },
+  { id:'m4', name:'晚餐' }, { id:'m5', name:'最后一勺蛋白粉' },
 ];
 const MISC_TEMPLATE = [
   { id:'coffee1', name:'第一杯咖啡' }, { id:'coffee2', name:'第二杯咖啡' },
@@ -1626,6 +1643,8 @@ const DB = {
         startDate: `${y}-10-01`,
         stepGoal: 2500,
         autoBackup: true,
+    /* 16+8 轻断食：把 4 餐压进 8 小时窗口，其余 16 小时只喝水/黑咖啡 */
+    fasting: true, fastStart: '08:30', fastEnd: '16:30',
         wakeTime: '08:30', sleepTime: '01:30',
         remindOn: true, coffee1: '09:00', coffee2: '13:00',
         trainTime: '19:00',
@@ -1815,18 +1834,18 @@ const DB = {
       tip:'13:00 躺下，闹钟定 14:00。<br><b>60 分钟是完整的睡眠周期，醒来正好在浅睡期。</b>千万别睡成 45 分钟 —— 那是深睡被强行打断，醒来比不睡更困，一下午废掉。<br>窗帘拉上、眼罩戴上。睡不着也算，闭眼安静躺 20 分钟同样能降皮质醇。' });
 
     /* 下午加餐已按用户要求删除，鸡蛋并进早餐 */
-    add({ id:'weigh', time:'17:00', ic:'scale', kind:'action', go:'weight',
+    add({ id:'weigh', time:'17:30', ic:'scale', kind:'action', go:'weight',
       name:'称重 + 打卡', sub:'只看 7 日均线',
       tip:'称之前先去趟厕所、把水杯放下。<br>下午 5 点的体重天生比早上重 1~2 斤（一天的水和饭），而且更容易被「今天吃咸了」影响。<br><b>所以永远只看 7 日均线，绝不看单日数字。</b>某天虚涨 2 斤不是胖，是水，两天就回去。' });
 
-    add({ id:'m4', time:'18:30', ic:'meal', kind:'check', group:'meals', keep:true,
+    add({ id:'m4', time:'16:00', ic:'meal', kind:'check', group:'meals', keep:true,
       name:'晚餐', sub:'蛋白粉 1 勺 · 菠菜 150g',
       tip:'蛋白粉 1 勺（牛奶冲）+ 晚餐那碗菠菜 150g。<br><b>晚餐不放盐</b>，只放醋、柠檬、辣椒面 —— 盐只放早餐和午餐。这条比断水更有效，而且安全。<br><br>不饿的话可以只喝蛋白粉，但<b>这一勺不能省</b>：去掉它全天蛋白从 137g 掉到 112g，对 80kg 的你刚好卡在保肌线下。<br>真饿的话允许加：水煮蛋 1 个，或再来一碗菠菜。' });
     add({ id:'stopwater', time:'20:00', ic:'water', kind:'info',
       name:'停止喝水', sub:'之后一口都不喝',
       tip:'之后一口都不喝。<br>不是为了上镜，是为了不半夜起夜 —— 你只睡 6 小时，起一次夜就毁掉一半深睡。<br>白天已经喝够 2.4L，晚间断水不会脱水。' });
-    add({ id:'m5', time:'23:00', ic:'meal', kind:'check', group:'meals', keep:true,
-      name:'睡前半勺蛋白粉', sub:'防深夜点外卖',
+    add({ id:'m5', time:'16:30', ic:'meal', kind:'check', group:'meals', keep:true,
+      name:'最后一勺蛋白粉', sub:'16:30 的收尾，防深夜点外卖',
       tip:'蛋白粉半勺 + 少量水（100ml 以内）。<br>熬夜的人这半勺作用比不熬夜的人更大：压住深夜饥饿激素，防你 23:30 点外卖，同时给夜间提供氨基酸、减少肌肉分解。<br>如果还是饿得受不了，只允许加：水煮蛋 1 个、或冷冻蔬菜一把。别开别的口子。' });
     add({ id:'sleep', time:s.sleepTime, ic:'moon', kind:'info',
       name:'熄灯睡觉', sub:'固定在 ' + s.sleepTime,
@@ -2248,16 +2267,25 @@ const MuscleModel = {
     const today = Impact.fromRecord(this._todayRec(), {});
     const tdeeNow = Engine.tdee(cur, cm, s.age || 20, s.sex || 'm', false)
       + Math.min(500, (today.steps || 0) / 1000 * 45);
-    const deficit = tdeeNow - (today.kcal || s.targetKcal);
-    const ds = Math.round(clamp(1 - Math.max(0, deficit - 500) / 900, 0, 1) * 100);
+    /* ⚠️ 这里原来写的是 `today.kcal || s.targetKcal` —— 那是个真 bug：
+       计划热量（1000）会被当成「实际吃的」顶上去，
+       于是吃了 1200 kcal 火锅之后，App 反而算出「缺口很健康」并给满分。
+       实际摄入永远是 today.kcal，它已经把 extra 里多吃的算进去了。
+       只有在「今天完全没记录」时才视为无数据 —— 那种情况不该拿计划值顶替。 */
+    const tr = this._todayRec();
+    const logged = !!((tr.meals && Object.keys(tr.meals).length) || (tr.extra && tr.extra.length));
+    const deficit = tdeeNow - today.kcal;
+    const ds = logged
+      ? Math.round(clamp(1 - Math.max(0, deficit - 500) / 900, 0, 1) * 100)
+      : 0;
 
     return [
       { key:'train',   name:'抗阻训练', weight:.35, score:ts, value:`两周 ${tc} 次`,
         why:'这是保肌的第一变量 —— 单独它就能决定你掉的一半是脂肪还是肌肉。' },
       { key:'protein', name:'蛋白吃够', weight:.22, score:ps, value:`达标 ${Math.round(pr * 100)}%`,
         why:'150g 蛋白 / 天（约 1.9g/kg）是保肌区间，少一天就少一层保护。' },
-      { key:'deficit', name:'缺口不超标', weight:.18, score:ds, value: deficit > 0 ? `约 ${Math.round(deficit)} kcal` : '暂无数据',
-        why: deficit > 500
+      { key:'deficit', name:'缺口不超标', weight:.18, score:ds, value: !logged ? '今天还没记录' : (deficit > 0 ? `约 ${Math.round(deficit)} kcal` : `盈余 ${Math.round(-deficit)} kcal`),
+        why: !logged ? '今天还没打卡，记了才算得出真实缺口。' : deficit <= 0 ? `<b>今天没有缺口</b>（盈余 ${Math.round(-deficit)} kcal）—— 吃回来的那天不会长多少脂肪，但也不掉秤。明天照常吃就行，不用补偿性绝食。` : deficit > 500
           ? `<b>这一项正在扣分。</b>你现在缺口约 ${Math.round(deficit)} kcal，是保肌阈值（500）的 <b>${(deficit / 500).toFixed(1)} 倍</b>。
              超得越多肌肉流失越快 —— 想拿回这一项的分，<b>反而是要「多吃一点」，不是少吃</b>。`
           : '研究给出约 500 kcal/日 是保肌阈值，缺口在这个范围内就算达标。' },
@@ -3461,6 +3489,58 @@ const App = {
     this.toast('训练完成 · 今天不掉肌肉');
   },
 
+  /* ── 16+8 轻断食 ──
+     把 4 餐压进 8 小时的窗口，剩下 16 小时只喝水、黑咖啡。
+     窗口可改；默认 08:30–16:30（不动训练时间和睡眠，代价是晚餐提前到下午 4 点）。 */
+  fastingOn() { return !!(DB.data.settings.fasting); },
+  fastWindow() {
+    const s = DB.data.settings;
+    return { start: s.fastStart || '08:30', end: s.fastEnd || '16:30' };
+  },
+  toggleFasting() {
+    const s = DB.data.settings;
+    s.fasting = !s.fasting;
+    DB.save(true);
+    this.renderSettings(); this.renderToday();
+    this.toast(s.fasting ? '已开启 16+8' : '已关闭 16+8');
+  },
+  saveFastWindow() {
+    const s = DB.data.settings;
+    const a = $('#setFastStart'), b = $('#setFastEnd');
+    if (a && a.value) s.fastStart = a.value;
+    if (b && b.value) s.fastEnd = b.value;
+    const w = this.fastWindow();
+    const span = (toMin(w.end) - toMin(w.start) + 1440) % 1440;
+    if (span < 240 || span > 720) { this.toast('窗口要在 4~12 小时之间'); return; }
+    DB.save(true);
+    this.renderSettings(); this.renderToday();
+    this.toast(`进食窗口 ${w.start}–${w.end}（${(span / 60).toFixed(1)} 小时）`);
+  },
+  /* 某个时间点是否在进食窗口内（窗口允许跨午夜） */
+  inFastWindow(hhmm) {
+    const w = this.fastWindow();
+    const t = toMin(hhmm), a = toMin(w.start), b = toMin(w.end);
+    return a <= b ? (t >= a && t <= b) : (t >= a || t <= b);
+  },
+  renderFastingHint() {
+    const el = $('#fastWindowHint');
+    if (!el) return;
+    if (!this.fastingOn()) { el.textContent = '当前未开启 16+8。'; return; }
+    const w = this.fastWindow();
+    const span = (toMin(w.end) - toMin(w.start) + 1440) % 1440;
+    const fastSpan = 24 - span / 60;
+    /* 检查时间轴里哪些项落在窗口外 —— 这才是这个功能真正要提醒的 */
+    /* ⚠️ 只检查「要吃」的项 —— 称重、训练是动作，info 是时间点标记，
+       它们落在断食期完全正常，标成「窗口外」是错的。 */
+    const out = DB.timeline().filter(it => it.kind === 'check' && !this.inFastWindow(it.time));
+    const list = out.map(x => x.name + ' ' + x.time).join('、');
+    el.innerHTML = '进食 <b>' + w.start + ' – ' + w.end + '</b>（' + (span / 60).toFixed(1) + ' 小时），'
+      + '断食 <b>' + fastSpan.toFixed(1) + ' 小时</b>。<br>'
+      + (out.length
+          ? '<span style="color:var(--warn)">有 ' + out.length + ' 项在窗口外：' + list + '</span>'
+          : '所有进食项都在窗口内');
+  },
+
   /* ── 忍不住嘴：记下多吃的，让预测算准 ── */
   extras() { const r = DB.rec(); return Array.isArray(r.extra) ? r.extra : []; },
 
@@ -3543,7 +3623,85 @@ const App = {
     imp.innerHTML = `今天多吃 <b>${sum} kcal</b>（蛋白 +${sumP}g）。<br>
       换算成掉秤速度：<b style="color:var(--gold)">少掉约 ${fmt(kg2jin(dKg), 2)} 斤/天</b>，
       一周少掉约 <b>${fmt(kg2jin(dKg * 7), 1)} 斤</b>。<br>
-      当前缺口：<b style="color:${gap > 0 ? 'var(--accent)' : 'var(--gold)'}">${Math.round(gap)} kcal</b>${gap <= 0 ? ' —— <b>已经吃回来了，今天不会掉秤</b>，但也不用补偿性绝食，明天照常吃就行' : ''}`;
+      当前缺口：<b style="color:${gap > 0 ? 'var(--accent)' : 'var(--gold)'}">${Math.round(gap)} kcal</b>${gap <= 0 ? ' —— <b>已经吃回来了</b>，往下看这到底意味着什么' : ''}`;
+    /* 不管吃没吃超，都要把「一顿 vs 一周」讲清楚 —— 这是防补偿性绝食的关键 */
+    this.renderExtraTruth();
+  },
+
+  /* 吃多了到底会不会长胖 —— 把「一顿」和「一周」分开讲。
+     ⚠️ 这段是必需的：用户很容易把「今天吃超了」直接理解成「长了这么多脂肪」，
+        然后第二天补偿性绝食 —— 那反而掉肌肉、更容易反弹。 */
+  renderExtraTruth() {
+    const el = $('#extraTruth');
+    if (!el) return;
+    const s = DB.data.settings;
+    const base = this.bmrInputs();
+    const sex = s.sex || 'm';
+    const b = Engine.bmr(base.kg, s.heightCm || 178, s.age || 20, sex);
+    const tdee = b * 1.35 + Math.min(500, (base.steps || 0) / 1000 * 45);
+    const imp = Impact.fromRecord(DB.rec(), {});
+    const net = imp.kcal - tdee;                       /* >0 = 今天净吃超了 */
+    const sp = Engine.split(base.kg, Engine.bodyFat(base.kg, s.heightCm || 178, s.age || 20, sex));
+    const ed = Engine.energyDensity(sp.fat);            /* 当前脂肪量下的 kcal/kg */
+
+    /* 一天吃超多少，才真的长 1 斤脂肪 */
+    const kcalPerJinFat = ed / 2;
+    /* 如果今天净超了，换算成真实脂肪（不是体重） */
+    const fatJin = net > 0 ? (net / ed) * 2 : 0;
+
+    /* 一周的盘子：7 天计划缺口 vs 今天这一顿 */
+    const weeklyPlan = (tdee - (s.targetKcal || 1000)) * 7;
+    const share = net > 0 ? (net / Math.max(1, weeklyPlan)) * 100 : 0;
+
+    el.innerHTML = `
+      <div class="hsub">吃超了到底会不会长胖</div>
+      <div class="hw">
+        <b>短期不会长脂肪，但秤会涨。</b><br>
+        火锅那一顿 1200 kcal 里，大部分问题不是热量，而是<b>钠和碳水</b>：
+        1g 钠会带走约 200ml 水，一顿火锅轻松吃进 3~5g 钠 —— 第二天秤上多出来的
+        2~3 斤<b>基本全是水</b>。<br>
+        同时每存 1g 糖原会绑约 3g 水，火锅的碳水量也远高于你平时的饮食。<br>
+        <b>这 2~3 斤水，2~3 天自己就回去了</b> —— 那几天别慌，别称完就加练。
+      </div>
+
+      <div class="hsub">真的长脂肪需要吃超多少</div>
+      <div class="hw">
+        按你现在的脂肪量（${fmt(sp.fat, 1)}kg），1 斤脂肪大约对应
+        <b>${Math.round(kcalPerJinFat).toLocaleString()} kcal 的净盈余</b>。<br>
+        而你一天总共只烧 ${Math.round(tdee)} kcal —— 也就是说，<b>你得在吃饱的基础上再多吃掉
+        ${Math.round(kcalPerJinFat)} kcal，才可能真的长 1 斤脂肪</b>。
+        一顿火锅做不到这件事。
+      </div>
+
+      ${net > 0 ? `
+      <div class="hsub">今天（实测）</div>
+      <div class="hw">
+        你今天吃了约 ${Math.round(imp.kcal)} kcal，消耗约 ${Math.round(tdee)} kcal，
+        净<b style="color:var(--warn)">超 ${Math.round(net)} kcal</b>。<br>
+        换算成脂肪：最多约 <b>${fmt(fatJin, 2)} 斤</b>
+        —— 这点量在这个精度下基本可以忽略（一次称重的误差就有 ±1 斤）。<br>
+        它消耗掉你一周计划缺口（${Math.round(weeklyPlan)} kcal）的约
+        <b>${fmt(share, 0)}%</b>。也就是说：<b>偶尔一次，一周照常吃就能盖回去。</b>
+      </div>` : `
+      <div class="hsub">今天（实测）</div>
+      <div class="hw">
+        你今天吃了约 ${Math.round(imp.kcal)} kcal，消耗约 ${Math.round(tdee)} kcal，
+        净缺口 <b style="color:var(--accent)">${Math.round(-net)} kcal</b> —— 还在减。
+      </div>`}
+
+      <div class="hsub">真正要防的不是这一顿</div>
+      <div class="hw">
+        <b>一次火锅不会让你胖，一周三次会。</b><br>
+        按上面的算法：一周吃超 <b>${Math.round((kcalPerJinFat * 2) / 7).toLocaleString()} kcal/天</b>
+        （平均每天多吃这么多），持续一周才会真的长 1 斤脂肪。<br>
+        所以要盯的是<b>频率</b>，不是单次。吃都吃了，<b>下一顿照常吃</b>就行 ——
+        补偿性绝食只会让肌肉多掉、然后更容易暴食。
+      </div>
+
+      <div class="hw" style="color:var(--warn);margin-top:var(--s4)">
+        ⚠️ 顺带说一句：如果哪天的秤突然涨了 2~3 斤，<b>先回忆前一天是不是吃咸了</b>，
+        别急着认定自己胖了。
+      </div>`;
   },
 
   /* ── 基础代谢计算器 ── */
@@ -3909,7 +4067,18 @@ const App = {
 
     this.renderGoalLock();
     this.renderBackupState();
+    /* 16+8：开关状态 + 窗口 + 窗口内外的检查 */
+    const fsw = $('#setFasting');
+    if (fsw) fsw.className = 'sw' + (this.fastingOn() ? ' on' : '');
+    const fs1 = $('#setFastStart'), fs2 = $('#setFastEnd');
+    if (fs1) fs1.value = this.fastWindow().start;
+    if (fs2) fs2.value = this.fastWindow().end;
+    this.renderFastingHint();
     /* 基础代谢面板：改任一参数立刻重算（只试算，不写盘） */
+    ['setFastStart','setFastEnd'].forEach(id => {
+      const el = $('#' + id);
+      if (el && !el.dataset.fastBound) { el.dataset.fastBound = '1'; el.addEventListener('change', () => this.saveFastWindow()); }
+    });
     ['bmrKg','bmrCm','bmrAge','bmrSex','bmrAct','bmrEat'].forEach(id => {
       const el = $('#' + id);
       if (el && !el.dataset.bmrBound) {
