@@ -353,22 +353,24 @@ button{cursor:pointer}
 .tile .v sub{font-size:var(--f-2xs);font-weight:500;color:var(--dim);margin-left:3px;letter-spacing:0}
 .tile .d{font-size:var(--f-3xs);color:var(--dim);margin-top:4px}
 
-/* ════════════ 日历 ════════════ */
-.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+/* ════════════ 日历 ════════════
+   ⚠️ 用 minmax(0,1fr) 而不是 1fr：1fr 在 aspect-ratio 下会被内容撑开而溢出右边 */
+.cal{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px}
 .cell{aspect-ratio:1;border-radius:10px;border:1px solid var(--line);display:grid;place-items:center;
-  font-family:var(--mono);font-size:var(--f-3xs);color:var(--dim);
+  font-family:var(--mono);font-size:var(--f-3xs);color:var(--dim);min-width:0;
   transition:transform var(--d1) var(--e-spring),background var(--d2),border-color var(--d2),color var(--d2)}
 .cell.full{background:linear-gradient(150deg,rgba(79,214,196,.9),rgba(43,145,134,.75));
   color:#04211d;font-weight:700;border-color:transparent;box-shadow:0 6px 18px -10px rgba(79,214,196,.7)}
 .cell.part{background:rgba(224,169,79,.12);color:var(--warn);border-color:rgba(224,169,79,.26)}
 .cell.miss{background:rgba(226,121,140,.07);color:var(--bad);border-color:rgba(226,121,140,.18)}
 .cell.today{box-shadow:0 0 0 1.5px var(--accent)}
-.cell.future{opacity:.34}
+/* 还没到的日子：只留一个淡淡的轮廓，不要和「断签」的红混淆 */
+.cell.future{opacity:.3;background:transparent;border-color:rgba(200,215,235,.05);color:var(--dim)}
 .cell:active{background:rgba(200,215,235,.14)}
 
 /* ════════════ 计时器 ════════════ */
 .timerWrap{display:grid;place-items:center;gap:var(--s5);padding:var(--s5) 0 var(--s3)}
-.tRing{position:relative;width:224px;height:224px}
+.tRing{position:relative;width:224px;height:224px;flex:none}
 .tRing svg{transform:rotate(-90deg);display:block;overflow:visible}
 .tRing .mid{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
   width:150px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;text-align:center}
@@ -547,7 +549,7 @@ details .body b{color:var(--text);font-weight:650}
       <div class="hero">
         <div class="ring">
           <div class="glow"></div>
-          <svg width="112" height="112" viewBox="0 0 136 136">
+          <svg width="112" height="112" viewBox="0 0 136 136" style="width:112px;height:112px;flex:none">
             <circle cx="68" cy="68" r="57" fill="none" stroke="var(--track)" stroke-width="10"/>
             <circle id="heroArc" cx="68" cy="68" r="57" fill="none" stroke="url(#gAcc)" stroke-width="10"
                     stroke-linecap="round" stroke-dasharray="358.1" stroke-dashoffset="358.1"
@@ -574,7 +576,7 @@ details .body b{color:var(--text);font-weight:650}
         <div class="ctitle"><span class="badge gold"><span class="i" data-i="shield"></span></span>断签补救</div>
       </div>
       <p class="hint" id="recoverText"></p>
-      <button class="btn wide mt4" onclick="App.openRecover()">看补救方案</button>
+      <button class="btn mt4" onclick="App.openRecover()">怎么办</button>
     </div>
 
     <div class="card">
@@ -813,7 +815,7 @@ details .body b{color:var(--text);font-weight:650}
   <!-- ══════════════ 训练 ══════════════ -->
   <section class="view" id="v-train">
     <header class="top">
-      <div><div class="kicker">每周 3 次 · 早上 7:40</div><h1 class="h1">12 分钟训练</h1></div>
+      <div><div class="kicker" id="trainKicker">每周 3 次</div><h1 class="h1">12 分钟训练</h1></div>
       <div class="chip" id="trainDayBadge">—</div>
     </header>
 
@@ -821,7 +823,7 @@ details .body b{color:var(--text);font-weight:650}
       <div class="timerWrap">
         <div class="tRing" id="tRing">
           <div class="aura"></div>
-          <svg width="224" height="224" viewBox="0 0 224 224">
+          <svg width="224" height="224" viewBox="0 0 224 224" style="width:224px;height:224px;flex:none">
             <circle cx="112" cy="112" r="98" fill="none" stroke="var(--track)" stroke-width="12"/>
             <circle id="tArc" cx="112" cy="112" r="98" fill="none" stroke="url(#gT)" stroke-width="12"
                     stroke-linecap="round" stroke-dasharray="615.8" stroke-dashoffset="0"/>
@@ -1396,16 +1398,21 @@ const Engine = {
                 脂肪损失减少 55%，FFM 损失增加 60%。方向共识，幅度不照搬
      · 缺口     Murphy & Koehler 2022（PMID 34623696）meta 回归：
                 约 500 kcal/日 的缺口即阻止瘦体重增长 → 减脂保肌应避免缺口 >500
-     返回「能挡住多少比例的 Forbes 基础 FFM 流失」，0.15~0.78 */
+     返回「能挡住多少比例的 Forbes 基础 FFM 流失」，0.04~0.78。
+     ⚠️ 缺口的惩罚要够狠：1000 kcal 的吃法配上 2000+ 的消耗，缺口常在 1200~1800，
+        是文献阈值（500）的 2~3 倍。惩罚上限必须能反映这个量级，否则
+        「满分计划」会算出一个看起来还行的肌肉占比，掩盖方案本身太激进的事实。
+     ⚠️ 训练必须是最有分量的一项 —— 否则「不做训练」的后果看起来还不如「漏一顿饭」。*/
   protection(trained, proteinPerKg, sleepH, deficit) {
-    let p = 0.25;                                     // 基础（自发活动等）
-    if (trained) p += 0.33;
-    if (proteinPerKg >= 1.05) p += 0.14;              // Krieger 阈值
+    let p = 0.06;                                     // 基础
+    if (trained) p += 0.45;                           // 训练：第一变量，独一档
+    if (proteinPerKg >= 1.05) p += 0.12;              // Krieger 阈值
     if (proteinPerKg >= 1.6) p += 0.05;
-    if (sleepH >= 7) p += 0.05;
+    if (sleepH >= 7) p += 0.04;
     if (sleepH >= 7.5) p += 0.04;
-    if (deficit > 500) p -= Math.min(0.12, (deficit - 500) / 100 * 0.02);
-    return clamp(p, 0.15, 0.78);
+    /* 缺口惩罚：超过 500 之后每 100 kcal 扣 0.018，最多扣 0.20 */
+    if (deficit > 500) p -= Math.min(0.20, (deficit - 500) / 100 * 0.018);
+    return clamp(p, 0.04, 0.80);
   },
 
   /* ══════════════════════════════════════════════════════════
@@ -1564,7 +1571,10 @@ const Impact = {
         dJin: +(lostJin - baseJin).toFixed(2),            // 正 = 掉更多（少吃），负 = 掉更少
         dMuscle: +(muscleJin - baseMuscle).toFixed(2),    // 正 = 肌肉多掉
         kcal: sp.kcal, protein: sp.protein,
-        harm: Math.abs(muscleJin - baseMuscle) * 2 + Math.abs(lostJin - baseJin) * 0.25,
+        /* 排序只看「肌肉多掉」—— 那才是要保护的东西。
+           如果把「掉秤更多」也算进危害，会得出「漏一顿饭比不训练更有害」的荒谬结论，
+           因为少吃反而让秤掉得更多。 */
+        harm: Math.abs(muscleJin - baseMuscle),
       };
     }).filter(Boolean).sort((a, b) => b.harm - a.harm);
   },
@@ -1646,9 +1656,11 @@ const MuscleModel = {
 
   detail() {
     const s = DB.data.settings;
+    const cm = s.heightCm || 178;
     const cur = (DB.weights().slice(-1)[0] || { kg:s.startWeight }).kg;
     const lostKg = Math.max(0, s.startWeight - cur);
-    const rate = lostKg / Math.max(1, diffDays(s.startDate, todayKey()) + 1);
+    const days = Math.max(1, diffDays(s.startDate, todayKey()) + 1);
+    const rate = lostKg / days;
 
     const tc = this.trainCount();
     const ts = Math.round(Math.min(6, tc) / 6 * 100);
@@ -1662,19 +1674,34 @@ const MuscleModel = {
     const sts = steps.length ? Math.round(clamp(avgSteps / 8000 * 100, 0, 100)) : 0;
     const rs = Math.round(clamp((0.35 - rate) / 0.20, 0, 1) * 100);
 
+    /* ⭐ 缺口大小 —— 之前漏了这一项，导致「守护分 91」和「模拟预测肌肉占 40%」互相矛盾。
+       依据：Murphy & Koehler 2022（PMID 34623696）meta 回归 ——
+       约 500 kcal/日 的缺口即阻止瘦体重增长，所以减脂保肌应避免缺口 >500。
+       用「今天实际吃的」对比 TDEE 算出真实缺口。 */
+    const today = Impact.fromRecord(this._todayRec(), {});
+    const tdeeNow = Engine.tdee(cur, cm, s.age || 20, s.sex || 'm', false)
+      + Math.min(500, (today.steps || 0) / 1000 * 45);
+    const deficit = tdeeNow - (today.kcal || s.targetKcal);
+    const ds = Math.round(clamp(1 - Math.max(0, deficit - 500) / 900, 0, 1) * 100);
+
     return [
-      { key:'train',   name:'抗阻训练', weight:.40, score:ts, value:`两周 ${tc} 次`,
+      { key:'train',   name:'抗阻训练', weight:.35, score:ts, value:`两周 ${tc} 次`,
         why:'这是保肌的第一变量 —— 单独它就能决定你掉的一半是脂肪还是肌肉。' },
-      { key:'protein', name:'蛋白吃够', weight:.25, score:ps, value:`达标 ${Math.round(pr * 100)}%`,
+      { key:'protein', name:'蛋白吃够', weight:.22, score:ps, value:`达标 ${Math.round(pr * 100)}%`,
         why:'150g 蛋白 / 天（约 1.9g/kg）是保肌区间，少一天就少一层保护。' },
-      { key:'sleep',   name:'睡眠',     weight:.15, score:ss, value:`约 ${this.sleepHoursToday()} 小时`,
+      { key:'deficit', name:'热量缺口', weight:.18, score:ds, value: deficit > 0 ? `约 ${Math.round(deficit)} kcal` : '暂无数据',
+        why:'研究给出约 500 kcal/日 是保肌阈值，超过越多，肌肉流失越快 —— 这一项比蛋白更重要。' },
+      { key:'sleep',   name:'睡眠',     weight:.13, score:ss, value:`约 ${this.sleepHoursToday()} 小时`,
         why:'睡不够 6 小时，皮质醇升、生长激素降 —— 同样赤字下肌肉流失接近翻倍。' },
-      { key:'steps',   name:'日常活动', weight:.10, score:sts, value: steps.length ? `均 ${Math.round(avgSteps)} 步` : '暂无',
+      { key:'steps',   name:'日常活动', weight:.07, score:sts, value: steps.length ? `均 ${Math.round(avgSteps)} 步` : '暂无',
         why:'NEAT 影响赤字总量，也影响肌肉是「用着」还是「闲着」。' },
-      { key:'rate',    name:'减重速度', weight:.10, score:rs, value: rate > 0 ? `${fmt(kg2jin(rate), 2)} 斤/天` : '暂无',
+      { key:'rate',    name:'减重速度', weight:.05, score:rs, value: rate > 0 ? `${fmt(kg2jin(rate), 2)} 斤/天` : '暂无',
         why:'掉得越快，肌肉占比越高。每周 2~3 斤是安全上限。' },
     ];
   },
+
+  /* 今天记录（readonly，不创建空记录 —— 否则会污染历史） */
+  _todayRec() { return DB.get() || {}; },
 
   score() { return Math.round(this.detail().reduce((a, x) => a + x.score * x.weight, 0)); },
 
@@ -2469,8 +2496,10 @@ const App = {
     }
     const avg = DB.movingAvg(list);
     const all = list.concat(avg);
-    let lo = Math.min(...all.map(p => p.kg)), hi = Math.max(...all.map(p => p.kg));
-    const pad = Math.max(0.4, (hi - lo) * 0.22); lo -= pad; hi += pad;
+    /* 目标体重也要算进 Y 轴范围，不然用户进度一大、目标线就跑出图外看不见了 */
+    const tgtW = DB.data.settings.startWeight - DB.data.settings.goalLoss;
+    let lo = Math.min(...all.map(p => p.kg), tgtW), hi = Math.max(...all.map(p => p.kg), tgtW);
+    const pad = Math.max(0.4, (hi - lo) * 0.12); lo -= pad; hi += pad;
     const L = 6, R = W - 6, T = 16, B = H - 20;
     const X = i => L + (R - L) * (list.length === 1 ? .5 : i / (list.length - 1));
     const Y = kg => B - (B - T) * ((kg - lo) / (hi - lo));
@@ -2783,6 +2812,12 @@ const App = {
   renderTrain() {
     const dow = new Date().getDay();
     $('#trainDayBadge').textContent = ['周日','周一','周二','周三','周四','周五','周六'][dow];
+    /* 顶部提示跟着设置里的训练时间走，别再写死 */
+    const tt = DB.data.settings.trainTime || '19:00';
+    const hh = Number(tt.split(':')[0]);
+    const slot = hh < 11 ? '早上' : hh < 14 ? '中午' : hh < 18 ? '下午' : '晚上';
+    const kk = $('#trainKicker');
+    if (kk) kk.textContent = `每周 3 次 · ${slot} ${tt}`;
     $('#exList').innerHTML = EXERCISES.map(ex => `
       <div class="kv">
         <span class="k" style="display:flex;align-items:center;gap:8px;font-size:var(--f-sm);color:var(--text-2)">
