@@ -98,30 +98,18 @@ img,canvas,svg,video{max-width:100%}
 button,input,select,textarea{font:inherit;color:inherit;background:none;border:none;outline:none}
 button{cursor:pointer}
 
-/* ════════════ 环境层：星野 / 星云 / 网格 / 暗角 ════════════ */
-#sky{position:fixed;inset:0;z-index:0;pointer-events:none;display:block}
-#env{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
-#env .neb{position:absolute;border-radius:50%;filter:blur(70px);opacity:.5}
-#env .neb.n1{width:78vw;height:78vw;left:-26vw;top:-30vw;
-  background:radial-gradient(circle at 50% 50%,rgba(55,175,161,.20),transparent 68%);animation:drift1 46s var(--e-soft) infinite alternate}
-#env .neb.n2{width:64vw;height:64vw;right:-22vw;top:2vh;
-  background:radial-gradient(circle at 50% 50%,rgba(139,160,216,.16),transparent 68%);animation:drift2 58s var(--e-soft) infinite alternate}
-#env .neb.n3{width:88vw;height:60vw;left:-10vw;top:44vh;
-  background:radial-gradient(circle at 50% 50%,rgba(200,159,86,.075),transparent 70%);animation:drift3 72s var(--e-soft) infinite alternate}
-@keyframes drift1{from{transform:translate3d(0,0,0) scale(1)}to{transform:translate3d(6%,5%,0) scale(1.14)}}
-@keyframes drift2{from{transform:translate3d(0,0,0) scale(1.08)}to{transform:translate3d(-7%,9%,0) scale(.94)}}
-@keyframes drift3{from{transform:translate3d(0,0,0)}to{transform:translate3d(5%,-6%,0) scale(1.1)}}
-#env .grid{position:absolute;left:-20%;right:-20%;bottom:-10%;height:58vh;
-  background-image:linear-gradient(rgba(200,215,235,.026) 1px,transparent 1px),
-                   linear-gradient(90deg,rgba(200,215,235,.026) 1px,transparent 1px);
-  background-size:52px 52px;
-  transform:perspective(460px) rotateX(64deg);
-  -webkit-mask-image:linear-gradient(to top,rgba(0,0,0,.34),transparent 52%);
-  mask-image:linear-gradient(to top,rgba(0,0,0,.34),transparent 52%);
-  animation:gridflow 34s linear infinite;opacity:.2}
-@keyframes gridflow{from{background-position:0 0,0 0}to{background-position:0 44px,44px 0}}
-#env .vig{position:absolute;inset:0;
-  background:radial-gradient(120% 78% at 50% 0%,transparent 42%,rgba(0,0,0,.55) 100%)}
+/* ════════════ 背景 ════════════
+   ⚠️ 这里原来是四层装饰：canvas 星野 + 三个漂移星云 + 透视网格 + 暗角。
+      滑动一直在卡，最后整个删掉了：
+        · canvas 星野要每帧重绘（固定定位的整屏画布），和滚动抢主线程
+        · 三个 filter:blur(70px) 的大圆要 GPU 持续合成
+        · 网格还有 34 秒循环的 background-position 动画（触发重绘）
+      现在只剩一层静态暗角 —— 不占 GPU，滑动就是纯滚动。
+      视觉上深色底 + 细腻的顶部渐变更干净，也更有「静」的感觉。 */
+body::before{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;
+  background:
+    radial-gradient(120% 78% at 50% 0%, rgba(79,214,196,.045), transparent 55%),
+    radial-gradient(100% 60% at 50% 100%, rgba(139,160,216,.035), transparent 60%)}
 
 /* ════════════ 布局骨架 ════════════
    ⚠️ 顶栏全宽这件事踩了三次坑，最后定成这个结构，别再改：
@@ -180,7 +168,6 @@ button{cursor:pointer}
     transition-duration:.01ms !important;
     scroll-behavior:auto !important;
   }
-  #sky,#env{display:none}          /* 星空是纯装饰，直接不渲染，省电 */
 }
 /* ════════════ 按压状态层（M3 规范）════════════
    调研结论：安全的手感只有四个来源 —— 颜色、透明度、阴影、描边。
@@ -728,12 +715,6 @@ details .body b{color:var(--text);font-weight:650}
 </style>
 </head>
 <body>
-
-<canvas id="sky"></canvas>
-<div id="env">
-  <div class="neb n1"></div><div class="neb n2"></div><div class="neb n3"></div>
-  <div class="grid"></div><div class="vig"></div>
-</div>
 
 <div id="app">
 
@@ -1304,7 +1285,7 @@ details .body b{color:var(--text);font-weight:650}
    1 · 常量与工具
    ════════════════════════════════════════════════════════════════ */
 /* App 版本 —— 每次改完内容把它 +1，设置页会显示，用来确认看到的是不是最新版 */
-const APP_VER = '2026.09.17-28';
+const APP_VER = '2026.09.17-29';
 
 const JIN = 2;
 const DAY = 86400000;
@@ -2747,21 +2728,16 @@ const App = {
     let _lastY = 0;
     window.addEventListener('scroll', () => {
       const y = window.scrollY;
-      /* ⚠️ 早退必须在最前面 —— 原来 y 变化小于 6px 就直接 return，
-         结果下面的逻辑都不会执行（这个 return 曾经把星空暂停也一起跳过了）。 */
+      /* 早退放在最前面（原来 y 变化小于 6px 就 return，会把后面的逻辑一起跳掉） */
       const moved = Math.abs(y - _lastY) >= 6;
       if (!moved) return;
       _lastY = y;
       $$('.top').forEach(t => t.classList.toggle('shrink', y > 28));
-      /* 滑动中先不画星空，停下 120ms 再恢复 —— 主线程让给滚动 */
-      Sky.scrolling = true;
-      clearTimeout(Sky._sidle);
-      Sky._sidle = setTimeout(() => { Sky.scrolling = false; }, 120);
+      /* 星空已经整个删掉了 —— 滚动现在只是纯滚动，没有任何每帧重绘 */
     }, { passive: true });
 
     document.addEventListener('visibilitychange', () => {
-      if (document.visibilityState === 'visible') { this.renderAll(); Reminder.schedule(); Sky.play(); }
-      else Sky.pause();
+      if (document.visibilityState === 'visible') { this.renderAll(); Reminder.schedule(); }
     });
   },
 
@@ -4283,115 +4259,6 @@ const App = {
 /* ════════════════════════════════════════════════════════════════
    9 · 星空（生态感来源，不用图片）
    ════════════════════════════════════════════════════════════════ */
-const Sky = {
-  cv: null, g: null, stars: [], w: 0, h: 0, t: 0, raf: null, timer: null,
-  shooting: null, alive: false, scrolling: false,
-
-  init() {
-    this.cv = $('#sky'); if (!this.cv) return;
-    this.resize();
-    window.addEventListener('resize', () => this.resize());
-    this.build();
-    this.play();
-  },
-  resize() {
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
-    this.w = window.innerWidth; this.h = window.innerHeight;
-    this.cv.width = this.w * dpr; this.cv.height = this.h * dpr;
-    this.cv.style.width = this.w + 'px'; this.cv.style.height = this.h + 'px';
-    this.g = this.cv.getContext('2d');
-    this.g.setTransform(dpr, 0, 0, dpr, 0, 0);
-    this.build();
-  },
-  build() {
-    /* 星点数量按屏幕面积算，但封顶更狠 —— 之前最多 150 个，滑动时明显掉帧 */
-    const n = Math.round(clamp(this.w * this.h / 16000, 28, 72));
-    this.stars = Array.from({ length:n }, () => {
-      const depth = Math.random();
-      return {
-        x: Math.random() * this.w, y: Math.random() * this.h,
-        r: 0.35 + depth * 1.15,
-        a: 0.12 + depth * 0.48,
-        vx: (Math.random() - .5) * (0.006 + depth * 0.016),
-        vy: (Math.random() - .5) * (0.006 + depth * 0.016),
-        ph: Math.random() * Math.PI * 2,
-        sp: 0.4 + Math.random() * 1.0,
-      };
-    });
-  },
-  play() {
-    if (this.alive) return;
-    this.alive = true;
-    this.last = 0;
-    this.schedule();
-  },
-  pause() { this.alive = false; clearTimeout(this.timer); cancelAnimationFrame(this.raf); },
-
-  /* ⚠️ 原来用 requestAnimationFrame 递归 + 「间隔不到 33ms 就 return」来限帧 —— 那是错的：
-     rAF 每秒仍被调用 60 次，只是跳过了绘制，CPU 照样被占着。
-     而且固定定位的 canvas 在滑动时每帧都要重绘，和滚动抢主线程 → 滑动发卡。
-     改成：setTimeout 精确排下一帧 + 「滑动中不画」。 */
-  schedule() {
-    if (!this.alive) return;
-    clearTimeout(this.timer);
-    this.timer = setTimeout(() => this.loop(), 33);
-  },
-  loop() {
-    if (!this.alive) return;
-    /* 滚动中不重绘：星空是背景装饰，人眼看不出这一两帧，但主线程能省下来给滚动 */
-    if (!this.scrolling) this.draw();
-    this.schedule();
-  },
-  draw() {
-    const now = Date.now();
-    const dt = Math.min((now - (this.last || now)) / 1000, 0.1);
-    this.last = now;
-    this.t += dt;
-    const g = this.g; if (!g) return;
-    g.clearRect(0, 0, this.w, this.h);
-
-    for (const s of this.stars) {
-      s.x += s.vx; s.y += s.vy;
-      if (s.x < -2) s.x = this.w + 2; if (s.x > this.w + 2) s.x = -2;
-      if (s.y < -2) s.y = this.h + 2; if (s.y > this.h + 2) s.y = -2;
-      const tw = 0.62 + 0.38 * Math.sin(this.t * s.sp + s.ph);
-      g.beginPath(); g.arc(s.x, s.y, s.r, 0, Math.PI * 2);
-      g.fillStyle = `rgba(214,228,245,${(s.a * tw).toFixed(3)})`;
-      g.fill();
-    }
-    /* 偶尔一颗流星 */
-    if (!this.shooting && Math.random() < 0.0025) {
-      this.shooting = { x: Math.random() * this.w * .6 + this.w * .2, y: Math.random() * this.h * .35,
-                        vx: 2.6 + Math.random() * 1.4, vy: 1.1 + Math.random() * .7, life: 1 };
-    }
-    if (this.shooting) {
-      const m = this.shooting;
-      const grd = g.createLinearGradient(m.x, m.y, m.x - m.vx * 15, m.y - m.vy * 15);
-      grd.addColorStop(0, `rgba(214,236,245,${(0.6 * m.life).toFixed(3)})`);
-      grd.addColorStop(1, 'rgba(214,236,245,0)');
-      g.strokeStyle = grd; g.lineWidth = 1.4; g.lineCap = 'round';
-      g.beginPath(); g.moveTo(m.x, m.y); g.lineTo(m.x - m.vx * 15, m.y - m.vy * 15); g.stroke();
-      m.x += m.vx * 2.6; m.y += m.vy * 2.6; m.life -= 0.018;
-      if (m.life <= 0 || m.x > this.w + 40 || m.y > this.h + 40) this.shooting = null;
-    }
-  },
-};
-
-/* ════════════════════════════════════════════════════════════════
-   手机自己数步（网页能自动拿步数的唯一办法）
-   ────────────────────────────────────────────────────────────────
-   ⚠️ 为什么不是读「健康」：
-      HealthKit 只对原生 App 开放，网页读不到（苹果的安全设计）。
-      导入导出包又要用户操作，太麻烦 —— 已放弃。
-   网页能自动拿步数的唯一途径是读手机的加速度计（DeviceMotionEvent），
-   自己在页面上算步数。限制说清楚：
-     · 只有页面开着的时候才计数（切走/锁屏就停）
-     · iOS 必须先点一下授权，且要 https
-     · 是估算值，不如系统计步准，但「原地踏步」这类完全够用
-   ════════════════════════════════════════════════════════════════ */
-
-
-
 /* ════════════════════════════════════════════════════════════════
    锁住横向滑动
    ────────────────────────────────────────────────────────────────
@@ -4431,7 +4298,7 @@ const LockSwipe = {
 /* ════════════════════════════════════════════════════════════════
    启动
    ════════════════════════════════════════════════════════════════ */
-window.addEventListener('load', () => { Sky.init(); App.init(); LockSwipe.init(); });
+window.addEventListener('load', () => { App.init(); LockSwipe.init(); });
 window.addEventListener('resize', () => {
   clearTimeout(window._rz);
   window._rz = setTimeout(() => { if (App.view === 'weight') App.drawChart(); }, 180);
