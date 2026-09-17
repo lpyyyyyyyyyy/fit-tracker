@@ -149,6 +149,8 @@ button{cursor:pointer}
 /* ════════════ 容器响应式（窄屏自动收紧，避免挤压）════════════ */
 @media (max-width:400px){
   #app{padding-left:var(--s3);padding-right:var(--s3)}
+  /* ⚠️ 窄屏 #app 内边距变成 --s3，顶栏的负边距必须同步改成 --s3，否则又露缝 */
+  .top{margin-left:calc(var(--s3) * -1);margin-right:calc(var(--s3) * -1);padding-left:var(--s3);padding-right:var(--s3)}
   /* 顶栏的「铺满全宽」规则保持不变，只把左右内边距收到 --s3。
      ⚠️ 不要在这里写 margin-left:calc(...-1) —— 那会把刚修好的全宽又改回去。 */
   .card{padding:var(--s4) var(--s3)}
@@ -208,36 +210,31 @@ button{cursor:pointer}
       代价是没那么「依次浮现」，但绝不会出现黑块。 */
 @keyframes rise{from{opacity:0;transform:translate3d(0,8px,0)}to{opacity:1;transform:none}}
 
-/* ════════════ 顶栏：锁死在屏幕顶部，滚动时不走 ════════════
-   ⚠️ 顶栏「铺满整屏」这件事踩了三次坑，最后用固定定位伪元素解决，别再改：
+/* ════════════ 顶栏 ════════════
+   ⚠️ 这个顶栏返工了四次，最后定成下面这样，别再动它。
 
-   为什么前面几种做法都不行：
-   1) calc(50% - 50vw) —— vw 含滚动条、百分比不含，两边对不上，右边露底。
-   2) 负边距抵消 —— 窄屏媒体查询改了 #app 的 padding，负边距写死在别的值上，又露底。
-   3) 直接靠元素自身宽度 —— 会被 #app *{max-width:100%} 限制住，量出来还是差几十像素。
+   试过并失败的做法（都记着，避免再走一遍）：
+   1) calc(50% - 50vw) 全宽技巧 —— vw 含滚动条、百分比不含，右边永远差几像素。
+   2) 靠 #app 的内边距自然全宽 —— 但 #app *{max-width:100%} 会限制它。
+   3) position:fixed 的 ::before 画背景 —— **这条把页面画花了**：
+      那个伪元素带 z-index:-1，而 #app 本身是层叠上下文（position:relative + z-index:1），
+      黑块被压到内容后面、出现在错误的位置，还挡住了文字。
+   4) 顶栏下缘再加一条 fixed 渐隐 —— 同样的问题，一起删了。
 
-   现在：顶栏自己不管背景，交给一个 position:fixed 的 ::before 去铺满视口。
-   fixed 定位的包含块是视口，所以它天然就是全宽 —— 不受任何祖先约束。 */
+   现在：负边距抵消 #app 的左右内边距，margin 和 padding 用同一个变量，
+   数字必然一致；背景直接给 .top 自己（实色、不透明）。 */
 .top{
   position:sticky;top:0;z-index:30;
   display:flex;align-items:center;justify-content:space-between;gap:var(--s4);
-  padding:calc(env(safe-area-inset-top) + var(--s4)) 0 var(--s3);
-  margin:0 0 var(--s3);
-  background:transparent;              /* 背景交给 ::before */
-  transition:padding-top var(--d2) var(--e-out),padding-bottom var(--d2) var(--e-out);
+  margin-left:calc(var(--s4) * -1);
+  margin-right:calc(var(--s4) * -1);
+  margin-bottom:var(--s3);
+  padding:calc(env(safe-area-inset-top) + var(--s4)) var(--s4) var(--s3);
+  background:var(--bg);
 }
-/* 铺满整个视口宽度的背景层（fixed 定位 → 不受父级宽度/内边距影响） */
-.top::before{content:"";position:fixed;left:0;right:0;top:0;
-  height:100%;max-height:200px;         /* 只覆盖顶栏自身的高度范围，不影响下面 */
-  z-index:-1;pointer-events:none;
-  background:var(--bg)}
-/* 顶栏下缘一条渐隐：让滚上来的内容「淡出」，而不是被硬切一刀 */
-.top::after{content:"";position:fixed;left:0;right:0;height:20px;
-  z-index:-1;pointer-events:none;
-  background:linear-gradient(180deg,var(--bg) 0%,rgba(7,10,16,.5) 55%,rgba(7,10,16,0) 100%)}
-/* 桌面/平板：顶栏内容也跟着对齐到 600px 中间 */
+/* 桌面/平板：顶栏内容也对齐到 600px 中间（顶栏底仍是全宽） */
 @media (min-width:640px){
-  .top{padding-left:max(var(--s4), calc(50% - 300px + var(--s4)));padding-right:max(var(--s4), calc(50% - 300px + var(--s4)))}
+  .top{padding-left:max(var(--s4), calc(50% - 300px));padding-right:max(var(--s4), calc(50% - 300px))}
 }
 /* 滚下去之后收窄，把空间还给内容 */
 .top.shrink{padding-top:calc(env(safe-area-inset-top) + var(--s2));padding-bottom:var(--s2)}
@@ -516,15 +513,18 @@ canvas{display:block;width:100%;height:100%}
   padding:9px 4px calc(env(safe-area-inset-bottom) + 9px);
   background:rgba(9,12,18,.93);border-top:1px solid var(--line);
   backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur)}
-.tab{display:flex;flex-direction:column;align-items:center;gap:4px;padding:6px 4px;
-  border-radius:var(--r2);color:var(--dim);font-size:12px;font-weight:600;   /* M3：标签 12sp */
-  letter-spacing:.08em;position:relative;transition:color var(--d2) var(--e-out)}
+.tab{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;
+  padding:6px 4px;border-radius:var(--r2);color:var(--dim);
+  font-size:12px;font-weight:600;   /* M3：标签 12sp */
+  letter-spacing:.08em;position:relative;
+  transition:color var(--d2) var(--e-out)}
 .tab .i{font-size:23px;transition:color 150ms ease-out}   /* M3：图标 24dp */
-.tab.on{color:var(--text)}
+/* ⚠️ 选中态只用「颜色」表达，不再画药丸指示器。
+   之前那个 ::after{inset:0} 会盖住整个 tab，而它的底边正好压在标签文字上，
+   结果「进度」两个字被吃掉了。M3 的活跃指示器是可选的 —— 去掉更简单也更不容易出错。 */
+.tab.on{color:var(--accent)}
 .tab.on .i{color:var(--accent)}
-.tab.on::before{content:"";position:absolute;inset:0;border-radius:16px;   /* M3 活跃指示器圆角 16dp（绝对定位，不重排）*/
-  background:var(--surface-hi);z-index:-1;animation:tabin var(--d2) var(--e-spring)}
-@keyframes tabin{from{opacity:0}to{opacity:1}}
+.tab:active{background:rgba(200,215,235,.08)}   /* 按压反馈：只改背景，不改尺寸 */
 
 /* ════════════ 弹层 / 提示 ════════════ */
 .sheet{position:fixed;inset:0;z-index:80;display:none}
@@ -631,8 +631,12 @@ details .body b{color:var(--text);font-weight:650}
 .factor{display:grid;grid-template-columns:84px minmax(0,1fr) 28px;align-items:center;gap:var(--s3)}
 .factor .fn{font-size:var(--f-2xs);color:var(--text-2)}
 .factor .fv{font-family:var(--mono);font-size:var(--f-3xs);color:var(--dim);text-align:right}
-.factor.low .fn{color:var(--warn)}
-.factor.top .fn{color:var(--accent)}
+/* ⚠️ 这两个类名原来是 low / top —— **top 和顶栏的 .top 撞名了**。
+   结果顶栏的 background:var(--bg) 和 padding 被套到「最好的一项」那一行上，
+   在卡片里画出一条黑横条（这行高度也从 18px 变成 50px）。
+   改名成 worst / best，不可能再和任何布局类撞。 */
+.factor.worst .fn{color:var(--warn)}
+.factor.best .fn{color:var(--accent)}
 .note{display:flex;gap:var(--s3);padding:var(--s3) 0}
 .note+.note{padding-top:var(--s6)}
 .note .ni{width:22px;height:22px;border-radius:7px;flex:none;display:grid;place-items:center;font-size:12px}
@@ -1158,7 +1162,7 @@ details .body b{color:var(--text);font-weight:650}
    1 · 常量与工具
    ════════════════════════════════════════════════════════════════ */
 /* App 版本 —— 每次改完内容把它 +1，设置页会显示，用来确认看到的是不是最新版 */
-const APP_VER = '2026.09.17-15';
+const APP_VER = '2026.09.17-18';
 
 const JIN = 2;
 const DAY = 86400000;
@@ -3145,7 +3149,7 @@ const App = {
 
     const bn = MuscleModel.bottleneck(), st = MuscleModel.strongest();
     $('#gFactors').innerHTML = MuscleModel.detail().map(f => `
-      <div class="factor ${f.key === bn.key ? 'low' : f.key === st.key ? 'top' : ''}">
+      <div class="factor ${f.key === bn.key ? 'worst' : f.key === st.key ? 'best' : ''}">
         <span class="fn">${f.name}</span>
         <span class="bar thin${f.score >= 100 ? ' full' : ''}"><i style="width:${f.score}%;background:${f.key === bn.key ? 'var(--grad-warm)' : 'var(--grad-accent)'}"></i></span>
         <span class="fv">${f.score}</span>
