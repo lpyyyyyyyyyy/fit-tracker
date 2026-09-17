@@ -111,13 +111,16 @@ button{cursor:pointer}
 #env .vig{position:absolute;inset:0;
   background:radial-gradient(120% 78% at 50% 0%,transparent 42%,rgba(0,0,0,.55) 100%)}
 
-#app{position:relative;z-index:1;max-width:580px;margin:0 auto;padding:0 var(--s5) 156px}
+#app{position:relative;z-index:1;max-width:600px;margin:0 auto;padding:0 var(--s4) 156px}
 
-/* ════════════ 图标（内联 SVG，不用 emoji） ════════════ */
+/* ════════════ 图标（内联 SVG，不用 emoji） ════════════
+   ⚠️ 这个选择器必须覆盖图标里用到的**所有**形状标签。
+   之前漏了 ellipse，导致「轨道 / 目标」图标里的椭圆被默认填成黑色实心块。
+   现在把所有常见形状标签都列进来，避免以后加图标再踩。 */
 .i{width:1em;height:1em;display:block;flex:none;overflow:visible}
-.i path,.i circle,.i rect,.i line,.i polyline{
+.i path,.i circle,.i ellipse,.i rect,.i line,.i polyline,.i polygon{
   fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
-.i.fill path,.i.fill circle{fill:currentColor;stroke:none}
+.i.fill path,.i.fill circle,.i.fill ellipse{fill:currentColor;stroke:none}
 
 /* ════════════ 视图切换 ════════════ */
 .view{display:none}
@@ -139,8 +142,8 @@ button{cursor:pointer}
   position:sticky;top:0;z-index:30;
   display:flex;align-items:center;justify-content:space-between;gap:var(--s4);
   padding:calc(env(safe-area-inset-top) + var(--s4)) 0 var(--s3);
-  margin:0 calc(var(--s5) * -1) var(--s3);
-  padding-left:var(--s5);padding-right:var(--s5);
+  margin:0 calc(var(--s4) * -1) var(--s3);
+  padding-left:var(--s4);padding-right:var(--s4);
   background:linear-gradient(180deg,rgba(7,10,16,.94) 62%,rgba(7,10,16,.72) 100%);
   backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);
   transition:padding var(--d2) var(--e-out),background var(--d2) var(--e-out);
@@ -165,7 +168,7 @@ button{cursor:pointer}
 /* ════════════ 卡片 ════════════ */
 .card{
   position:relative;background:var(--surface);border:1px solid var(--line);border-radius:var(--r4);
-  padding:var(--s6) var(--s5);margin-bottom:var(--s6);box-shadow:var(--shadow-1);
+  padding:var(--s5) var(--s4);margin-bottom:var(--s5);box-shadow:var(--shadow-1);
   backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);
   transition:border-color var(--d2) var(--e-out),background var(--d2) var(--e-out);
   overflow:hidden;
@@ -209,67 +212,74 @@ button{cursor:pointer}
 .metric .v{font-size:var(--f-md);font-weight:600;font-variant-numeric:tabular-nums;letter-spacing:-.01em}
 .metric .v sub{font-size:var(--f-3xs);color:var(--dim);font-weight:500;margin-left:3px;letter-spacing:.02em}
 
-/* ════════════ 时间轴（无线版：靠间距和留白分组） ════════════ */
+/* ════════════ 时间轴 ════════════
+   ⚠️ 反复踩过的坑，记在这里：
+   1) 容器上必须有 .tl 类（#timeline），否则 .tl.hideSub 这类后代规则全部失效
+   2) grid 最后一列**不能用 auto 或 max-content** —— auto 即使空内容也会吃光剩余空间；
+      max-content 在空内容时行为也不稳。这里改成「状态列绝对定位在右侧」，
+      内容列永远是简单的 1fr，不再依赖任何 auto/fr 的博弈。
+   3) 标题行不要用 flex 包住圆点：直接让圆点 inline-block 跟着文字，
+      少一层布局就少一个出错点。 */
 .tl{position:relative}
-/* 时间列 52px + 圆点列 14px + 间距，用变量统一管理，改一处全对 */
-.tl{--tw:52px; --dotw:14px; --gap:var(--s3)}
-.tlBlock{display:flex;align-items:baseline;gap:var(--s2);
-  padding:var(--s7) 0 var(--s3) calc(var(--tw) + var(--dotw) + var(--gap) + var(--gap));
+.tlBlock{padding:var(--s6) 0 var(--s2) 58px;
   font-size:var(--f-3xs);letter-spacing:.22em;text-transform:uppercase;color:var(--dim);font-weight:650}
 .tlBlock:first-child{padding-top:var(--s1)}
-.tlBlock .cnt{font-family:var(--mono);font-size:9.5px;letter-spacing:.02em;color:rgba(200,215,235,.2)}
-.tlBlock .cnt.all{color:rgba(79,214,196,.55)}
-.tlRow{display:grid;grid-template-columns:var(--tw) var(--dotw) minmax(0,1fr) auto;align-items:center;
-  column-gap:var(--gap);padding:16px 0;width:100%;text-align:left;
-  background:none;border:none;border-radius:var(--r2);color:var(--text);
+.tlRow{display:grid;grid-template-columns:44px minmax(0,1fr);
+  column-gap:12px;align-items:baseline;
+  padding:12px var(--s3);width:100%;text-align:left;
+  background:none;border:none;border-radius:var(--r1);color:var(--text);
   position:relative;overflow:hidden;
   transition:background var(--d1) var(--e-out)}
 .tlRow:active{background:rgba(200,215,235,.055)}
-/* 已完成的项自动收紧 —— 打完卡就不再占一整行的高度，一天越往后越清爽 */
-.tlRow.done{padding-top:8px;padding-bottom:8px}
+.tlRow.done{padding-top:7px;padding-bottom:7px}
 .tlRow.done .tlSub{display:none}
-.tlTime{font-family:var(--mono);font-size:var(--f-2xs);opacity:.85;color:var(--faint);
-  font-weight:500;letter-spacing:0;align-self:center;white-space:nowrap}
-.tlDot{width:9px;height:9px;border-radius:50%;justify-self:center;align-self:center;position:relative;
-  border:1.4px solid rgba(200,215,235,.2);transition:all var(--d2) var(--e-spring)}
-/* ── 已完成：实心渐变圆点（和"当前"完全不同）── */
-.tlRow.done .tlDot{background:var(--accent);border-color:transparent;box-shadow:0 0 9px rgba(79,214,196,.4)}
-.tlRow.overdue .tlDot{border-color:rgba(224,169,79,.85);background:rgba(224,169,79,.3)}
-/* ── 当前该做：整行淡底 + 空心圆环呼吸。
-      竖条挂在「文字列」的左边（不是整行的左边），所以永远不会碰到时间数字 ── */
-.tlRow.now{background:linear-gradient(90deg,rgba(79,214,196,.05),transparent 58%)}
-.tlRow.now .tlMain::before{content:"";position:absolute;
-  left:calc(var(--tw) + var(--dotw) + var(--gap) + var(--gap) - 7px);
-  top:10px;bottom:10px;width:2px;border-radius:2px;background:var(--accent);opacity:.8}
-.tlRow.done .tlMain::before{display:none}
-.tlRow.now .tlDot{border-color:var(--accent);border-width:2px;background:transparent;
-  animation:halo 3.4s var(--e-soft) infinite}
-@keyframes halo{0%,100%{box-shadow:0 0 0 0 rgba(79,214,196,.34)}55%{box-shadow:0 0 0 4.5px rgba(79,214,196,0)}}
-/* ── 防溢出：任何长文案都只能在自己格子里截断，绝不可能顶到卡片边框 ── */
-.tlMain{min-width:0;overflow:hidden;position:relative}
-.tlName{display:flex;align-items:center;gap:8px;font-size:var(--f-sm);font-weight:600;line-height:1.35;
-  min-width:0;transition:color var(--d2)}
-.tlName .i{font-size:15px;color:var(--faint);flex:none;transition:color var(--d2)}
-.tlName .nm{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tlTime{font-family:var(--mono);font-size:var(--f-2xs);opacity:.78;color:var(--faint);
+  font-weight:500;letter-spacing:0;white-space:nowrap}
+.tlBody{min-width:0;overflow:hidden;display:block;padding-right:58px}
+/* 圆点：inline-block，直接跟在文字前，不参与 flex 也不占列 */
+.tlDot{display:inline-block;width:8px;height:8px;border-radius:50%;vertical-align:middle;
+  margin-right:9px;position:relative;top:-1px;
+  border:1.4px solid rgba(200,215,235,.26);transition:all var(--d2) var(--e-spring)}
+.tlRow.done .tlDot{background:var(--accent);border-color:transparent;box-shadow:0 0 8px rgba(79,214,196,.42)}
+.tlRow.overdue .tlDot{border-color:rgba(224,169,79,.8);background:rgba(224,169,79,.35)}
+.tlName{display:block;font-size:var(--f-sm);font-weight:600;line-height:1.45;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;transition:color var(--d2)}
+.tlName .i{display:inline-block;vertical-align:-2px;font-size:15px;margin-right:7px;
+  color:var(--faint);transition:color var(--d2)}
+.tlName .nm{display:inline}
 .tlRow.done .tlName .i{color:var(--accent-deep)}
 .tlRow.now .tlName .i{color:var(--accent)}
-.tlSub{font-size:var(--f-2xs);color:var(--dim);margin-top:6px;line-height:1.7;
+/* 当前该做 */
+.tlRow.now{background:linear-gradient(90deg,rgba(79,214,196,.07),rgba(79,214,196,.015) 58%,transparent)}
+.tlRow.now::before{content:"";position:absolute;left:0;top:9px;bottom:9px;width:2px;
+  border-radius:0 2px 2px 0;background:var(--accent);opacity:.9}
+.tlRow.now .tlDot{border-color:var(--accent);border-width:2px;background:transparent;
+  animation:halo 3.4s var(--e-soft) infinite}
+@keyframes halo{0%,100%{box-shadow:0 0 0 0 rgba(79,214,196,.32)}55%{box-shadow:0 0 0 4px rgba(79,214,196,0)}}
+.tlSub{font-size:var(--f-2xs);color:var(--dim);margin-top:4px;line-height:1.6;
   overflow-wrap:anywhere;overflow:hidden}
 .tlRow.done .tlName{color:var(--dim);font-weight:500}
 .tlRow.done .tlName .nm{text-decoration:line-through;text-decoration-thickness:1px;
   text-decoration-color:rgba(200,215,235,.18)}
 .tlRow.done .tlSub{opacity:.36}
-.tlMark{font-size:var(--f-2xs);color:var(--dim);white-space:nowrap;padding-left:var(--s2);
-  font-weight:600;letter-spacing:.04em;display:flex;align-items:center;gap:4px}
+/* 右侧状态：绝对定位在行的右内侧，不再占网格列 */
+.tlMark{position:absolute;right:var(--s3);top:12px;
+  font-size:var(--f-2xs);color:var(--dim);white-space:nowrap;
+  font-weight:600;letter-spacing:.04em;display:inline-flex;align-items:center;gap:4px}
+.tlRow.done .tlMark{top:7px}
 .tlMark .i{font-size:13px}
 .tlRow.done .tlMark{color:var(--accent)}
 .tlRow.action .tlMark{color:var(--ink-400)}
 .tlRow.overdue .tlTime{color:var(--warn)}
 .tlRow.overdue .tlMark{color:var(--warn)}
-/* 已经弹过通知了：时间旁边加一个小圆点，表示'提醒已发出' */
-.tlRow.alerted .tlTime::after{content:'';display:inline-block;width:4px;height:4px;border-radius:50%;background:var(--warn);margin-left:4px;vertical-align:middle;opacity:.9}
+.tlRow.alerted .tlTime::after{content:'';display:inline-block;width:4px;height:4px;border-radius:50%;
+  background:var(--warn);margin-left:4px;vertical-align:middle;opacity:.9}
 .tlRow.alerted .tlTime{color:var(--warn)}
 
+/* 时间轴副标题默认隐藏（点右上角标签可展开）—— 一屏更清爽 */
+.tl.hideSub .tlSub{display:none}
+.tl.hideSub .tlRow{padding-top:11px;padding-bottom:11px}
+.tl.hideSub .tlRow.done{padding-top:7px;padding-bottom:7px}
 /* ════════════ 水杯：改成小圆点阵，视觉重量降到最低 ════════════ */
 .cups{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
 .cup{width:26px;height:26px;border-radius:50%;flex:none;position:relative;overflow:hidden;
@@ -322,7 +332,7 @@ button{cursor:pointer}
 .btn.wide{width:100%}
 
 /* ════════════ 进度条 ════════════ */
-.bar{height:6px;border-radius:var(--rf);background:var(--track);overflow:hidden}
+.bar{display:block;height:6px;border-radius:var(--rf);background:var(--track);overflow:hidden}
 .bar i{display:block;height:100%;border-radius:inherit;width:0;background:var(--grad-accent);
   transition:width 1.1s var(--e-out)}
 .bar.gold i{background:var(--grad-warm)}
@@ -333,10 +343,11 @@ button{cursor:pointer}
 .tiles{display:grid;gap:var(--s4)}
 .tiles.c2{grid-template-columns:1fr 1fr}
 .tiles.c3{grid-template-columns:repeat(3,1fr)}
-.tile{background:var(--surface);border:1px solid var(--line);border-radius:var(--r2);padding:18px}
-.tile .k{font-size:var(--f-3xs);letter-spacing:.16em;text-transform:uppercase;color:var(--dim);
-  display:flex;align-items:center;gap:5px}
-.tile .k .i{font-size:12px}
+.tile{background:var(--surface);border:1px solid var(--line);border-radius:var(--r2);padding:18px;
+  position:relative;overflow:hidden}
+.tile .k{display:flex;align-items:center;gap:5px;
+  font-size:var(--f-3xs);letter-spacing:.16em;text-transform:uppercase;color:var(--dim)}
+.tile .k .i{font-size:12px;flex:none}
 .tile .v{font-size:var(--f-xl);font-weight:600;letter-spacing:-.03em;font-variant-numeric:tabular-nums;
   margin-top:6px;line-height:1.1}
 .tile .v sub{font-size:var(--f-2xs);font-weight:500;color:var(--dim);margin-left:3px;letter-spacing:0}
@@ -419,8 +430,8 @@ canvas{display:block;width:100%;height:100%}
 .toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
 
 /* ════════════ 提示条 ════════════ */
-.banner{display:flex;align-items:center;gap:var(--s3);padding:13px var(--s4);margin-bottom:var(--s4);
-  border-radius:var(--r2);font-size:var(--f-xs);line-height:1.5;
+.banner{display:flex;align-items:center;gap:var(--s3);padding:11px var(--s4);margin-bottom:var(--s3);
+  border-radius:var(--r2);font-size:var(--f-2xs);line-height:1.45;
   border:1px solid rgba(224,169,79,.24);
   background:linear-gradient(120deg,rgba(224,169,79,.1),rgba(224,169,79,.03));
   animation:rise var(--d3) var(--e-out) both;cursor:pointer}
@@ -455,12 +466,12 @@ details .body b{color:var(--text);font-weight:650}
 .sw.on i{transform:translateX(19px);background:#04211d}
 
 /* ════════════ 肌肉守护卡 ════════════ */
-.guardTop{display:grid;grid-template-columns:auto minmax(0,1fr);gap:var(--s5);align-items:center}
+.guardTop{display:grid;grid-template-columns:auto minmax(0,1fr);gap:var(--s4);align-items:baseline}
 .guardNum{font-size:var(--f-display);font-weight:500;letter-spacing:-.05em;line-height:1;
   font-family:var(--mono);font-variant-numeric:tabular-nums}
 .guardNum sub{font-size:var(--f-sm);font-weight:500;color:var(--dim);margin-left:2px;letter-spacing:0}
-.factors{display:flex;flex-direction:column;gap:var(--s3);margin-top:var(--s4)}
-.factor{display:grid;grid-template-columns:78px minmax(0,1fr) 34px;align-items:center;gap:var(--s3)}
+.factors{display:flex;flex-direction:column;gap:var(--s4);margin-top:var(--s5)}
+.factor{display:grid;grid-template-columns:84px minmax(0,1fr) 28px;align-items:center;gap:var(--s3)}
 .factor .fn{font-size:var(--f-2xs);color:var(--text-2)}
 .factor .fv{font-family:var(--mono);font-size:var(--f-3xs);color:var(--dim);text-align:right}
 .factor.low .fn{color:var(--warn)}
@@ -468,9 +479,11 @@ details .body b{color:var(--text);font-weight:650}
 .note{display:flex;gap:var(--s3);padding:var(--s3) 0}
 .note+.note{padding-top:var(--s6)}
 .note .ni{width:22px;height:22px;border-radius:7px;flex:none;display:grid;place-items:center;font-size:12px}
-.note .nb{font-size:var(--f-xs);line-height:1.75;color:var(--text-2)}
+/* ⚠️ 这几个都是 <span>，必须显式 display:block ——
+   inline 元素上的 margin-bottom / 换行都不生效，会导致标题和正文粘成一行 */
+.note .nt{display:block;font-size:var(--f-xs);font-weight:650;color:var(--text);margin-bottom:5px}
+.note .nb{display:block;font-size:var(--f-xs);line-height:1.75;color:var(--text-2)}
 .note .nb b{color:var(--text);font-weight:650}
-.note .nt{font-size:var(--f-xs);font-weight:650;color:var(--text);margin-bottom:3px}
 .note.great .ni{background:rgba(95,211,154,.12);color:var(--ok)}
 .note.good .ni,.note.info .ni{background:rgba(79,214,196,.12);color:var(--accent)}
 .note.warn .ni{background:rgba(224,169,79,.12);color:var(--warn)}
@@ -567,16 +580,10 @@ details .body b{color:var(--text);font-weight:650}
     <div class="card">
       <div class="chead">
         <div class="ctitle"><span class="badge"><span class="i" data-i="orbit"></span></span>今日时间轴</div>
-        <span class="tag acc" id="timelinePill">—</span>
+        <button class="tag acc" id="timelinePill" onclick="App.toggleSub()">—</button>
       </div>
-      <div id="timeline"></div>
+      <div id="timeline" class="tl hideSub"></div>
       <div class="hint mt4" id="mealHint"></div>
-      <div class="hr"></div>
-      <div class="kv" style="border-bottom:none;padding-bottom:0">
-        <span class="k" style="display:flex;align-items:center;gap:8px">
-          <span class="i" data-i="dumbbell" style="font-size:15px;color:var(--faint)"></span>今天训练</span>
-        <span class="v"><button class="btn ghost" onclick="App.go('train')"><span id="trainTag" class="tag">未完成</span></button></span>
-      </div>
     </div>
 
     <div class="card">
@@ -787,17 +794,19 @@ details .body b{color:var(--text);font-weight:650}
     </div>
 
     <div class="card">
-      <div class="chead">
-        <div class="ctitle">模型说明</div>
-      </div>
-      <div class="hint" style="line-height:1.9">
-        <b>BMI</b> = 体重 / 身高²（WHO 标准）。<br>
-        <b>BMR</b> = Mifflin-St Jeor：10×体重 + 6.25×身高 − 5×年龄 + 5。<br>
-        <b>体脂率</b> = Deurenberg：1.20×BMI + 0.23×年龄 − 10.8（男）− 5.4，误差约 ±4%，<b>看趋势别看绝对值</b>。<br>
-        <b>脂肪 / 肌肉分配</b> = 分配系数法（借鉴 Forbes 模型「体脂越低、去脂体重被动用越多」的趋势）：按训练、蛋白、睡眠、当前体脂率算出肌肉占掉秤的比例，从 ~42%（无保护）到 ~5%（完整保护）。<br>
-        <b>热量到体重</b>：7700 kcal ≈ 1kg 脂肪。<br>
-        <b>代谢适应</b>：体重每降一点，BMR 跟着降，再叠加约 5% 的适应性产热下降 —— 所以掉秤会越来越慢，这是模型算出来的，不是你没努力。
-      </div>
+      <details>
+        <summary>这些数字是怎么算出来的</summary>
+        <div class="body">
+          <b>BMI</b> = 体重 / 身高²（WHO 标准）。<br>
+          <b>BMR</b> = Mifflin-St Jeor：10×体重 + 6.25×身高 − 5×年龄 + 5。<br>
+          <b>体脂率</b> = Deurenberg：1.20×BMI + 0.23×年龄 − 10.8（男）− 5.4。误差约 ±4%，<b>看趋势别看绝对值</b>。<br>
+          <b>热量 → 体重</b>：不用硬编码的 7700，而是按当前脂肪量算能量密度
+          ED(FM) = 9440.7 − 7624.3 × 10.4 / (FM + 10.4)。<br>
+          脂肪 35kg 的人算出来正好是 7700，但瘦的人会低到 5500 —— 这解释了为什么<b>越瘦越难减</b>。<br>
+          <b>脂肪 / 肌肉分配</b> = Forbes 模型（男 FFM = 13.8·ln(FM) + 16.9），再用训练、蛋白、睡眠、缺口四个系数决定能挡住多少肌肉流失。<br>
+          <b>代谢适应</b>：dAT/dt = (0.14·ΔEI − AT) / 14 —— 每 1 kcal 缺口最多产生 0.14 kcal/天的适应，时间常数 14 天。所以掉秤会越来越慢，<b>这是模型算出来的，不是你没努力</b>。
+        </div>
+      </details>
     </div>
   </section>
 
@@ -839,10 +848,11 @@ details .body b{color:var(--text);font-weight:650}
         <span class="tag">每次 +1</span>
       </div>
       <div id="exList"></div>
+      <details class="mt3">
+        <summary>动作要领（做之前看一遍）</summary>
+        <div class="body" id="exGuide"></div>
+      </details>
     </div>
-
-    <div class="sec">动作要领</div>
-    <div id="exGuide"></div>
   </section>
 
   <!-- ══════════════ 设置 ══════════════ -->
@@ -2006,10 +2016,20 @@ const App = {
   init() {
     DB.load();
     paintIcons();
+    /* 读回「隐藏时间轴说明」的偏好（默认隐藏） */
+    try {
+      const el = $('#timeline');
+      if (el && localStorage.getItem('ran_fit_hidesub') !== '0') el.classList.add('hideSub');
+    } catch (e) {}
     this.bind();
     this.renderAll();
     Reminder.schedule();
-    setInterval(() => { if (this.view === 'today') this.renderToday(); }, 60000);
+    /* 每分钟只刷新「会随时间变化」的部分，不再整页重渲染（滑动的卡顿来源之一）*/
+    setInterval(() => {
+      if (this.view !== 'today') return;
+      this.renderHero(); this.renderCups(); this.renderSteps();
+      if (this.lateInfo()) this.renderLate();
+    }, 60000);
     setInterval(() => Reminder.check(), 30000);
   },
 
@@ -2112,10 +2132,7 @@ const App = {
 
     const r = DB.rec();
     if (document.activeElement !== $('#stepsInput')) $('#stepsInput').value = r.steps ?? '';
-
-    const tag = $('#trainTag');
-    if (tag) { tag.textContent = r.train ? '已完成' : '未完成'; tag.className = 'tag' + (r.train ? ' ok' : ''); }
-    $('#marchState').textContent = r.steps ? `今天已记录 ${r.steps} 步` : '绑在刷手机/看剧上，20 分钟，不用出门。';
+    $('#marchState').textContent = r.steps ? `今天已记录 ${r.steps} 步` : '绑在刷手机/看剧上，20 分钟。';
   },
 
   renderHero() {
@@ -2171,9 +2188,11 @@ const App = {
 
       html += `<button class="${cls.join(' ')}" onclick="${onclick}">
         <span class="tlTime">${it.time}</span>
-        <span class="tlDot"></span>
-        <span class="tlMain">
-          <span class="tlName">${icon(it.ic)}<span class="nm">${it.name}</span></span>
+        <span class="tlBody">
+          <span class="tlName">
+            <span class="tlDot"></span>
+            ${icon(it.ic)}<span class="nm">${it.name}</span>
+          </span>
           <span class="tlSub">${it.sub}</span>
         </span>
         <span class="tlMark">${mark}</span>
@@ -2252,7 +2271,16 @@ const App = {
     tag.className = 'tag' + (v >= s.stepGoal ? ' ok' : '');
   },
 
-  /* ══ 到点未完成的横幅（这组方法之前漏定义了，是 bug） ══ */
+  /* 副标题显示/隐藏（默认隐藏，点时间轴右上角那个标签切换）*/
+  toggleSub() {
+    const el = $('#timeline');
+    if (!el) return;
+    const hidden = el.classList.toggle('hideSub');
+    try { localStorage.setItem('ran_fit_hidesub', hidden ? '1' : '0'); } catch (e) {}
+    this.toast(hidden ? '已隐藏说明，只留标题' : '已显示说明');
+  },
+
+  /* ── 到点未完成的横幅 ── */
   showOverdueBadge(due) {
     const el = $('#overdueBadge');
     if (!el) return;
@@ -2511,13 +2539,13 @@ const App = {
 
     const span = list.length >= 2 ? Math.max(1, diffDays(list[0].date, list[list.length - 1].date)) : 0;
     const rateJin = span ? kg2jin(list[0].kg - cur) / span : 0;
-    $('#pRate').innerHTML = span && rateJin > 0 ? fmt(rateJin, 2) + '<sub>斤/天</sub>' : '—';
+    $('#pRate').innerHTML = span && rateJin > 0 ? fmt(rateJin, 2) + '<sub>斤/天</sub>' : '<span style="font-size:var(--f-2xs);color:var(--dim);font-weight:500">需 2 次体重记录</span>';
     if (rateJin > 0.02 && remain > 0) {
       const days = Math.ceil(remain / (rateJin / JIN));
       const eta = addDays(todayKey(), days);
       const within = diffDays(todayKey(), eta) <= (s.planDays - dayNum);
       $('#pEta').innerHTML = `<span style="font-size:var(--f-md);color:${within ? 'var(--accent)' : 'var(--warn)'}">${eta.slice(5)}</span><sub>${days}天后</sub>`;
-    } else $('#pEta').innerHTML = '—';
+    } else $('#pEta').innerHTML = '<span style="font-size:var(--f-2xs);color:var(--dim);font-weight:500">需 2 次体重记录</span>';
 
     /* 肌肉守护 */
     const gs = MuscleModel.score();
@@ -2957,25 +2985,36 @@ const Sky = {
     this.build();
   },
   build() {
-    const n = Math.round(clamp(this.w * this.h / 9000, 40, 150));
+    /* 星点数量按屏幕面积算，但封顶更狠 —— 之前最多 150 个，滑动时明显掉帧 */
+    const n = Math.round(clamp(this.w * this.h / 16000, 28, 72));
     this.stars = Array.from({ length:n }, () => {
       const depth = Math.random();
       return {
         x: Math.random() * this.w, y: Math.random() * this.h,
-        r: 0.35 + depth * 1.25,
-        a: 0.12 + depth * 0.5,
-        vx: (Math.random() - .5) * (0.006 + depth * 0.02),
-        vy: (Math.random() - .5) * (0.006 + depth * 0.02),
+        r: 0.35 + depth * 1.15,
+        a: 0.12 + depth * 0.48,
+        vx: (Math.random() - .5) * (0.006 + depth * 0.016),
+        vy: (Math.random() - .5) * (0.006 + depth * 0.016),
         ph: Math.random() * Math.PI * 2,
-        sp: 0.4 + Math.random() * 1.1,
+        sp: 0.4 + Math.random() * 1.0,
       };
     });
   },
-  play() { if (this.alive) return; this.alive = true; this.loop(); },
+  play() {
+    if (this.alive) return;
+    this.alive = true;
+    this.last = 0;
+    this.loop(Date.now());
+  },
   pause() { this.alive = false; cancelAnimationFrame(this.raf); },
-  loop() {
+  loop(now) {
     if (!this.alive) return;
-    this.t += 0.016;
+    this.raf = requestAnimationFrame(t => this.loop(t));
+    /* 限帧到 ~30fps：星空是背景装饰，30fps 完全看不出来，但省一半 GPU */
+    if (now - (this.last || 0) < 33) return;
+    const dt = Math.min((now - (this.last || now)) / 1000, 0.1);
+    this.last = now;
+    this.t += dt;
     const g = this.g; if (!g) return;
     g.clearRect(0, 0, this.w, this.h);
 
@@ -2989,7 +3028,7 @@ const Sky = {
       g.fill();
     }
     /* 偶尔一颗流星 */
-    if (!this.shooting && Math.random() < 0.0022) {
+    if (!this.shooting && Math.random() < 0.0025) {
       this.shooting = { x: Math.random() * this.w * .6 + this.w * .2, y: Math.random() * this.h * .35,
                         vx: 2.6 + Math.random() * 1.4, vy: 1.1 + Math.random() * .7, life: 1 };
     }
@@ -3003,7 +3042,6 @@ const Sky = {
       m.x += m.vx * 2.6; m.y += m.vy * 2.6; m.life -= 0.018;
       if (m.life <= 0 || m.x > this.w + 40 || m.y > this.h + 40) this.shooting = null;
     }
-    this.raf = requestAnimationFrame(() => this.loop());
   },
 };
 
