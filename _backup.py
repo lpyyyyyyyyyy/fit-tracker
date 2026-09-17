@@ -45,7 +45,7 @@ CDP_PORT = 9222
 # 跟着代码一起同步的文件（不含 _ 开头的本地工具）
 CODE_FILES = [
     "index.html", "sw.js", "manifest.json", "README.md",
-    "tools.py", "_backup.py",                 # Python 工具也进仓库
+    "tools.py", "_backup.py", "run-backup.cmd",   # Python 工具 + 任务包装也进仓库
     ".gitignore", ".nojekyll",
 ]
 
