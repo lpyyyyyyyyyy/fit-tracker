@@ -533,13 +533,16 @@ canvas{display:block;width:100%;height:100%}
 .sheet .scrim{position:absolute;inset:0;background:rgba(3,5,9,.68);
   backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);animation:fadein var(--d2) var(--e-out)}
 @keyframes fadein{from{opacity:0}to{opacity:1}}
+/* transform 用来做下拉关闭，必须带过渡，否则松手会生硬跳回 */
 .sheet .panel{position:absolute;left:0;right:0;bottom:0;max-width:580px;margin:0 auto;
+  transition:transform var(--d2) var(--e-out);touch-action:pan-y;
   background:linear-gradient(180deg,#101620,#0b1017);
   border-radius:var(--r4) var(--r4) 0 0;border-top:1px solid var(--line-hi);
   padding:var(--s6) var(--s5) calc(env(safe-area-inset-bottom) + var(--s6));
   max-height:86vh;overflow:auto;animation:up var(--d2) var(--e-out)}
 @keyframes up{from{transform:translateY(26px);opacity:.5}to{transform:none;opacity:1}}
-.sheet .grip{width:38px;height:4px;border-radius:2px;background:var(--line-hi);margin:-8px auto var(--s5)}
+.sheet .grip{width:38px;height:4px;border-radius:2px;background:var(--line-hi);margin:-8px auto var(--s3);
+  position:relative}
 .sheet h3{margin:0 0 var(--s3);font-size:var(--f-lg);font-weight:600;letter-spacing:-.01em}
 /* 今日页顶部的训练入口条 —— 一个不抖的整行按压目标 */
 .trainEntry{display:flex;align-items:center;gap:10px;width:100%;text-align:left;
@@ -1301,7 +1304,7 @@ details .body b{color:var(--text);font-weight:650}
    1 · 常量与工具
    ════════════════════════════════════════════════════════════════ */
 /* App 版本 —— 每次改完内容把它 +1，设置页会显示，用来确认看到的是不是最新版 */
-const APP_VER = '2026.09.17-23';
+const APP_VER = '2026.09.17-27';
 
 const JIN = 2;
 const DAY = 86400000;
@@ -2547,6 +2550,24 @@ const Reminder = {
 const Timer = {
   seq: [], idx: 0, running: false, endAt: 0, raf: null, countUp: false, elapsed: 0, wakeLock: null,
 
+  /* ⚠️ 训练相关元素在「训练页」和「训练弹窗」里各有一份，id 相同。
+     document.querySelector('#tNum') 永远返回**文档里第一个** —— 也就是隐藏训练页里那个，
+     于是内容全写到了看不见的元素上：弹窗里的按钮和数字永远不变，
+     用户看到的就是「点开始训练没反应」。
+     统一走这个函数：先找可见容器里的，再退回全局。 */
+  el(id) {
+    const v = document.getElementById('v-' + (App.view || 'today'));
+    if (v) { const hit = v.querySelector('#' + id); if (hit) return hit; }
+    const sheet = document.getElementById('sheet');
+    if (sheet && sheet.classList.contains('on')) {
+      const hit = sheet.querySelector('#' + id);
+      if (hit) return hit;
+    }
+    const list = document.querySelectorAll('#' + id);
+    for (const n of list) { const r = n.getBoundingClientRect(); if (r.width > 0 || r.height > 0) return n; }
+    return list[0] || null;
+  },
+
   /* 动作要领 —— 训练页和弹窗共用同一份 */
   renderExGuide() {
     const html = EX_GUIDE.map(g =>
@@ -2564,11 +2585,11 @@ const Timer = {
     if (this.seq.length && this.idx < this.seq.length) this.paint();
     else {
       const total = this.total();
-      const n = $('#tNum');
+      const n = this.el('tNum');
       if (n) n.textContent = this.clip(`${Math.floor(total / 60)}:${String(total % 60).padStart(2, '0')}`, 8);
-      const e = $('#tEx'); if (e) e.textContent = '准备开始';
-      const h = $('#tHint'); if (h) h.textContent = '点开始，自动衔接';
-      const b = $('#tStartBtn'); if (b) b.textContent = '开始训练';
+      const e = this.el('tEx'); if (e) e.textContent = '准备开始';
+      const h = this.el('tHint'); if (h) h.textContent = '点开始，自动衔接';
+      const b = this.el('tStartBtn'); if (b) b.textContent = '开始训练';
     }
   },
 
@@ -2594,19 +2615,19 @@ const Timer = {
     this.countUp = !!(cur.ex && cur.ex.countUp);
     this.elapsed = 0;
     this.endAt = Date.now() + cur.secs * 1000;
-    $('#tStartBtn').textContent = '暂停';
+    this.el('tStartBtn').textContent = '暂停';
     this.requestWake();
     this.tick();
   },
-  pause() { this.running = false; cancelAnimationFrame(this.raf); $('#tStartBtn').textContent = '继续'; this.releaseWake(); },
+  pause() { this.running = false; cancelAnimationFrame(this.raf); this.el('tStartBtn').textContent = '继续'; this.releaseWake(); },
   reset() {
     this.running = false; cancelAnimationFrame(this.raf); this.seq = []; this.idx = 0;
-    $('#tStartBtn').textContent = '开始训练';
-    $('#tEx').textContent = '准备开始';
-    $('#tNum').textContent = '9:50';
-    $('#tHint').textContent = '点开始，自动衔接';
-    $('#tArc').setAttribute('stroke-dashoffset', 0);
-    $('#tRing').classList.remove('rest');
+    this.el('tStartBtn').textContent = '开始训练';
+    this.el('tEx').textContent = '准备开始';
+    this.el('tNum').textContent = '9:50';
+    this.el('tHint').textContent = '点开始，自动衔接';
+    this.el('tArc').setAttribute('stroke-dashoffset', 0);
+    this.el('tRing').classList.remove('rest');
     this.releaseWake();
   },
 
@@ -2622,12 +2643,12 @@ const Timer = {
   paint(left) {
     const cur = this.seq[this.idx] || { label:'完成', hint:'', secs:1 };
     const m = Math.floor(Math.abs(left) / 60), s = Math.abs(left) % 60;
-    $('#tEx').textContent = this.clip(cur.label, 8);
-    $('#tNum').textContent = `${m}:${String(s).padStart(2, '0')}`;
-    $('#tHint').textContent = this.clip(cur.hint, 8);
-    $('#tRing').classList.toggle('rest', cur.kind === 'rest');
+    this.el('tEx').textContent = this.clip(cur.label, 8);
+    this.el('tNum').textContent = `${m}:${String(s).padStart(2, '0')}`;
+    this.el('tHint').textContent = this.clip(cur.hint, 8);
+    this.el('tRing').classList.toggle('rest', cur.kind === 'rest');
     const ratio = cur.secs ? clamp(left / cur.secs, 0, 1) : 0;
-    $('#tArc').setAttribute('stroke-dashoffset', String(615.8 * (1 - ratio)));
+    this.el('tArc').setAttribute('stroke-dashoffset', String(615.8 * (1 - ratio)));
   },
 
   next() {
@@ -2635,10 +2656,10 @@ const Timer = {
     this.idx++;
     if (this.idx >= this.seq.length) {
       this.running = false;
-      $('#tStartBtn').textContent = '再来一次';
-      $('#tEx').textContent = '今天完成';
-      $('#tNum').textContent = '0:00';
-      $('#tHint').textContent = '下次每个动作 +1';
+      this.el('tStartBtn').textContent = '再来一次';
+      this.el('tEx').textContent = '今天完成';
+      this.el('tNum').textContent = '0:00';
+      this.el('tHint').textContent = '下次每个动作 +1';
       App.finishTrain();
       this.releaseWake();
       return;
@@ -2666,6 +2687,7 @@ const App = {
   init() {
     DB.load();
     paintIcons();
+    this.initSheetDrag();          /* 弹窗支持下拉关闭 */
     /* 读回「隐藏时间轴说明」的偏好（默认隐藏） */
     try {
       const el = $('#timeline');
@@ -2747,6 +2769,61 @@ const App = {
   },
   openSheet(title, html) { this.sheet(title, html); },
   closeSheet() { $('#sheet').classList.remove('on'); },
+
+  /* ⚠️ 弹窗必须能手势退出 —— 只能点「知道了」体验很差。
+     实现：拖手柄或面板顶部往下拖，超过面板高度 22% 就关闭；
+     从面板内部滚动区往下拖不触发（否则会和内容滚动打架）。 */
+  initSheetDrag() {
+    const sheet = $('#sheet');
+    if (!sheet) return;
+    const panel = sheet.querySelector('.panel');
+    if (!panel) return;
+    let y0 = 0, dy = 0, dragging = false, pid = null;
+
+    const fromTop = e => {
+      const g = e.target.closest && e.target.closest('.grip');
+      if (g) return true;
+      /* 面板已滚到顶部时，再从内容区往下拖也算下拉关闭 */
+      return panel.scrollTop <= 2;
+    };
+
+    panel.addEventListener('touchstart', e => {
+      if (e.touches.length !== 1 || !fromTop(e)) return;
+      dragging = true; dy = 0;
+      y0 = e.touches[0].clientY;
+      pid = e.touches[0].identifier;
+      panel.style.transition = 'none';
+    }, { passive: true });
+
+    panel.addEventListener('touchmove', e => {
+      if (!dragging) return;
+      const t = [...e.touches].find(x => x.identifier === pid) || e.touches[0];
+      dy = t.clientY - y0;
+      if (dy < 0) dy = 0;                      /* 往上拖不跟手，避免和滚动冲突 */
+      if (dy > 6 && e.cancelable) e.preventDefault();
+      panel.style.transform = `translateY(${dy}px)`;
+      const scrim = sheet.querySelector('.scrim');
+      if (scrim) scrim.style.opacity = String(Math.max(0, 1 - dy / 240));
+    }, { passive: false });
+
+    const settle = () => {
+      if (!dragging) return;
+      dragging = false;
+      const limit = panel.getBoundingClientRect().height * 0.22;
+      panel.style.transition = '';
+      const scrim = sheet.querySelector('.scrim');
+      if (scrim) scrim.style.opacity = '';
+      if (dy > limit) {
+        this.closeSheet();
+        panel.style.transform = '';
+      } else {
+        panel.style.transform = '';            /* 弹回原位 */
+      }
+      dy = 0;
+    };
+    panel.addEventListener('touchend', settle);
+    panel.addEventListener('touchcancel', settle);
+  },
 
   /* ── 今日 ── */
   renderToday() {
@@ -3464,13 +3541,15 @@ const App = {
         </div>
       </div>
       <p class="hint" style="margin-top:var(--s5)">深蹲 → 俯卧撑 → 站姿后踢腿 → 平板支撑，每个 1 组，组间休息 60 秒，全程自动衔接。</p>
-      <details class="mt3">
-        <summary>动作要领（做之前看一遍）</summary>
+      <details class="mt3" open>
+        <summary>动作要领 · 每个动作怎么做</summary>
         <div class="body" id="exGuideDrawer"></div>
       </details>
     `);
-    /* 弹窗里的元素 id 和训练页重复，渲染时优先找弹窗里的 */
-    this.renderExGuide();
+    /* ⚠️ renderExGuide 定义在 Timer 上，不是 App。
+       原来写成 this.renderExGuide() → 抛「is not a function」→
+       整个弹窗渲染中断、按钮点不动。 */
+    Timer.renderExGuide();
     Timer.syncUI();
   },
 
