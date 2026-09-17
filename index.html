@@ -561,6 +561,46 @@ canvas{display:block;width:100%;height:100%}
   font-weight:600;font-variant-numeric:tabular-nums}
 .stepRow .sr-go{font-size:var(--f-2xs);color:var(--dim);flex:none}
 
+/* ════════════ 忍不住嘴 ════════════ */
+.chips{display:flex;flex-wrap:wrap;gap:7px}
+.chipBtn{display:inline-flex;align-items:center;gap:6px;padding:8px 11px;border-radius:var(--rf);
+  background:var(--n-900);border:1px solid var(--line);color:var(--text-2);
+  font-size:var(--f-2xs);transition:background 120ms ease-out,border-color 120ms ease-out}
+.chipBtn em{font-style:normal;font-family:var(--mono);font-size:9.5px;color:var(--gold);opacity:.85}
+.chipBtn:active{background:rgba(216,173,106,.14);border-color:rgba(216,173,106,.35)}
+.extraRow{display:flex;align-items:center;gap:var(--s3);padding:9px 0;
+  border-bottom:1px solid var(--line);font-size:var(--f-xs)}
+.extraRow:last-child{border-bottom:none}
+.extraRow .er-n{flex:1;min-width:0;color:var(--text-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.extraRow .er-k{font-family:var(--mono);color:var(--gold);font-size:var(--f-2xs);flex:none}
+.extraRow .er-x{flex:none;width:24px;height:24px;border-radius:50%;color:var(--dim);
+  font-size:16px;line-height:1;transition:background 120ms ease-out,color 120ms ease-out}
+.extraRow .er-x:active{background:rgba(224,120,120,.16);color:var(--bad)}
+/* ════════════ 基础代谢计算器 ════════════ */
+.bmrRow{display:grid;grid-template-columns:1fr 1fr;gap:var(--s3)}
+.bmrCell{background:var(--n-900);border:1px solid var(--line);border-radius:var(--r2);
+  padding:var(--s4) var(--s3);min-width:0}
+.bmrK{font-size:var(--f-3xs);letter-spacing:.08em;color:var(--dim);text-transform:uppercase}
+.bmrV{font-family:var(--mono);font-size:26px;font-weight:700;letter-spacing:-.02em;
+  margin:6px 0 2px;font-variant-numeric:tabular-nums}
+.bmrV sub{font-size:var(--f-2xs);font-weight:500;color:var(--dim);margin-left:3px}
+.bmrD{font-size:var(--f-3xs);color:var(--dim);line-height:1.5}
+/* 一条横向堆叠条：BMR 段 + 活动段 + 食物段 */
+.bmrBar{display:flex;height:12px;border-radius:var(--rf);overflow:hidden;
+  box-shadow:inset 0 1px 3px rgba(0,0,0,.4)}
+.bmrBarIn{display:flex;height:100%;width:100%}
+.bmrBarIn .seg{height:100%;transition:width .8s var(--e-out)}
+.bmrSegBmr{background:linear-gradient(135deg,var(--a-400),var(--a-600))}
+.bmrSegAct{background:rgba(139,160,216,.55)}
+.bmrSegStep{background:rgba(139,160,216,.3)}
+.bmrLeg{display:flex;flex-wrap:wrap;gap:var(--s3);margin-top:var(--s3);font-size:var(--f-3xs);color:var(--dim)}
+.bmrLeg i{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:5px}
+.bmrRow2{display:flex;align-items:baseline;justify-content:space-between;gap:var(--s3);
+  padding:7px 0;border-bottom:1px solid var(--line);font-size:var(--f-xs)}
+.bmrRow2:last-child{border-bottom:none}
+.bmrRow2 .bk{color:var(--text-2)}
+.bmrRow2 .bv{font-family:var(--mono);font-weight:600;font-variant-numeric:tabular-nums}
+
 /* ════════════ 弹层里的「做法」区块 ════════════ */
 .howto{background:var(--n-900);border-radius:var(--r2);
   padding:var(--s4);margin:0 0 var(--s3)}
@@ -835,6 +875,30 @@ details .body b{color:var(--text);font-weight:650}
       <div class="tile"><div class="k">预计达标</div><div class="v" id="pEta">—</div></div>
     </div>
 
+    <!-- ⭐ 忍不住嘴：把多吃的记进来，预测才算得准 -->
+    <div class="sec">忍不住嘴</div>
+    <div class="card">
+      <div class="chead" style="margin-bottom:var(--s2)">
+        <div class="ctitle"><span class="badge gold"><span class="i" data-i="flame"></span></span>多吃了什么</div>
+        <span class="tag" id="extraPill">还没记</span>
+      </div>
+      <div class="hint">记下来不是为了自责 —— 是<b>为了让预测算得准</b>。
+        不记的话，模型会以为你缺口很大，高估掉秤、低估肌肉流失。</div>
+
+      <div class="chips mt4" id="extraPresets"></div>
+
+      <div class="rowline mt4">
+        <input id="extraName" placeholder="或者自己写，如「半碗米饭」" class="plainIn">
+      </div>
+      <div class="rowline mt3">
+        <input id="extraKcal" type="number" inputmode="numeric" placeholder="大概多少 kcal" class="plainIn">
+        <button class="btn primary" onclick="App.addExtra()">记上</button>
+      </div>
+
+      <div id="extraList" class="mt4"></div>
+      <div class="hint mt3" id="extraImpact">—</div>
+    </div>
+
     <div class="sec">肌肉守护</div>
     <div class="card">
       <div class="guardTop">
@@ -925,6 +989,63 @@ details .body b{color:var(--text);font-weight:650}
         <div class="tile"><div class="k">体脂率</div><div class="v" id="simBf" style="font-size:var(--f-lg)">—</div><div class="d" id="simBfSub">—</div></div>
       </div>
       <div class="hint mt4" id="simNote">—</div>
+    </div>
+
+    <div class="card">
+      <div class="chead">
+        <div class="ctitle"><span class="badge ink"><span class="i" data-i="flame"></span></span>基础代谢计算器</div>
+        <span class="tag" id="bmrPill">—</span>
+      </div>
+
+      <!-- 主数字：BMR / TDEE / 缺口 三个并排 -->
+      <div class="bmrRow">
+        <div class="bmrCell">
+          <div class="bmrK">基础代谢 BMR</div>
+          <div class="bmrV" id="bmrVal">—</div>
+          <div class="bmrD">躺着不动也要烧掉的</div>
+        </div>
+        <div class="bmrCell">
+          <div class="bmrK">每日消耗 TDEE</div>
+          <div class="bmrV" id="tdeeVal" style="color:var(--accent)">—</div>
+          <div class="bmrD">BMR × 活动系数 + 步数</div>
+        </div>
+      </div>
+
+      <div class="bmrBar mt4">
+        <div class="bmrBarIn" id="bmrBar"></div>
+      </div>
+      <div class="bmrLeg" id="bmrLegend"></div>
+      <div class="hint mt3" id="bmrEquation">—</div>
+
+      <div class="hr"></div>
+
+      <!-- 可调参数 -->
+      <details class="mt3" id="bmrPanelWrap">
+        <summary>改参数算算（体重 / 活动量 / 每天吃多少）</summary>
+        <div class="body">
+          <div class="kv"><span class="k">体重</span><span class="v"><input id="bmrKg" type="number" step="0.1" inputmode="decimal">kg</span></div>
+          <div class="kv"><span class="k">身高</span><span class="v"><input id="bmrCm" type="number" inputmode="numeric">cm</span></div>
+          <div class="kv"><span class="k">年龄</span><span class="v"><input id="bmrAge" type="number" inputmode="numeric">岁</span></div>
+          <div class="kv"><span class="k">性别</span><span class="v" style="gap:0">
+            <select id="bmrSex" style="text-align:right;font-weight:650">
+              <option value="m">男</option><option value="f">女</option>
+            </select></span></div>
+          <div class="kv"><span class="k">活动水平</span><span class="v" style="gap:0">
+            <select id="bmrAct" style="text-align:right;font-weight:650">
+              <option value="1.2">久坐（几乎不动）</option>
+              <option value="1.35" selected>轻度（在家办公 + 日常走动）</option>
+              <option value="1.45">中度（每周动 3 次）</option>
+              <option value="1.55">较高（每周动 4~5 次）</option>
+              <option value="1.725">高（体力工作或天天练）</option>
+            </select></span></div>
+          <div class="kv"><span class="k">每天吃</span><span class="v"><input id="bmrEat" type="number" inputmode="numeric">kcal</span></div>
+          <button class="btn wide mt3" onclick="App.resetBmr()">回到我的实际数据</button>
+        </div>
+      </details>
+
+      <!-- 结果拆解 -->
+      <div class="hr"></div>
+      <div id="bmrBreak"></div>
     </div>
 
     <div class="card">
@@ -1163,7 +1284,7 @@ details .body b{color:var(--text);font-weight:650}
    1 · 常量与工具
    ════════════════════════════════════════════════════════════════ */
 /* App 版本 —— 每次改完内容把它 +1，设置页会显示，用来确认看到的是不是最新版 */
-const APP_VER = '2026.09.17-19';
+const APP_VER = '2026.09.17-20';
 
 const JIN = 2;
 const DAY = 86400000;
@@ -1290,6 +1411,30 @@ const EX_GUIDE = [
   { n:'平板支撑', b:'手肘在肩膀正下方，前臂贴地。收腹、夹臀、脚尖蹬地，身体一条直线。<br><b>不要憋气</b> —— 保持正常呼吸。<br><b>常见错误：</b>塌腰（腰会疼）、撅屁股、低头看地。<br><b>撑不住怎么办：</b>撑 20 秒歇 10 秒再撑，累计 30 秒也算完成。质量比时长重要。' },
 ];
 
+
+/* ════════════════════════════════════════════════════════════════
+   忍不住嘴 —— 常见踩雷的份量估算
+   热量按「常见份量」的中位数给，不追求精确（误差 ±20% 无所谓，
+   关键是让模型知道今天多吃了多少，而不是以为你没吃）。
+   ════════════════════════════════════════════════════════════════ */
+const EXTRA_PRESETS = [
+  { n:'奶茶（全糖）',   kcal:450, p:4  },
+  { n:'奶茶（三分糖）', kcal:320, p:4  },
+  { n:'美式/拿铁',      kcal:150, p:8  },
+  { n:'重庆小面',       kcal:520, p:14 },
+  { n:'火锅（一顿）',   kcal:1200, p:60 },
+  { n:'烧烤（一顿）',   kcal:900,  p:45 },
+  { n:'炸鸡（一份）',   kcal:700,  p:35 },
+  { n:'汉堡',           kcal:550,  p:25 },
+  { n:'薯条（中）',     kcal:340,  p:4  },
+  { n:'啤酒 1 瓶',      kcal:150,  p:1  },
+  { n:'可乐 1 罐',      kcal:140,  p:0  },
+  { n:'蛋糕/甜点',      kcal:400,  p:5  },
+  { n:'饼干 1 包',      kcal:280,  p:3  },
+  { n:'坚果 1 把',      kcal:200,  p:5  },
+  { n:'米饭 1 碗',      kcal:230,  p:4  },
+  { n:'水果 1 份',      kcal:90,   p:1  },
+];
 const EXERCISES = [
   { id:'squat', name:'深蹲',     secs:45, unit:'个', base:15, tip:'像往后坐椅子，膝盖跟脚尖方向' },
   { id:'push',  name:'俯卧撑',   secs:45, unit:'个', base:10, tip:'身体一条直线，胸真的沉下去' },
@@ -1939,6 +2084,12 @@ const Impact = {
       if (sp.kind !== 'meal') return;
       if (done(id)) { kcal += sp.kcal; protein += sp.protein; }
     });
+    /* ⭐ 忍不住嘴多吃的也要算进实际摄入。
+       不算的话，模型会以为你缺口很大 → 高估掉秤、低估肌肉流失。 */
+    const extras = Array.isArray(r.extra) ? r.extra : [];
+    const extraKcal = extras.reduce((a, x) => a + (Number(x.kcal) || 0), 0);
+    const extraP = extras.reduce((a, x) => a + (Number(x.protein) || 0), 0);
+    kcal += extraKcal; protein += extraP;
     const steps = r.steps != null ? r.steps : 0;
     /* 睡觉时长：夜睡 6 小时 + 午睡（记了算 1 小时） */
     const sleepH = 6 + (done('nap') ? 1 : 0);
@@ -3108,6 +3259,7 @@ const App = {
 
   /* ── 进度 + 肌肉守护 ── */
   renderProgress() {
+    this.renderExtra();
     const s = DB.data.settings;
     const list = DB.weights();
     const start = s.startWeight;
@@ -3309,8 +3461,197 @@ const App = {
     this.toast('训练完成 · 今天不掉肌肉');
   },
 
+  /* ── 忍不住嘴：记下多吃的，让预测算准 ── */
+  extras() { const r = DB.rec(); return Array.isArray(r.extra) ? r.extra : []; },
+
+  addExtra(name, kcal, protein) {
+    const nEl = $('#extraName'), kEl = $('#extraKcal');
+    const nm = (name != null ? name : (nEl ? nEl.value : '')).trim();
+    const kk = Number(kcal != null ? kcal : (kEl ? kEl.value : 0));
+    if (!nm) return this.toast('写个名字吧');
+    if (!kk || kk <= 0 || kk > 5000) return this.toast('填个合理的热量（1~5000 kcal）');
+    const r = DB.rec();
+    r.extra = r.extra || [];
+    r.extra.push({ name: nm.slice(0, 20), kcal: Math.round(kk), protein: Math.round(protein || 0), at: Date.now() });
+    DB.save(); Backup.auto();
+    if (nEl) nEl.value = '';
+    if (kEl) kEl.value = '';
+    this.renderProgress();
+    /* 明确反馈：这一口让你今天的缺口变成了多少 */
+    const sum = this.extras().reduce((a, x) => a + x.kcal, 0);
+    const imp = Impact.fromRecord(DB.rec(), {});
+    const base = this.bmrInputs();
+    const s = DB.data.settings;
+    const tdee = Engine.tdee(base.kg, s.heightCm || 178, s.age || 20, s.sex || 'm', false)
+      + Math.min(500, (base.steps || 0) / 1000 * 45);
+    this.toast(`记上了 · 今天多吃 ${sum} kcal · 缺口约 ${Math.round(tdee - imp.kcal)}`);
+  },
+
+  delExtra(i) {
+    const r = DB.rec();
+    if (!r.extra || !r.extra[i]) return;
+    r.extra.splice(i, 1);
+    DB.save(); Backup.auto();
+    this.renderProgress();
+  },
+
+  renderExtra() {
+    const ex = this.extras();
+    const sum = ex.reduce((a, x) => a + x.kcal, 0);
+    const sumP = ex.reduce((a, x) => a + x.protein, 0);
+
+    /* 预设按钮（只建一次） */
+    const pre = $('#extraPresets');
+    if (pre && !pre.dataset.built) {
+      pre.dataset.built = '1';
+      pre.innerHTML = EXTRA_PRESETS.map(p =>
+        `<button class="chipBtn" onclick="App.addExtra('${p.n}',${p.kcal},${p.p})">${p.n}<em>${p.kcal}</em></button>`).join('');
+    }
+
+    /* 已记的清单 */
+    const list = $('#extraList');
+    if (list) {
+      list.innerHTML = ex.length
+        ? ex.map((x, i) => `<div class="extraRow">
+             <span class="er-n">${x.name}</span>
+             <span class="er-k">${x.kcal} kcal${x.protein ? ' · 蛋白 ' + x.protein + 'g' : ''}</span>
+             <button class="er-x" onclick="App.delExtra(${i})" aria-label="删掉">×</button>
+           </div>`).join('')
+        : '<div class="hint">今天还没记 —— 挺好。</div>';
+    }
+
+    const pill = $('#extraPill');
+    if (pill) {
+      pill.textContent = ex.length ? `+${sum} kcal` : '还没记';
+      pill.className = 'tag ' + (ex.length ? 'gold' : '');
+    }
+
+    /* 把它换算成掉秤 —— 这才是「记下来有什么用」 */
+    const imp = $('extraImpact');
+    if (!imp) return;
+    if (!ex.length) { imp.textContent = '点上面的按钮，或者自己填。记了才会算准。'; return; }
+    const s = DB.data.settings;
+    const base = this.bmrInputs();
+    const tdee = Engine.tdee(base.kg, s.heightCm || 178, s.age || 20, s.sex || 'm', false)
+      + Math.min(500, (base.steps || 0) / 1000 * 45);
+    const withExtra = Impact.fromRecord(DB.rec(), {});
+    const noExtra = Impact.fromRecord(Object.assign({}, DB.rec(), { extra: [] }), {});
+    const dKcal = withExtra.kcal - noExtra.kcal;
+    const sp = Engine.split(base.kg, Engine.bodyFat(base.kg, s.heightCm || 178, s.age || 20, s.sex || 'm'));
+    const dKg = dKcal / Engine.energyDensity(sp.fat);
+    const gap = tdee - withExtra.kcal;
+    imp.innerHTML = `今天多吃 <b>${sum} kcal</b>（蛋白 +${sumP}g）。<br>
+      换算成掉秤速度：<b style="color:var(--gold)">少掉约 ${fmt(kg2jin(dKg), 2)} 斤/天</b>，
+      一周少掉约 <b>${fmt(kg2jin(dKg * 7), 1)} 斤</b>。<br>
+      当前缺口：<b style="color:${gap > 0 ? 'var(--accent)' : 'var(--gold)'}">${Math.round(gap)} kcal</b>${gap <= 0 ? ' —— <b>已经吃回来了，今天不会掉秤</b>，但也不用补偿性绝食，明天照常吃就行' : ''}`;
+  },
+
+  /* ── 基础代谢计算器 ── */
+  bmrInputs() {
+    const s = DB.data.settings;
+    const wl = DB.weights();
+    const cur = wl.length ? wl[wl.length - 1].kg : s.startWeight;
+    return {
+      kg: cur, cm: s.heightCm || 178, age: s.age || 20, sex: s.sex || 'm',
+      act: s.activityFactor || 1.35, eat: s.targetKcal || 1000,
+      steps: (DB.rec().steps || 0),
+    };
+  },
+  resetBmr() {
+    DB.data.settings.bmrOverride = null;
+    DB.save(true);
+    this.renderBmr();
+    this.toast('已回到你的实际数据');
+  },
+  /* 面板里改了就重算（不写盘，只是试算） */
+  readBmrPanel() {
+    const g = id => { const el = $('#' + id); return el ? el.value : null; };
+    const o = {};   /* null = 用实际数据 */
+    if (g('bmrKg') !== null && g('bmrKg') !== '') o.kg = Number(g('bmrKg'));
+    if (g('bmrCm') !== null && g('bmrCm') !== '') o.cm = Number(g('bmrCm'));
+    if (g('bmrAge') !== null && g('bmrAge') !== '') o.age = Number(g('bmrAge'));
+    if (g('bmrSex')) o.sex = g('bmrSex');
+    if (g('bmrAct')) o.act = Number(g('bmrAct'));
+    if (g('bmrEat') !== null && g('bmrEat') !== '') o.eat = Number(g('bmrEat'));
+    return o;
+  },
+
+  renderBmr() {
+    const base = this.bmrInputs();
+    const o = Object.assign({}, base, this.readBmrPanel());
+    const sex = o.sex === 'f' ? 'f' : 'm';
+
+    /* Mifflin-St Jeor（和 Engine.bmr 同一套公式，保证两处数字一致） */
+    const b = Engine.bmr(o.kg, o.cm, o.age, sex);
+
+    /* 拆成三段：BMR + 日常活动（NEAT）+ 走路步数 */
+    const stepKcal = Math.min(500, Math.max(0, (base.steps || 0) / 1000 * 45));
+    const actKcal = Math.round(b * (o.act - 1));
+    const tdee = b + actKcal + stepKcal;
+    const deficit = tdee - o.eat;
+    const perWeekKg = deficit * 7 / (Engine.energyDensity(Engine.split(o.kg,
+      Engine.bodyFat(o.kg, o.cm, o.age, sex)).fat) || 7000);
+    const perWeekJin = kg2jin(perWeekKg);
+
+    /* 主数字 */
+    const setv = (id, v) => { const el = $('#' + id); if (el) el.innerHTML = v; };
+    setv('bmrVal', b.toLocaleString() + '<sub>kcal</sub>');
+    setv('tdeeVal', tdee.toLocaleString() + '<sub>kcal</sub>');
+    const pill = $('#bmrPill');
+    if (pill) {
+      pill.textContent = deficit > 0 ? `缺口 ${deficit}` : `盈余 ${-deficit}`;
+      pill.className = 'tag ' + (deficit > 0 ? 'acc' : 'gold');
+    }
+
+    /* 堆叠条 */
+    const total = Math.max(1, tdee);
+    const bar = $('#bmrBar');
+    if (bar) {
+      bar.innerHTML =
+        `<div class="seg bmrSegBmr" style="width:${(b / total * 100).toFixed(1)}%"></div>` +
+        `<div class="seg bmrSegAct" style="width:${(actKcal / total * 100).toFixed(1)}%"></div>` +
+        `<div class="seg bmrSegStep" style="width:${(stepKcal / total * 100).toFixed(1)}%"></div>`;
+    }
+    const leg = $('#bmrLegend');
+    if (leg) {
+      leg.innerHTML =
+        `<span><i class="bmrSegBmr" style="background:var(--a-400)"></i>基础代谢 ${b}</span>` +
+        `<span><i class="bmrSegAct" style="background:rgba(139,160,216,.55)"></i>日常活动 ${actKcal}</span>` +
+        `<span><i class="bmrSegStep" style="background:rgba(139,160,216,.3)"></i>步数 ${stepKcal}</span>`;
+    }
+
+    /* 公式与结论 */
+    const eq = $('#bmrEquation');
+    if (eq) {
+      const S = sex === 'm' ? '+ 5' : '− 161';
+      eq.innerHTML = `Mifflin-St Jeor：10 × ${fmt(o.kg, 1)} + 6.25 × ${o.cm} − 5 × ${o.age} ${S} = <b>${b}</b> kcal<br>
+        再乘活动系数 <b>${o.act}</b>，加上今天走的 ${base.steps || 0} 步 ≈ ${stepKcal} kcal → 一天总共烧 <b>${tdee}</b> kcal。`;
+    }
+
+    /* 拆解表 */
+    const br = $('#bmrBreak');
+    if (br) {
+      const rows = [
+        ['基础代谢（躺着不动）', b + ' kcal'],
+        ['日常活动（NEAT，活动系数 ' + o.act + '）', '+' + actKcal + ' kcal'],
+        ['走路（' + (base.steps || 0) + ' 步）', '+' + stepKcal + ' kcal'],
+        ['＝ 一天总共消耗', tdee + ' kcal'],
+        ['你计划吃', '−' + o.eat + ' kcal'],
+        ['＝ 每天净缺口', deficit + ' kcal'],
+      ];
+      br.innerHTML = rows.map(([k, v], i) =>
+        `<div class="bmrRow2"${i >= 3 ? ' style="font-weight:600"' : ''}>
+           <span class="bk">${k}</span><span class="bv" style="color:${i === 5 ? (deficit > 500 ? 'var(--warn)' : 'var(--accent)') : 'inherit'}">${v}</span>
+         </div>`).join('')
+        + `<div class="hint mt4">按这个缺口，一周大约掉 <b>${fmt(Math.abs(perWeekJin), 2)} 斤</b>。
+           ${deficit > 500 ? `<br><span style="color:var(--warn)">⚠️ 缺口 ${deficit} kcal 是保肌阈值（500）的 ${(deficit / 500).toFixed(1)} 倍 —— 秤掉得快，但肌肉也在跟着掉。</span>` : ''}
+           ${deficit <= 0 ? '<br><span style="color:var(--gold)">没有缺口就不会掉秤。要减重必须让「吃进去」小于「消耗掉」。</span>' : ''}</div>`;
+    }
+  },
+
   /* ── 模拟 ── */
   renderSim() {
+    this.renderBmr();
     const s = DB.data.settings;
     const days = s.planDays || 30;
     const perfect = Impact.perfect();
@@ -3568,6 +3909,15 @@ const App = {
 
     this.renderGoalLock();
     this.renderBackupState();
+    /* 基础代谢面板：改任一参数立刻重算（只试算，不写盘） */
+    ['bmrKg','bmrCm','bmrAge','bmrSex','bmrAct','bmrEat'].forEach(id => {
+      const el = $('#' + id);
+      if (el && !el.dataset.bmrBound) {
+        el.dataset.bmrBound = '1';
+        el.addEventListener('input', () => this.renderBmr());
+        el.addEventListener('change', () => this.renderBmr());
+      }
+    });
     $('#portionGuide').innerHTML = PORTION_GUIDE.map(p =>
       `<details><summary>${p.q}</summary><div class="body">${p.a}</div></details>`).join('');
   },
