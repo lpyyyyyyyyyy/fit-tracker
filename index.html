@@ -1304,7 +1304,7 @@ details .body b{color:var(--text);font-weight:650}
    1 · 常量与工具
    ════════════════════════════════════════════════════════════════ */
 /* App 版本 —— 每次改完内容把它 +1，设置页会显示，用来确认看到的是不是最新版 */
-const APP_VER = '2026.09.17-27';
+const APP_VER = '2026.09.17-28';
 
 const JIN = 2;
 const DAY = 86400000;
@@ -2651,6 +2651,31 @@ const Timer = {
     this.el('tArc').setAttribute('stroke-dashoffset', String(615.8 * (1 - ratio)));
   },
 
+  /* 跳过当前环节：直接进下一段，不等倒计时走完。
+     热身、休息、或者某个动作做不动了 —— 不用干等。 */
+  skip() {
+    if (!this.seq.length) { this.seq = this.build(); this.idx = 0; }
+    this.buzz(20);
+    this.idx++;
+    if (this.idx >= this.seq.length) {
+      this.running = false;
+      this.el('tStartBtn').textContent = '再来一次';
+      this.el('tEx').textContent = '今天完成';
+      this.el('tNum').textContent = '0:00';
+      this.el('tHint').textContent = '下次每个动作 +1';
+      App.finishTrain();
+      this.releaseWake();
+      return;
+    }
+    if (!this.running) { this.running = true; this.requestWake && this.requestWake(); }
+    const cur = this.seq[this.idx];
+    this.countUp = !!(cur.ex && cur.ex.countUp);
+    this.elapsed = 0;
+    this.endAt = Date.now() + cur.secs * 1000;
+    this.el('tStartBtn').textContent = '暂停';
+    this.tick();
+  },
+
   next() {
     this.buzz([120, 60, 120]);
     this.idx++;
@@ -2722,9 +2747,17 @@ const App = {
     let _lastY = 0;
     window.addEventListener('scroll', () => {
       const y = window.scrollY;
-      if (Math.abs(y - _lastY) < 6) return;
+      /* ⚠️ 早退必须在最前面 —— 原来 y 变化小于 6px 就直接 return，
+         结果下面的逻辑都不会执行（这个 return 曾经把星空暂停也一起跳过了）。 */
+      const moved = Math.abs(y - _lastY) >= 6;
+      if (!moved) return;
       _lastY = y;
-      $$('.top').forEach(t => t.classList.toggle('shrink', y > 28));    }, { passive: true });
+      $$('.top').forEach(t => t.classList.toggle('shrink', y > 28));
+      /* 滑动中先不画星空，停下 120ms 再恢复 —— 主线程让给滚动 */
+      Sky.scrolling = true;
+      clearTimeout(Sky._sidle);
+      Sky._sidle = setTimeout(() => { Sky.scrolling = false; }, 120);
+    }, { passive: true });
 
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'visible') { this.renderAll(); Reminder.schedule(); Sky.play(); }
@@ -3521,7 +3554,7 @@ const App = {
     const total = Timer.total();
     this.sheet('12 分钟训练', `
       <div class="timerWrap">
-        <div class="tRing" id="tRing" style="width:200px;height:200px">
+        <div class="tRing" id="tRing" style="width:200px;height:200px" onclick="Timer.skip()" role="button" aria-label="跳过这一节">
           <div class="aura"></div>
           <svg width="200" height="200" viewBox="0 0 224 224" style="width:200px;height:200px;flex:none">
             <circle cx="112" cy="112" r="98" fill="none" stroke="var(--track)" stroke-width="12"/>
@@ -3536,9 +3569,10 @@ const App = {
         </div>
         <button class="btn primary wide" id="tStartBtn" onclick="Timer.toggle()">开始训练</button>
         <div class="row2" style="width:100%">
+          <button class="btn" onclick="Timer.skip()">跳过这节</button>
           <button class="btn" onclick="Timer.reset()">重置</button>
-          <button class="btn" onclick="App.trainDone()">做完了</button>
         </div>
+        <button class="btn ghost wide" onclick="App.trainDone()">做完了，直接记上</button>
       </div>
       <p class="hint" style="margin-top:var(--s5)">深蹲 → 俯卧撑 → 站姿后踢腿 → 平板支撑，每个 1 组，组间休息 60 秒，全程自动衔接。</p>
       <details class="mt3" open>
@@ -4250,7 +4284,8 @@ const App = {
    9 · 星空（生态感来源，不用图片）
    ════════════════════════════════════════════════════════════════ */
 const Sky = {
-  cv: null, g: null, stars: [], w: 0, h: 0, t: 0, raf: null, shooting: null, alive: false,
+  cv: null, g: null, stars: [], w: 0, h: 0, t: 0, raf: null, timer: null,
+  shooting: null, alive: false, scrolling: false,
 
   init() {
     this.cv = $('#sky'); if (!this.cv) return;
@@ -4288,14 +4323,27 @@ const Sky = {
     if (this.alive) return;
     this.alive = true;
     this.last = 0;
-    this.loop(Date.now());
+    this.schedule();
   },
-  pause() { this.alive = false; cancelAnimationFrame(this.raf); },
-  loop(now) {
+  pause() { this.alive = false; clearTimeout(this.timer); cancelAnimationFrame(this.raf); },
+
+  /* ⚠️ 原来用 requestAnimationFrame 递归 + 「间隔不到 33ms 就 return」来限帧 —— 那是错的：
+     rAF 每秒仍被调用 60 次，只是跳过了绘制，CPU 照样被占着。
+     而且固定定位的 canvas 在滑动时每帧都要重绘，和滚动抢主线程 → 滑动发卡。
+     改成：setTimeout 精确排下一帧 + 「滑动中不画」。 */
+  schedule() {
     if (!this.alive) return;
-    this.raf = requestAnimationFrame(t => this.loop(t));
-    /* 限帧到 ~30fps：星空是背景装饰，30fps 完全看不出来，但省一半 GPU */
-    if (now - (this.last || 0) < 33) return;
+    clearTimeout(this.timer);
+    this.timer = setTimeout(() => this.loop(), 33);
+  },
+  loop() {
+    if (!this.alive) return;
+    /* 滚动中不重绘：星空是背景装饰，人眼看不出这一两帧，但主线程能省下来给滚动 */
+    if (!this.scrolling) this.draw();
+    this.schedule();
+  },
+  draw() {
+    const now = Date.now();
     const dt = Math.min((now - (this.last || now)) / 1000, 0.1);
     this.last = now;
     this.t += dt;
