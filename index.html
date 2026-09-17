@@ -134,7 +134,7 @@ button{cursor:pointer}
       窄屏媒体查询里 #app 的 padding 会从 --s4 变成 --s3，
       而 .top 的负边距写死在 --s4 上，两者一打架右边就露出 14px。
       现在 .top 不抵消任何东西，就不可能算错。 */
-#app{position:relative;z-index:1;max-width:none;margin:0;padding:0 var(--s4) 92px}
+#app{position:relative;z-index:1;max-width:none;margin:0;padding:0 0 92px}
 
 /* ════════════ 图标（内联 SVG，不用 emoji） ════════════
    ⚠️ 这个选择器必须覆盖图标里用到的**所有**形状标签。
@@ -148,11 +148,11 @@ button{cursor:pointer}
 
 /* ════════════ 容器响应式（窄屏自动收紧，避免挤压）════════════ */
 @media (max-width:400px){
-  #app{padding-left:var(--s3);padding-right:var(--s3)}
-  /* ⚠️ 窄屏 #app 内边距变成 --s3，顶栏的负边距必须同步改成 --s3，否则又露缝 */
-  .top{margin-left:calc(var(--s3) * -1);margin-right:calc(var(--s3) * -1);padding-left:var(--s3);padding-right:var(--s3)}
-  /* 顶栏的「铺满全宽」规则保持不变，只把左右内边距收到 --s3。
-     ⚠️ 不要在这里写 margin-left:calc(...-1) —— 那会把刚修好的全宽又改回去。 */
+  /* 窄屏：内容和顶栏都用 --s3 作为左右内边距。
+     ⚠️ #app 本身永远不带左右内边距 —— 顶栏才能天然全宽。
+     这里只改「内容」和「顶栏自己的 padding」，不碰任何 margin。 */
+  .view > *:not(.top){padding-left:var(--s3);padding-right:var(--s3)}
+  .top{padding-left:var(--s3);padding-right:var(--s3)}
   .card{padding:var(--s4) var(--s3)}
   .tile{padding:14px}
   .guardNum{font-size:38px}
@@ -194,7 +194,8 @@ button{cursor:pointer}
 .view{display:none}
 .view.on{display:block}
 /* 除顶栏外，内容都居中限制在 600px（宽屏不至于拉太开） */
-.view > *:not(.top){margin-left:auto;margin-right:auto;max-width:600px;width:100%}
+.view > *:not(.top){margin-left:auto;margin-right:auto;max-width:600px;width:100%;
+  padding-left:var(--s4);padding-right:var(--s4);box-sizing:border-box}
 .view.on>*{animation:rise var(--d3) var(--e-out)}
 .view.on>*:nth-child(1){animation-delay:0s}
 .view.on>*:nth-child(2){animation-delay:.03s}
@@ -221,14 +222,14 @@ button{cursor:pointer}
       黑块被压到内容后面、出现在错误的位置，还挡住了文字。
    4) 顶栏下缘再加一条 fixed 渐隐 —— 同样的问题，一起删了。
 
-   现在：负边距抵消 #app 的左右内边距，margin 和 padding 用同一个变量，
-   数字必然一致；背景直接给 .top 自己（实色、不透明）。 */
+   现在（第四次，最终版）：
+      #app 永远不带左右内边距 → .top 和 .view 都是天然全宽。
+      左右内边距由「每个 .view 的直接子元素（除顶栏）」自己带。
+      全程没有一个负边距，所以不可能算错。 */
 .top{
   position:sticky;top:0;z-index:30;
   display:flex;align-items:center;justify-content:space-between;gap:var(--s4);
-  margin-left:calc(var(--s4) * -1);
-  margin-right:calc(var(--s4) * -1);
-  margin-bottom:var(--s3);
+  margin:0 0 var(--s3);
   padding:calc(env(safe-area-inset-top) + var(--s4)) var(--s4) var(--s3);
   background:var(--bg);
 }
@@ -1162,7 +1163,7 @@ details .body b{color:var(--text);font-weight:650}
    1 · 常量与工具
    ════════════════════════════════════════════════════════════════ */
 /* App 版本 —— 每次改完内容把它 +1，设置页会显示，用来确认看到的是不是最新版 */
-const APP_VER = '2026.09.17-18';
+const APP_VER = '2026.09.17-19';
 
 const JIN = 2;
 const DAY = 86400000;
