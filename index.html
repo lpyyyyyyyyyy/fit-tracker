@@ -276,10 +276,14 @@ button{cursor:pointer}
   background:var(--warn);margin-left:4px;vertical-align:middle;opacity:.9}
 .tlRow.alerted .tlTime{color:var(--warn)}
 
-/* 时间轴副标题默认隐藏（点右上角标签可展开）—— 一屏更清爽 */
+/* 时间轴副标题默认隐藏（点右上角标签可展开）—— 一屏更清爽。
+   ⚠️ 但午餐那一项例外：它要显示今天吃鸡胸还是虾，这是方案核心，藏掉会让人以为蛋白没了。
+   所以给那一行加 .keep，副标题永远显示。 */
 .tl.hideSub .tlSub{display:none}
+.tl.hideSub .tlRow.keep .tlSub{display:block}
 .tl.hideSub .tlRow{padding-top:11px;padding-bottom:11px}
 .tl.hideSub .tlRow.done{padding-top:7px;padding-bottom:7px}
+.tl.hideSub .tlRow.keep{padding-top:13px;padding-bottom:13px}
 /* ════════════ 水杯：改成小圆点阵，视觉重量降到最低 ════════════ */
 .cups{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
 .cup{width:26px;height:26px;border-radius:50%;flex:none;position:relative;overflow:hidden;
@@ -1239,7 +1243,7 @@ const DB = {
     add({ id:'coffee2', time:s.coffee2, ic:'coffee', kind:'check', group:'misc',
       name:'第二杯咖啡', sub:'最后一杯',
       tip:'这是最后一杯。14:00 之后一滴都不碰（茶、可乐、奶茶也算）。<br>咖啡因半衰期 5~6 小时，你 01:30 睡，下午那杯会吃掉你本就不多的深睡 —— 你会睡着，但那 6 小时只顶 4 小时。' });
-    add({ id:'m2', time:'12:30', ic:'meal', kind:'check', group:'meals',
+    add({ id:'m2', time:'12:30', ic:'meal', kind:'check', group:'meals', keep:true,
       name:'午餐', sub:`${PROTEIN_ROTATION[dow]} · 玉米 · 菠菜`,
       tip:`<b>${PROTEIN_ROTATION[dow]}</b>（水煮或干煎，做法见「训练」页下面的说明或直接看份量速查）；<br><b>玉米 1 小根</b>（约 150g，就是唯一的碳水，替代米饭）；<br><b>菠菜 150g</b>（煮熟装满一个饭碗，别和肉一起炒，水煮蘸醋）。<br><br>调味随便用辣椒面、花椒粉、醋、蒜末 —— 几乎零热量。<br>❌ 不放油，不勾芡，不用香油碟。` });
     add({ id:'corn', time:'12:30', ic:'meal', kind:'check', group:'misc',
@@ -2201,6 +2205,7 @@ const App = {
       const isNow = !done && !trainDone && actionable
         && toMin(it.time) <= toMin(hhmm) && toMin(hhmm) < toMin(this.nextTime(list, it));
       const cls = ['tlRow', it.kind];
+      if (it.keep) cls.push('keep');   // 这一行的副标题永远显示（如午餐的鸡胸/虾）
       if (done || trainDone) cls.push('done');
       if (overdue) cls.push('overdue');
       if (overdue && Reminder.firedId(it.id)) cls.push('alerted');   // 已通知过，留个痕
