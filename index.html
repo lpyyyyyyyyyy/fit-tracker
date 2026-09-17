@@ -246,6 +246,9 @@ button{cursor:pointer}
 .tlRow.action .tlMark{color:var(--ink-400)}
 .tlRow.overdue .tlTime{color:var(--warn)}
 .tlRow.overdue .tlMark{color:var(--warn)}
+/* 已经弹过通知了：时间旁边加一个小圆点，表示'提醒已发出' */
+.tlRow.alerted .tlTime::after{content:'';display:inline-block;width:4px;height:4px;border-radius:50%;background:var(--warn);margin-left:4px;vertical-align:middle;opacity:.9}
+.tlRow.alerted .tlTime{color:var(--warn)}
 
 /* ════════════ 水杯：改成小圆点阵，视觉重量降到最低 ════════════ */
 .cups{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
@@ -851,7 +854,7 @@ details .body b{color:var(--text);font-weight:650}
       <div class="kv"><span class="k">通知权限</span><span class="v" id="notifyState" style="font-size:var(--f-xs)">—</span></div>
       <div class="row2 mt4">
         <button class="btn primary" onclick="Reminder.enableNotify()">开启通知</button>
-        <button class="btn" onclick="Reminder.test()">测试</button>
+        <button class="btn" onclick="Reminder.testAll()">测试所有阶段</button>
       </div>
       <div class="hr"></div>
       <div class="kv"><span class="k">训练时间</span><span class="v" style="gap:0">
@@ -1013,7 +1016,7 @@ const MEAL_TEMPLATE = [
 ];
 const MISC_TEMPLATE = [
   { id:'coffee1', name:'第一杯咖啡' }, { id:'coffee2', name:'第二杯咖啡' },
-  { id:'nap', name:'午睡 60 分钟' }, { id:'chia', name:'菜籽油 10g' },
+  { id:'nap', name:'午睡 60 分钟' }, { id:'corn', name:'玉米 1 根' },
   { id:'spinach', name:'菠菜 300g' },
 ];
 /* 蛋白只在鸡胸和虾之间隔天换 */
@@ -1025,7 +1028,7 @@ const PORTION_GUIDE = [
   { q:'半碗米饭是多少？', a:'100g 熟重。普通饭碗装满约 200g，吃一半。<br>更准：煮一锅分成 7 份冷冻，每天拿一盒。' },
   { q:'菠菜 300g 怎么凑？', a:'煮熟装满一个普通饭碗约 150g。中午一碗 + 晚上一碗 = 300g。<br>技巧：早上蛋白粉里加一把冷冻菠菜打匀，完全尝不出来。' },
   { q:'不吃镁片行吗？', a:'行，但菠菜必须吃满。你这套饮食镁的缺口大约一半，<b>300g 熟菠菜能补回约 240mg，刚好够</b>，还顺带 1600mg 钾。<br>缺镁的表现：半夜腿抽筋、眼皮跳、入睡难、便秘 —— 出现就说明菠菜没吃够。' },
-  { q:'不吃鱼油、家里也没核桃怎么办？', a:'用<b>菜籽油</b>，就是炒菜那点油换成菜籽油，10g ≈ 1 瓷勺。<br>鸡胸和虾几乎不含 Omega-3，这是你这套饮食唯一的营养缺口，必须补上。<br><br>四种补法挑你能买到的：<br>· <b>菜籽油 10g</b> ≈ 0.9g ALA / 88 kcal ← 最日常，炒菜顺手<br>· 亚麻籽油 5g ≈ 1.1g ALA / 44 kcal（凉拌，不能加热）<br>· 奇亚籽或亚麻籽粉 10g ≈ 1.8g ALA / 49 kcal ← 热量最省<br>· 核桃 20g ≈ 1.8g ALA / 130 kcal<br><br>⚠ 菜籽油也是油，<b>全天所有用油加起来别超过这 10g</b>。' },
+  { q:'哪个吃法最减肥？', a:'<b>热量最低的那个最减肥 —— 而且只跟总热量有关，跟吃什么无关。</b><br><br>一个反直觉但很重要的事实：<b>去掉米饭会让秤掉得更快，但那不是脂肪。</b>碳水一少，身体里的糖原和它绑的水会排掉，秤上 2~3 天就能少 2~3 斤 —— 那是水，恢复吃碳水就回来。<br>真正决定减脂速度的只有一件事：<b>每天的缺口</b>。<br><br>所以最减肥的配置是：<br>· 热量压到 <b>1000~1100 kcal</b>（再低就是掉肌肉，不是掉脂肪）<br>· 蛋白尽量到 <b>130~150g</b>（这是保肌线，也是你能长期坚持的关键）<br>· 不吃任何"隐形热量"：油、糖、酱、饮料<br>· 碳水源只留玉米一根，或者干脆去掉' },
   { q:'虾怎么选？', a:'优先<b>冷冻生虾或鲜虾</b>，别买泡发的「虾仁」—— 那种用磷酸盐保水，钠极高，吃了第二天脸和眼皮就肿，秤上也会虚涨。' },
   { q:'没秤怎么估？', a:'鸡胸/虾：一个手掌 + 2 指厚 ≈ 200~250g。米饭：一个拳头 ≈ 半碗。油：一个拇指尖 ≈ 5g。' },
   { q:'估错 20% 会怎样？', a:'基本没事。多吃 100g 鸡胸 = 多 130 kcal。<br>真正毁掉一天的是一碗面（600 kcal）或一次火锅（2000+ kcal）。方向对就行。' },
@@ -1177,11 +1180,8 @@ const DB = {
       name:'训练 12 分钟', sub:'4 个动作 · 自动计时',
       tip:'深蹲 → 俯卧撑 → 鸟狗式 → 平板支撑。每个动作 1 组，组间歇 60 秒，全程自动衔接。<br><br><b>时机</b>：关掉电脑后立刻做 —— 别先坐下、别先刷手机、别先吃饭。一旦坐下来，这 12 分钟就永远没有了。<br><br>累到不行那天，<b>只做 10 个深蹲，30 秒也算完成</b>。保住「我还是在练的人」这条线，比练满 12 分钟重要得多。<br><br>训练时间可以在设置页改。' });
     L.push({ id:'m1', time:'08:30', ic:'meal', kind:'check', group:'meals',
-      name:'早餐', sub:'蛋白粉 + 豆浆 · 水煮蛋 2 个',
-      tip:'蛋白粉 1 勺 + 无糖豆浆 400ml；水煮蛋 2 个；复合维生素 1 片。<br>再加下面那一项奇亚籽 —— 泡进豆浆里就行。' });
-    L.push({ id:'chia', time:'08:30', ic:'leaf', kind:'check', group:'misc',
-      name:'菜籽油 10g', sub:'约 1 瓷勺 · 补 Omega-3',
-      tip:'<b>炒菜时用菜籽油，10g ≈ 1 瓷勺（约 1 汤勺的三分之二）。</b>不要另外倒，就是把当天炒菜那点油换成菜籽油。<br><br><b>为什么必须吃这一项</b>：你不吃鱼油，而鸡胸和虾几乎不含 Omega-3 —— 这是你这套饮食唯一的营养缺口。<br><br>各种补法换个算（挑你买得到的）：<br>· <b>菜籽油 10g ≈ 0.9g ALA，88 kcal</b>（最日常，炒菜顺手就吃了）<br>· 亚麻籽油 5g ≈ 1.1g ALA，44 kcal（不能加热，凉拌）<br>· 奇亚籽 / 亚麻籽粉 10g ≈ 1.8g ALA，49 kcal（热量最省，但要网购）<br>· 核桃 20g ≈ 1.8g ALA，130 kcal<br><br>⚠ 植物 ALA 转化成 EPA/DHA 的效率只有 5~10%，不如鱼油直接 —— 但比不吃好得多。<br>⚠ 菜籽油依然是油，<b>全天所有用油加起来不要超过这 10g</b>，超了就是纯加热量。' });
+      name:'早餐', sub:'水煮蛋 2 个 · 蛋白粉',
+      tip:'水煮蛋 2 个；蛋白粉 1 勺 —— <b>用白水冲就行</b>，有豆浆更好喝，没有完全不影响减脂（豆浆只是口感，蛋白质主要在粉里）。复合维生素 1 片。<br><br><b>关于蛋白粉会不会长胖</b>：一勺约 100 kcal / 25g 蛋白，它就是蛋白质，跟鸡胸里的蛋白是同一种东西 —— <b>在热量赤字下不会让你长胖</b>。<br>⚠️ 只有一种情况要停：看包装，<b>每 100g 里蛋白质低于 30g</b> 的那种是「增肌粉」（加了大量麦芽糊精和糖），那个才会胖。≥80g 就是纯乳清，放心喝。' });
     L.push({ id:'coffee1', time:s.coffee1, ic:'coffee', kind:'check', group:'misc',
       name:'第一杯咖啡', sub:'黑咖啡 · 补 200ml 水',
       tip:'只喝黑咖啡 / 美式。拿铁、卡布、加了奶糖的一杯 150~250 kcal，等于吃掉半顿饭。<br>每喝一杯咖啡额外补 200ml 水 —— 咖啡利尿，不补会头晕。' });
@@ -1190,11 +1190,14 @@ const DB = {
       name:'第二杯咖啡', sub:'最后一杯',
       tip:'这是最后一杯。14:00 之后一滴都不碰（茶、可乐、奶茶也算）。<br>咖啡因半衰期 5~6 小时，你 01:30 睡，下午那杯会吃掉你本就不多的深睡 —— 你会睡着，但那 6 小时只顶 4 小时。' });
     L.push({ id:'m2', time:'12:30', ic:'meal', kind:'check', group:'meals',
-      name:'午餐', sub:`${PROTEIN_ROTATION[dow]} · 2 把菜 · ${carb ? '米饭整碗' : '米饭半碗'}`,
-      tip:`${PROTEIN_ROTATION[dow]}（白灼/清蒸）；冷冻蔬菜 2 把（微波 4 分钟）；${carb ? '<b>今天是补碳日，米饭吃整碗</b>' : '白米饭半碗（100g 熟重）'}。<br>调味随便用辣椒面、花椒粉、醋、蒜末 —— 几乎零热量。` });
+      name:'午餐', sub:`${PROTEIN_ROTATION[dow]} · 玉米 · 菠菜`,
+      tip:`<b>${PROTEIN_ROTATION[dow]}</b>（水煮或干煎，做法见「训练」页下面的说明或直接看份量速查）；<br><b>玉米 1 小根</b>（约 150g，就是唯一的碳水，替代米饭）；<br><b>菠菜 150g</b>（煮熟装满一个饭碗，别和肉一起炒，水煮蘸醋）。<br><br>调味随便用辣椒面、花椒粉、醋、蒜末 —— 几乎零热量。<br>❌ 不放油，不勾芡，不用香油碟。` });
+    L.push({ id:'corn', time:'12:30', ic:'meal', kind:'check', group:'misc',
+      name:'玉米 1 小根', sub:'约 150g · 替代米饭',
+      tip:'<b>老玉米（整根煮的那种），1 小根约 150g，约 110 kcal。</b>这是你唯一的碳水来源，用来替代米饭。<br><br>为什么用玉米不用米饭：同样碳水，玉米多 3 倍纤维、饱腹感强得多，而且不需要煮饭。<br>⚠ 买整根煮的玉米，<b>不要买那种加了糖和油的"甜玉米粒罐头"或"即食玉米棒"</b>。<br>备选：南瓜 200g（46 kcal，更省）／ 红薯 100g（跟玉米差不多）。<br>实在不想吃任何碳水也可以去掉，代价是更容易饿 —— 但<b>菠菜 300g 必须吃满</b>，不然纤维和钾都不够。' });
     L.push({ id:'spinach', time:'12:30', ic:'leaf', kind:'check', group:'misc',
       name:'菠菜 150g', sub:'一碗 · 补镁钾',
-      tip:'煮熟装满一个普通饭碗约 150g。<br><b>这 300g 菠菜（午晚各一碗）是你唯一的镁和钾来源。</b>300g 约提供 240mg 镁 + 1600mg 钾，只花 70 kcal。<br>缺镁的表现：半夜腿抽筋、眼皮跳、入睡难、便秘 —— 出现就说明没吃满。<br>技巧：早上蛋白粉里加一把冷冻菠菜打匀，完全尝不出来。' });
+      tip:'煮熟装满一个普通饭碗约 150g。中午一碗、晚上一碗，<b>全天 300g —— 这是你唯一的镁和钾来源</b>（你没有镁片）。<br>300g 约提供 240mg 镁 + 1600mg 钾，只花 70 kcal。<br>缺镁的表现：半夜腿抽筋、眼皮跳、入睡难、便秘 —— 出现就说明没吃满。<br><br><b>为什么别的菜不替代</b>：生菜、黄瓜、冬瓜的镁含量差 3~5 倍，等于没吃。<br>真吃腻了可以换：芥蓝 / 小白菜 / 空心菜 / 菌菇（镁和钾也够）。<br>技巧：早上蛋白粉里加一把冷冻菠菜打匀，完全尝不出来。' });
     L.push({ id:'nap', time:'13:00', ic:'moon', kind:'check', group:'misc',
       name:'午睡 60 分钟', sub:'闹钟 14:00 · 窗帘拉上',
       tip:'13:00 躺下，闹钟定 14:00。<br><b>60 分钟是完整的睡眠周期，醒来正好在浅睡期。</b>千万别睡成 45 分钟 —— 那是深睡被强行打断，醒来比不睡更困，一下午废掉。<br>窗帘拉上、眼罩戴上。睡不着也算，闭眼安静躺 20 分钟同样能降皮质醇。' });
@@ -1208,7 +1211,7 @@ const DB = {
 
     L.push({ id:'m4', time:'18:30', ic:'meal', kind:'check', group:'meals',
       name:'晚餐', sub:'蛋白粉 1 勺 · 菠菜 150g',
-      tip:'蛋白粉 1 勺 + 水 300ml，加晚餐那碗菠菜（150g）。<br><b>晚餐不放盐</b>，只放醋、柠檬、辣椒面 —— 盐只放早餐和午餐。这条比断水更有效，而且安全。<br>不饿的话可以只喝蛋白粉，但<b>这一勺不能省</b>：去掉它全天蛋白从 150g 掉到 125g，对 80kg 的你不就够保肌肉了。' });
+      tip:'蛋白粉 1 勺（白水冲）+ 晚餐那碗菠菜 150g。<br><b>晚餐不放盐</b>，只放醋、柠檬、辣椒面 —— 盐只放早餐和午餐。这条比断水更有效，而且安全。<br><br>不饿的话可以只喝蛋白粉，但<b>这一勺不能省</b>：去掉它全天蛋白从 137g 掉到 112g，对 80kg 的你刚好卡在保肌线下。<br>真饿的话允许加：水煮蛋 1 个，或再来一碗菠菜。' });
     L.push({ id:'stopwater', time:'20:00', ic:'water', kind:'info',
       name:'停止喝水', sub:'之后一口都不喝',
       tip:'之后一口都不喝。<br>不是为了上镜，是为了不半夜起夜 —— 你只睡 6 小时，起一次夜就毁掉一半深睡。<br>白天已经喝够 2.4L，晚间断水不会脱水。' });
@@ -1774,9 +1777,33 @@ const Reminder = {
   },
 
   check() {
+    /* 补发：把今天已过点、还没打卡、还没提醒过的项按顺序补出来。
+       ⚠ 只补「当天」的 —— 否则第二天早上打开 App 会把昨天整天的提醒全炸出来。 */
     const due = this.dueNow();
-    due.forEach(it => { if (!this.firedId(it.id)) this.fire(it); });
+    const lastKey = localStorage.getItem('ran_fit_lastcheck');
+    const firstToday = lastKey !== todayKey();
+    localStorage.setItem('ran_fit_lastcheck', todayKey());
+
+    due.forEach((it, i) => {
+      if (this.firedId(it.id)) return;
+      if (firstToday) {
+        /* 当天第一次打开：不弹系统通知（避免一次性几十条），只在 App 里给出待办横幅 */
+        this.markFired(it.id);
+      } else {
+        /* 中途回到前台：逐个补发真正的系统通知，每条独立 */
+        setTimeout(() => this.fire(it), i * 600);
+      }
+    });
     if (due.length) App.showOverdueBadge(due);
+  },
+
+  /* 每个阶段的提示语（通知标题） */
+  LABEL: {
+    train:'该训练了 · 12 分钟', m1:'该吃早餐了', m2:'该吃午餐了', m3:'该加餐了',
+    m4:'该喝晚餐那勺蛋白粉了', m5:'睡前半勺蛋白粉', coffee1:'第一杯咖啡',
+    coffee2:'第二杯咖啡，也是最后一杯', nap:'该午睡了 · 60 分钟',
+    spinach:'该吃菠菜了 · 150g', corn:'该吃玉米了', weigh:'该称重打卡了',
+    sleep:'熄灯睡觉', stopwater:'停止喝水',
   },
 
   fire(it) {
@@ -1785,14 +1812,27 @@ const Reminder = {
     if (it.kind === 'check' && App.isDone(it, r)) return;
     if (r.remindOff && r.remindOff[it.id]) return;
     this.markFired(it.id);
-    const label = { train:'该训练了', m1:'该吃早餐了', m2:'该吃午餐了', m3:'该加餐了',
-      m4:'该喝晚餐那勺蛋白粉了', m5:'睡前半勺蛋白粉', coffee1:'第一杯咖啡时间',
-      coffee2:'第二杯咖啡，也是最后一杯', nap:'该午睡了，60 分钟',
-      spinach:'该吃午餐那碗菠菜了', weigh:'该称重打卡了' }[it.id] || it.name;
-    Notification_.send(label, `${it.time} · ${it.sub}`);
+    const label = this.LABEL[it.id] || it.name;
+    const body = it.sub ? `${it.time} · ${it.sub}` : it.time;
+    Notification_.send(label, body);
     Timer.buzz([90, 50, 90]);
     if (document.visibilityState === 'visible') App.toast(label);
     App.showOverdueBadge(this.dueNow());
+  },
+
+  /* 设置页那个按钮：把每个阶段逐个弹一遍，让你确认通知真的能到 */
+  async testAll() {
+    if (!Notification_.granted()) { App.toast('先点上面的「开启通知」授权'); return; }
+    const list = DB.reminderList();
+    App.toast(`开始逐个测试 ${list.length} 个阶段…`);
+    for (let i = 0; i < list.length; i++) {
+      const it = list[i];
+      setTimeout(() => {
+        Notification_.send(this.LABEL[it.id] || it.name, `第 ${i + 1}/${list.length} 条 · ${it.time}`);
+        Timer.buzz(40);
+      }, i * 1400);
+    }
+    setTimeout(() => App.toast('测试完毕，看看通知栏里到了几条'), list.length * 1400 + 800);
   },
 
   toggle() {
@@ -2071,6 +2111,7 @@ const App = {
       const cls = ['tlRow', it.kind];
       if (done || trainDone) cls.push('done');
       if (overdue) cls.push('overdue');
+      if (overdue && Reminder.firedId(it.id)) cls.push('alerted');   // 已通知过，留个痕
       if (isNow) cls.push('now');
 
       let mark = '';
