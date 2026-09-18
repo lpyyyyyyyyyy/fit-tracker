@@ -1255,6 +1255,17 @@ details .body b{color:var(--text);font-weight:650}
         <button class="btn" onclick="App.exportJSON()">导出 JSON</button>
         <button class="btn" onclick="App.importJSON()">导入 JSON</button>
       </div>
+      <div class="hr"></div>
+      <!-- 换设备 / 清缓存之后，从云端把记录拉回来 -->
+      <div class="kv"><span class="k">云端记录</span><span class="v" id="cloudState" style="font-size:var(--f-xs)">—</span></div>
+      <div class="row2 mt3">
+        <button class="btn primary" onclick="App.pullCloud()">从云端拉取</button>
+        <button class="btn" onclick="App.checkCloud()">看看云端有什么</button>
+      </div>
+      <div class="hint mt3">
+        <b>从云端拉取</b>会把云端已有的记录合并进来 ——
+        <b>同一天保留完成度更高的那份</b>，不会覆盖你手机上更完整的记录。
+      </div>
       <div class="hint mt4">
         数据只存在这台手机里，不上传任何服务器。<b>换手机、清缓存前一定先导出。</b>
       </div>
@@ -1308,7 +1319,7 @@ details .body b{color:var(--text);font-weight:650}
    1 · 常量与工具
    ════════════════════════════════════════════════════════════════ */
 /* App 版本 —— 每次改完内容把它 +1，设置页会显示，用来确认看到的是不是最新版 */
-const APP_VER = '2026.09.17-30';
+const APP_VER = '2026.09.17-31';
 
 const JIN = 2;
 const DAY = 86400000;
@@ -4266,6 +4277,7 @@ const App = {
       : '当前是本地预览地址（http），浏览器不允许发系统通知。<b>部署到 https 之后这里就能一键开启。</b>在那之前，App 内的到点提醒、震动、顶部横幅都正常工作 —— 只要 App 开着。';
 
     const av = $('#appVer'); if (av) av.textContent = APP_VER;
+    if ($('#cloudState') && !this._cloudChecked) { this._cloudChecked = true; this.checkCloud(); }
     const sws = $('#swState');
     if (sws) {
       if (!('serviceWorker' in navigator)) sws.textContent = '浏览器不支持';
@@ -4336,6 +4348,59 @@ const App = {
     if (!silent) this.toast('已保存，历史记录没动');
   },
   toggleAutoBackup() { DB.data.settings.autoBackup = !DB.data.settings.autoBackup; DB.save(true); this.renderSettings(); },
+
+  /* ── 从云端拉取记录 ──
+     换设备、清了缓存、或者手机和电脑各打了一部分 —— 都能合并到一起。
+     云端文件就是仓库里的 data.json，GitHub Pages 直接提供，不用密钥。
+     合并规则用现成的 mergeRemote：同一天保留完成度更高的那份，不会把好数据盖坏。 */
+  cloudURL() {
+    /* 同源相对路径最稳：不管是从 github.io 还是本地服务器打开都能取到 */
+    return './data.json?t=' + Date.now();
+  },
+
+  async fetchCloud() {
+    const r = await fetch(this.cloudURL(), { cache: 'no-store' });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    return await r.json();
+  },
+
+  async checkCloud() {
+    const el = $('#cloudState');
+    if (el) el.textContent = '读取中…';
+    try {
+      const j = await this.fetchCloud();
+      const recs = j.records || {};
+      const keys = Object.keys(recs).sort();
+      const w = keys.filter(k => (recs[k] || {}).weight != null).length;
+      if (el) el.textContent = `${keys.length} 天，${w} 条体重`;
+      const want = keys.filter(k => !DB.get(k)).length;
+      this.toast(keys.length
+        ? `云端 ${keys.length} 天（${want} 天本机没有）`
+        : '云端还没有记录');
+    } catch (e) {
+      if (el) el.textContent = '取不到';
+      this.toast('读云端失败：' + e.message);
+    }
+  },
+
+  async pullCloud() {
+    this.toast('正在从云端拉取…');
+    try {
+      const j = await this.fetchCloud();
+      const recs = j.records || {};
+      const keys = Object.keys(recs);
+      if (!keys.length) return this.toast('云端还没有记录');
+      const before = Object.keys(DB.data.records).length;
+      this.mergeRemote(j);                     /* 合并：同一天保留完成度更高的 */
+      const after = Object.keys(DB.data.records).length;
+      DB.save(true);
+      this.renderAll();
+      this.toast(`已合并云端 ${keys.length} 天 · 本机从 ${before} 天变成 ${after} 天`);
+      this.checkCloud();
+    } catch (e) {
+      this.toast('拉取失败：' + e.message);
+    }
+  },
 
   exportJSON() {
     const blob = new Blob([JSON.stringify(DB.data, null, 2)], { type:'application/json' });
