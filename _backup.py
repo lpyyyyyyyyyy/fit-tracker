@@ -328,6 +328,22 @@ def git_blob_sha(data: bytes) -> str:
     return h.hexdigest()
 
 
+
+
+def _remote_day_count(gh, cfg, token):
+    """云端 data.json 里有多少天记录。取不到就返回 -1（表示未知）。"""
+    try:
+        rr = requests.get(
+            f"https://api.github.com/repos/{cfg['repo']}/contents/{cfg['dataPath']}",
+            headers={"Authorization": f"Bearer {token}",
+                     "Accept": "application/vnd.github.raw"},
+            timeout=25)
+        if rr.status_code == 200:
+            return len((json.loads(rr.text) or {}).get("records", {}) or {})
+    except Exception:
+        pass
+    return -1
+
 class GitHub:
     def __init__(self, token: str, repo: str):
         self.token = token
@@ -361,6 +377,8 @@ def main() -> int:
     ap = argparse.ArgumentParser(description="把打卡数据同步到 GitHub")
     ap.add_argument("--dry", action="store_true", help="只显示会做什么，不真上传")
     ap.add_argument("--token", help="临时指定 GitHub token")
+    ap.add_argument("--force", action="store_true",
+                    help="即使本机数据比云端少也强制上传（危险，会覆盖云端）")
     args = ap.parse_args()
 
     log("===== 自动备份开始 =====")
@@ -404,28 +422,23 @@ def main() -> int:
         weights = sum(1 for k, v in records.items() if (v or {}).get("weight") is not None)
         log(f"数据来源：{src}　打卡 {days} 天，体重记录 {weights} 条")
 
-        # ⚠️ 安全闸：本机读到 0 天的时候绝不上传。
-        #    无头浏览器是全新 profile，读不到用户在别的浏览器里打的数据，
-        #    如果不拦，就会把云端已有的记录覆盖成空的 —— 那是不可逆的数据丢失。
-        if days == 0:
-            remote = 0
-            try:
-                r0 = gh.get_sha(cfg["dataPath"])
-                if r0:
-                    rr = requests.get(
-                        f"https://api.github.com/repos/{cfg['repo']}/contents/{cfg['dataPath']}",
-                        headers={"Authorization": f"Bearer {token}",
-                                 "Accept": "application/vnd.github.raw"},
-                        timeout=25)
-                    if rr.status_code == 200:
-                        remote = len((json.loads(rr.text) or {}).get("records", {}) or {})
-            except Exception:
-                pass
-            if remote > 0:
-                log(f"本机读到 0 天、云端有 {remote} 天 —— 跳过上传，避免把云端数据清空")
+        # ⚠️ 安全闸（吃过亏，务必保留）：
+        #    无头浏览器是全新 profile，读到的天数可能远少于用户真实数据；
+        #    无脑上传会把云端已有的记录**覆盖掉**，而且不可逆。
+        #    真出过这事：本机读到 2 天 → 覆盖了云端的 8 天，只能从 git 历史里捞回来。
+        #
+        #    规则：本机读到的天数比云端**少**就拒绝上传（说明这次读的不是同一份数据）。
+        #    天数相等或更多才允许覆盖。
+        remote_days = _remote_day_count(gh, cfg, token)
+        if remote_days > days:
+            log(f"本机 {days} 天 < 云端 {remote_days} 天 —— 跳过上传（这次读到的不是同一份数据）")
+            log("  如果确实要强制覆盖，加 --force")
+            if not args.force:
                 data = None
-            else:
-                log("本机和云端都没有记录，按空数据处理")
+        elif remote_days == days == 0:
+            log("本机和云端都没有记录，按空数据处理")
+        else:
+            log(f"云端有 {remote_days} 天，本机 {days} 天 —— 允许更新")
 
     # 2. 上传 data.json
     if data is not None and not args.dry:
