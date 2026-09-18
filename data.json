@@ -1,11 +1,12 @@
 {
   "version": 1,
+  "createdAt": "2026-09-18T01:48:03.504Z",
   "settings": {
     "startWeight": 80,
     "goalLoss": 8,
     "refLoss": 10,
     "planDays": 30,
-    "startDate": "2026-09-08",
+    "startDate": "2026-10-01",
     "stepGoal": 2500,
     "autoBackup": true,
     "fasting": true,
@@ -29,23 +30,24 @@
     }
   },
   "records": {
-    "2026-09-16": {
+    "2026-09-17": {
       "weight": null,
+      "meals": {},
+      "water": 0,
+      "misc": {},
+      "steps": null,
+      "train": null,
+      "remindOff": {}
+    },
+    "2026-09-16": {
+      "weight": 79.3,
       "meals": {
         "m1": 1,
-        "m2": 1,
-        "m4": 1,
-        "m5": 1
+        "m2": 1
       },
-      "water": 8,
-      "misc": {
-        "coffee1": 1,
-        "coffee2": 1,
-        "nap": 1,
-        "corn": 1,
-        "spinach": 1
-      },
-      "steps": 3000,
+      "water": 6,
+      "misc": {},
+      "steps": 2800,
       "train": {
         "done": true,
         "plank": 30
