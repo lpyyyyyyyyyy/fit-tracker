@@ -24,6 +24,7 @@ import socket
 import ssl
 import subprocess
 import sys
+import time
 from datetime import datetime
 from pathlib import Path
 
@@ -64,22 +65,95 @@ def log(msg: str) -> None:
 
 # ─────────────────────────── 数据来源 ───────────────────────────
 
-def read_from_browser():
-    """从 Edge 的 DevTools 端口读 localStorage 里的最新打卡数据。
+def _find_browser():
+    """找 Edge / Chrome 的可执行文件。"""
+    cands = [
+        r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe",
+        r"C:\Program Files\Microsoft\Edge\Application\msedge.exe",
+        r"C:\Program Files\Google\Chrome\Application\chrome.exe",
+        r"C:\Program Files (x86)\Google\Chrome\Application\chrome.exe",
+    ]
+    for c in cands:
+        if os.path.exists(c):
+            return c
+    return None
+
+
+def _spawn_browser():
+    """临时起一个带调试端口的无头浏览器，指向本机的 App。
+
+    ⚠️ 为什么需要这个：
+       备份任务在凌晨 2:00 跑，那时候用户不会开着浏览器，
+       CDP 端口根本没监听 —— 脚本就会「读不到数据」而跳过数据同步。
+       所以自己拉一个无头实例，读完就关，保证每天都能真的备份到。
+    """
+    exe = _find_browser()
+    if not exe:
+        return None
+    # 用独立的用户数据目录，避免和用户正在用的实例抢锁
+    prof = ROOT / "_backup_profile"
+    prof.mkdir(exist_ok=True)
+    port = CDP_PORT if _cdp_alive() else 9333
+    try:
+        proc = subprocess.Popen(
+            [exe, "--headless=new", "--disable-gpu", "--no-first-run",
+             "--no-default-browser-check", f"--remote-debugging-port={port}",
+             f"--user-data-dir={prof}", "about:blank"],
+            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+            creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
+        )
+    except Exception as e:
+        log(f"（启动浏览器失败：{e}）")
+        return None
+    for _ in range(40):                     # 最多等 20 秒
+        time.sleep(0.5)
+        if _cdp_alive(port):
+            return {"proc": proc, "port": port}
+    try:
+        proc.terminate()
+    except Exception:
+        pass
+    return None
+
+
+def _cdp_alive(port=None):
+    try:
+        requests.get(f"http://127.0.0.1:{port or CDP_PORT}/json/version", timeout=2)
+        return True
+    except Exception:
+        return False
+
+
+def read_from_browser(port=None):
+    """从浏览器的 DevTools 端口读 localStorage 里的最新打卡数据。
 
     用最原始的 WebSocket 帧收发，避免依赖 websocket-client 这个第三方包。
     """
+    p = port or CDP_PORT
     try:
-        r = requests.get(f"http://127.0.0.1:{CDP_PORT}/json/list", timeout=4)
+        r = requests.get(f"http://127.0.0.1:{p}/json/list", timeout=4)
         pages = r.json()
     except Exception:
         return None
 
+    # 优先找已经打开 App 的标签页；没有就随便开一个页面去读（localStorage 按域隔离，
+    # 所以必须真的导航到 App 的域名才有数据）
     page = None
-    for p in pages:
-        if p.get("type") == "page" and re.search(r"fit-tracker|:8443|:8080", p.get("url", "")):
-            page = p
+    for x in pages:
+        if x.get("type") == "page" and re.search(r"fit-tracker|:8443|:8080", x.get("url", "")):
+            page = x
             break
+    if not page:
+        # 让无头浏览器导航到本机 App（数据只在那个源下有）
+        page = next((x for x in pages if x.get("type") == "page"), None)
+        if page:
+            try:
+                ws_url = page["webSocketDebuggerUrl"]
+                _ws_call(ws_url, "1", method="Page.navigate",
+                         params={"url": "https://lpyyyyyyyyyy.github.io/fit-tracker/"})
+                time.sleep(3)
+            except Exception:
+                pass
     if not page:
         return None
 
@@ -97,8 +171,12 @@ def read_from_browser():
         return None
 
 
-def _ws_call(ws_url: str, js_expression: str, timeout: float = 8.0):
-    """极简 CDP 调用：连上、发一个 Runtime.evaluate、读回结果。"""
+def _ws_call(ws_url: str, js_expression: str, timeout: float = 8.0,
+             method: str = "Runtime.evaluate", params: dict = None):
+    """极简 CDP 调用：连上、发一条命令、读回结果。
+
+    默认发 Runtime.evaluate（用来读 localStorage）；
+    也可以传 method='Page.navigate' 之类的去驱动页面。"""
     m = re.match(r"ws://([^:/]+):(\d+)(/.*)", ws_url)
     if not m:
         return None
@@ -127,8 +205,9 @@ def _ws_call(ws_url: str, js_expression: str, timeout: float = 8.0):
             return None
 
         payload = json.dumps({
-            "id": 1, "method": "Runtime.evaluate",
-            "params": {"expression": js_expression, "returnByValue": True},
+            "id": 1,
+            "method": method,
+            "params": params if params is not None else {"expression": js_expression, "returnByValue": True},
         }).encode()
         sock.sendall(_ws_frame(payload))
 
@@ -301,8 +380,19 @@ def main() -> int:
     log(f"仓库：{cfg['repo']}")
 
     # 1. 取数据
+    #    先看有没有现成的调试端口；没有就自己拉一个无头浏览器
+    #    （凌晨 2:00 用户不会开着浏览器，不这么做就永远读不到数据）
     data = read_from_browser()
     src = "浏览器 localStorage"
+    spawned = None
+    if data is None and not _cdp_alive():
+        log("没有可用的调试端口 —— 自己启动一个无头浏览器去读…")
+        spawned = _spawn_browser()
+        if spawned:
+            data = read_from_browser(spawned["port"])
+            src = "无头浏览器读取"
+        else:
+            log("（起不来无头浏览器，这次跳过数据同步）")
     if data is None:
         data = read_from_file()
         src = "导出文件"
@@ -313,6 +403,29 @@ def main() -> int:
         days = len(records)
         weights = sum(1 for k, v in records.items() if (v or {}).get("weight") is not None)
         log(f"数据来源：{src}　打卡 {days} 天，体重记录 {weights} 条")
+
+        # ⚠️ 安全闸：本机读到 0 天的时候绝不上传。
+        #    无头浏览器是全新 profile，读不到用户在别的浏览器里打的数据，
+        #    如果不拦，就会把云端已有的记录覆盖成空的 —— 那是不可逆的数据丢失。
+        if days == 0:
+            remote = 0
+            try:
+                r0 = gh.get_sha(cfg["dataPath"])
+                if r0:
+                    rr = requests.get(
+                        f"https://api.github.com/repos/{cfg['repo']}/contents/{cfg['dataPath']}",
+                        headers={"Authorization": f"Bearer {token}",
+                                 "Accept": "application/vnd.github.raw"},
+                        timeout=25)
+                    if rr.status_code == 200:
+                        remote = len((json.loads(rr.text) or {}).get("records", {}) or {})
+            except Exception:
+                pass
+            if remote > 0:
+                log(f"本机读到 0 天、云端有 {remote} 天 —— 跳过上传，避免把云端数据清空")
+                data = None
+            else:
+                log("本机和云端都没有记录，按空数据处理")
 
     # 2. 上传 data.json
     if data is not None and not args.dry:
@@ -346,6 +459,13 @@ def main() -> int:
         else:
             log(f"{name} 失败 HTTP {r.status_code}")
 
+    # 读完了就把自己起的那个浏览器关掉，不要留进程
+    if spawned:
+        try:
+            spawned["proc"].terminate()
+        except Exception:
+            pass
+        log("已关闭临时浏览器")
     log(f"完成（同步 {changed} 个代码文件）")
     log("")
     return 0
