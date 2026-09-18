@@ -1,7 +1,7 @@
 {
   "version": 1,
   "settings": {
-    "startDate": "2026-10-01",
+    "startDate": "2026-09-17",
     "planDays": 30,
     "startWeight": 80,
     "goalLoss": 8,
@@ -11,6 +11,8 @@
     "heightCm": 178,
     "age": 20,
     "sex": "m",
+    "waistCm": null,
+    "neckCm": null,
     "coffee1": "09:00",
     "coffee2": "13:00",
     "wakeTime": "08:30",
@@ -23,7 +25,7 @@
     "autoBackup": true
   },
   "records": {
-    "2026-09-16": {
+    "2026-09-17": {
       "weight": null,
       "meals": {
         "m1": 1,
