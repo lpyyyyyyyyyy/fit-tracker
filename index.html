@@ -843,6 +843,7 @@ details .body b{color:var(--text);font-weight:650}
       <div class="tile"><div class="k">7 日均线</div><div class="v" id="wAvg">—</div></div>
       <div class="tile"><div class="k">较起始</div><div class="v" id="wDelta">—</div></div>
     </div>
+    <div class="hint mt3" id="wEmptyTip" style="display:none"></div>
 
     <div class="sec">历史记录</div>
     <div class="card" id="wHistory"></div>
@@ -3329,7 +3330,20 @@ const App = {
   },
   renderWeightStats() {
     const list = DB.weights();
-    if (!list.length) { $('#wLatest').textContent = $('#wAvg').textContent = $('#wDelta').textContent = '—'; return; }
+    /* ⚠️ 一条体重都没记时，格子只显示「—」会让人以为坏了。
+       这里给出明确说明：体重没变化就是没记，不是数据丢了。 */
+    if (!list.length) {
+      $('#wLatest').textContent = $('#wAvg').textContent = $('#wDelta').textContent = '—';
+      const tip = $('#wEmptyTip');
+      if (tip) {
+        tip.style.display = '';
+        tip.innerHTML = '还没有体重记录 —— <b>体重没变化就不用记</b>，不记不影响打卡和评分。<br>'
+          + '想记的时候点上面的输入框，或者用「用上次」。';
+      }
+      return;
+    }
+    const tip = $('#wEmptyTip');
+    if (tip) tip.style.display = 'none';
     const last = list[list.length - 1];
     const avg = DB.movingAvg(list);
     const a = avg[avg.length - 1];
