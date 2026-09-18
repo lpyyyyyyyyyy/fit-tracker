@@ -1,28 +1,33 @@
 {
   "version": 1,
+  "createdAt": "2026-09-18T02:08:44.470Z",
   "settings": {
-    "startDate": "2026-09-17",
-    "planDays": 30,
     "startWeight": 80,
     "goalLoss": 8,
-    "targetKcal": 1000,
-    "targetProtein": 150,
+    "refLoss": 10,
+    "planDays": 30,
+    "startDate": "2026-09-17",
     "stepGoal": 2500,
-    "heightCm": 178,
-    "age": 20,
-    "sex": "m",
-    "waistCm": null,
-    "neckCm": null,
-    "coffee1": "09:00",
-    "coffee2": "13:00",
-    "wakeTime": "08:30",
-    "sleepTime": "01:30",
-    "trainTime": "19:00",
+    "autoBackup": true,
     "fasting": true,
     "fastStart": "08:30",
     "fastEnd": "16:30",
+    "wakeTime": "08:30",
+    "sleepTime": "01:30",
     "remindOn": true,
-    "autoBackup": true
+    "coffee1": "09:00",
+    "coffee2": "13:00",
+    "trainTime": "19:00",
+    "heightCm": 178,
+    "age": 20,
+    "sex": "m",
+    "targetKcal": 1000,
+    "targetProtein": 150,
+    "backup": {
+      "token": "",
+      "repo": "",
+      "path": "data.json"
+    }
   },
   "records": {
     "2026-09-17": {
