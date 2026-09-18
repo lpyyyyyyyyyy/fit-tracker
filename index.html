@@ -1179,6 +1179,15 @@ details .body b{color:var(--text);font-weight:650}
             <select id="setSex" style="text-align:right;font-weight:650">
               <option value="m">男</option><option value="f">女</option>
             </select></span></div>
+          <!-- ⚠️ 只填身高时走 Deurenberg 公式（只用 BMI + 年龄）——
+               它对没练过的人偏低，因为同样 BMI 肌肉多的人体脂更低。
+               填上腰围就能用 US Navy 围度法，准得多（SEE 3~4%）。 -->
+          <div class="hr"></div>
+          <div class="kv"><span class="k">腰围</span><span class="v"><input id="setWaist" type="number" step="0.5" inputmode="decimal" placeholder="填了更准">cm</span></div>
+          <div class="kv"><span class="k">颈围</span><span class="v"><input id="setNeck" type="number" step="0.5" inputmode="decimal" placeholder="可选">cm</span></div>
+          <div class="hint mt2">量腰围：<b>肚脐水平一圈，别吸肚子</b>，早上空腹量最稳。<br>
+            填了腰围就用围度法，比只看身高体重准 —— 同一 BMI 下，肌肉多的体脂低、肌肉少的体脂高。</div>
+          <div class="hint mt3" id="bfNow">—</div>
         </div>
       </details>
       <button class="btn primary wide mt5" onclick="App.saveSettings()" id="goalSaveBtn">保存</button>
@@ -1386,7 +1395,22 @@ function paintIcons(root) {
 const Backup = {
   _t: null, _busy: false,
 
-  cfg() { return (DB.data.settings.backup = DB.data.settings.backup || { token:'', repo:'', path:'data.json' }); },
+  /* ⚠️ 备份配置（含 Token）存在 localStorage 的**独立键**里，不放进 DB.data。
+     为什么：DB.data 会被整份上传到公开仓库（data.json），
+     如果 Token 放在 settings 里，就等于把 Token 公开给任何能看仓库的人。
+     独立键不会被上传、也不会被导出。 */
+  cfg() {
+    const K = 'ran_fit_backup_cfg';
+    try {
+      const raw = localStorage.getItem(K);
+      if (raw) {
+        const c = JSON.parse(raw);
+        return { token: c.token || '', repo: c.repo || '', path: c.path || 'data.json' };
+      }
+    } catch (e) {}
+    return { token: '', repo: '', path: 'data.json' };
+  },
+  setCfg(c) { try { localStorage.setItem('ran_fit_backup_cfg', JSON.stringify(c)); } catch (e) {} },
   enabled() { const c = this.cfg(); return !!(c.token && c.repo); },
 
   /* 打卡后调用：防抖 20 秒，避免连续点击狂发请求 */
@@ -1663,6 +1687,8 @@ const DB = {
         autoBackup: true,
     /* 16+8 轻断食：把 4 餐压进 8 小时窗口，其余 16 小时只喝水/黑咖啡 */
     fasting: true, fastStart: '08:30', fastEnd: '16:30',
+    /* 围度（可选）—— 填了体脂率改走 US Navy 法，比 Deurenberg 准 */
+    waistCm: null, neckCm: null,
         wakeTime: '08:30', sleepTime: '01:30',
         remindOn: true, coffee1: '09:00', coffee2: '13:00',
         trainTime: '19:00',
@@ -1936,6 +1962,24 @@ const Engine = {
      已核实原文摘要（PMID 2043597）：R²=0.79，SEE=4.1%。
      自检：男/40岁/BMI25 → 23.0%；女 → 33.8%（写成 +10.8 会得 44.6%，荒谬）
      ⚠ 估算值 ±4%，看趋势别看绝对值 */
+  /* ⚠️ 优先用围度法。Deurenberg 只用 BMI + 年龄，没量任何围度 ——
+     同样 BMI 的人肌肉多体脂低、肌肉少体脂高，所以它给的是"平均值"，
+     对没练过的人偏低。有腰围就用 US Navy（SEE 3~4%），准得多。
+     没量腰围时退回 Deurenberg，但界面上会提示"填了更准"。 */
+  bodyFatBest(kg, cm, age, sex) {
+    const s = DB.data.settings || {};
+    if (s.waistCm) {
+      const navy = this.bodyFatNavy(s.waistCm, s.neckCm || 0, cm, null, sex);
+      if (navy != null) return navy;
+    }
+    return this.bodyFat(kg, cm, age, sex);
+  },
+  /* 体脂率是用哪种方法算出来的（界面上要说明） */
+  bodyFatMethod() {
+    const s = DB.data.settings || {};
+    return s.waistCm ? 'navy' : 'deurenberg';
+  },
+
   bodyFat(kg, cm, age, sex) {
     const v = 1.20 * this.bmi(kg, cm) + 0.23 * (age || 20) - 10.8 * (sex === 'f' ? 0 : 1) - 5.4;
     return clamp(v, 3, 60);
@@ -3079,7 +3123,9 @@ const App = {
     c.token = ($('#bkToken') ? $('#bkToken').value : '').trim();
     c.repo  = ($('#bkRepo') ? $('#bkRepo').value : '').trim();
     c.path  = (($('#bkPath') ? $('#bkPath').value : '') || 'data.json').trim();
-    DB.save(true);
+    /* ⚠️ 存到 localStorage 的独立键，**不写进 DB.data** ——
+       DB.data 会被整份上传到公开仓库，Token 放进去就等于公开了。 */
+    Backup.setCfg(c);
     this.renderSettings();
     if (!c.token || !c.repo) return this.toast('请把 Token 和仓库名都填上');
     this.toast('正在测试…');
@@ -3841,7 +3887,7 @@ const App = {
     const withExtra = Impact.fromRecord(DB.rec(), {});
     const noExtra = Impact.fromRecord(Object.assign({}, DB.rec(), { extra: [] }), {});
     const dKcal = withExtra.kcal - noExtra.kcal;
-    const sp = Engine.split(base.kg, Engine.bodyFat(base.kg, s.heightCm || 178, s.age || 20, s.sex || 'm'));
+    const sp = Engine.split(base.kg, Engine.bodyFatBest(base.kg, s.heightCm || 178, s.age || 20, s.sex || 'm'));
     const dKg = dKcal / Engine.energyDensity(sp.fat);
     const gap = tdee - withExtra.kcal;
     imp.innerHTML = `今天多吃 <b>${sum} kcal</b>（蛋白 +${sumP}g）。<br>
@@ -3865,7 +3911,7 @@ const App = {
     const tdee = b * 1.35 + Math.min(500, (base.steps || 0) / 1000 * 45);
     const imp = Impact.fromRecord(DB.rec(), {});
     const net = imp.kcal - tdee;                       /* >0 = 今天净吃超了 */
-    const sp = Engine.split(base.kg, Engine.bodyFat(base.kg, s.heightCm || 178, s.age || 20, sex));
+    const sp = Engine.split(base.kg, Engine.bodyFatBest(base.kg, s.heightCm || 178, s.age || 20, sex));
     const ed = Engine.energyDensity(sp.fat);            /* 当前脂肪量下的 kcal/kg */
 
     /* 一天吃超多少，才真的长 1 斤脂肪 */
@@ -3972,7 +4018,7 @@ const App = {
     const tdee = b + actKcal + stepKcal;
     const deficit = tdee - o.eat;
     const perWeekKg = deficit * 7 / (Engine.energyDensity(Engine.split(o.kg,
-      Engine.bodyFat(o.kg, o.cm, o.age, sex)).fat) || 7000);
+      Engine.bodyFatBest(o.kg, o.cm, o.age, sex)).fat) || 7000);
     const perWeekJin = kg2jin(perWeekKg);
 
     /* 主数字 */
@@ -4244,6 +4290,9 @@ const App = {
     $('#setDays').value = s.planDays;
     $('#setStart').value = s.startWeight;
     $('#setHeight').value = s.heightCm || 178;
+    if ($('#setWaist')) $('#setWaist').value = s.waistCm != null ? s.waistCm : '';
+    if ($('#setNeck')) $('#setNeck').value = s.neckCm != null ? s.neckCm : '';
+    this.renderBfNow();
     $('#setAge').value = s.age || 20;
     $('#setSex').value = s.sex || 'm';
     $('#setKcal').value = s.targetKcal || 1000;
@@ -4324,6 +4373,11 @@ const App = {
       if (gl > 0 && gl < 60) s.goalLoss = gl;
       const h = Number($('#setHeight').value); if (h > 120 && h < 230) s.heightCm = h;
       const ag = Number($('#setAge').value); if (ag > 10 && ag < 90) s.age = ag;
+      /* 围度：留空就当没量（null），不要写成 0 —— 0 会让围度法算出假值 */
+      const wv = $('#setWaist') ? $('#setWaist').value.trim() : '';
+      const nv = $('#setNeck') ? $('#setNeck').value.trim() : '';
+      s.waistCm = wv === '' ? null : (Number(wv) > 40 && Number(wv) < 200 ? Number(wv) : null);
+      s.neckCm = nv === '' ? null : (Number(nv) > 20 && Number(nv) < 80 ? Number(nv) : null);
       if ($('#setSex').value) s.sex = $('#setSex').value;
       const kc = Number($('#setKcal').value); if (kc >= 600 && kc < 5000) s.targetKcal = kc;
       const pr = Number($('#setProtein').value); if (pr >= 40 && pr < 400) s.targetProtein = pr;
@@ -4400,6 +4454,25 @@ const App = {
     } catch (e) {
       this.toast('拉取失败：' + e.message);
     }
+  },
+
+  /* 设置页里实时显示三种算法的结果 —— 让用户看到「只看身高体重」有多不准 */
+  renderBfNow() {
+    const el = $('#bfNow');
+    if (!el) return;
+    const s = DB.data.settings;
+    const wl = DB.weights();
+    const kg = wl.length ? wl[wl.length - 1].kg : s.startWeight;
+    const cm = s.heightCm || 178, age = s.age || 20, sex = s.sex || 'm';
+    const deut = Engine.bodyFat(kg, cm, age, sex);   /* 特意对比用，别改 */
+    const navy = s.waistCm ? Engine.bodyFatNavy(s.waistCm, s.neckCm || 0, cm, null, sex) : null;
+    const rfm = s.waistCm ? Engine.bodyFatRFM(s.waistCm, cm, sex) : null;
+    let t = `按 ${fmt(kg, 1)}kg 算：<br>· 只看身高体重 <b>${fmt(deut, 1)}%</b>`;
+    if (navy != null) t += `　·　围度法 <b style="color:var(--accent)">${fmt(navy, 1)}%</b>`;
+    if (rfm != null) t += `　·　RFM <b>${fmt(rfm, 1)}%</b>`;
+    if (!s.waistCm) t += `<br><span style="color:var(--warn)">填上腰围后会用围度法 —— 只看身高体重通常偏低。</span>`;
+    else t += `<br>有腰围数据，App 现在用<b>围度法</b>（误差 ±3~4%，比只看身高体重准）。`;
+    el.innerHTML = t;
   },
 
   exportJSON() {
