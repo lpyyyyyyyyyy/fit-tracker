@@ -462,7 +462,8 @@ body::before{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;
 /* ════════════ 日历 ════════════
    ⚠️ 用 minmax(0,1fr) 而不是 1fr：1fr 在 aspect-ratio 下会被内容撑开而溢出右边 */
 .cal{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px}
-.cell{aspect-ratio:1;border-radius:10px;border:1px solid var(--line);display:grid;place-items:center;
+.cell{aspect-ratio:1;width:100%;border-radius:10px;border:1px solid var(--line);display:grid;place-items:center;
+  padding:0;background:var(--n-900);cursor:pointer;
   font-family:var(--mono);font-size:var(--f-3xs);color:var(--dim);min-width:0;
   transition:transform var(--d1) var(--e-spring),background var(--d2),border-color var(--d2),color var(--d2)}
 .cell.full{background:linear-gradient(150deg,rgba(79,214,196,.9),rgba(43,145,134,.75));
@@ -551,6 +552,14 @@ canvas{display:block;width:100%;height:100%}
   font-weight:600;font-variant-numeric:tabular-nums}
 .stepRow .sr-go{font-size:var(--f-2xs);color:var(--dim);flex:none}
 
+/* ════════════ 补记某一天（日历弹窗） ════════════ */
+.dayChip{display:inline-flex;align-items:center;padding:8px 12px;border-radius:var(--rf);
+  background:var(--n-900);border:1px solid var(--line);color:var(--dim);
+  font-size:var(--f-2xs);transition:background 120ms ease-out,color 120ms ease-out,border-color 120ms ease-out}
+.dayChip.on{background:rgba(79,214,196,.15);border-color:rgba(79,214,196,.4);color:var(--accent);font-weight:650}
+.dayChip:active{background:rgba(200,215,235,.12)}
+.sheet .hsub{font-size:var(--f-2xs);font-weight:650;color:var(--accent);
+  margin:var(--s4) 0 var(--s2);letter-spacing:.02em}
 /* ════════════ 忍不住嘴 ════════════ */
 #extraTruth .hsub{font-size:var(--f-2xs);font-weight:650;color:var(--accent);margin:var(--s4) 0 var(--s2)}
 #extraTruth .hw{font-size:var(--f-2xs);color:var(--dim);line-height:1.85}
@@ -922,6 +931,20 @@ details .body b{color:var(--text);font-weight:650}
         <div class="ctitle"><span class="badge dim"><span class="i" data-i="cal"></span></span>30 天打卡日历</div>
         <span class="tag" id="calEntryPill">—</span>
       </div>
+      <div class="hint">点日历里任意一天，就能补记或修改那天的记录</div>
+    </div>
+
+    <!-- 漏记了？直接补，不用翻日历 -->
+    <div class="card">
+      <div class="chead" style="margin-bottom:var(--s2)">
+        <div class="ctitle"><span class="badge gold"><span class="i" data-i="up"></span></span>补记</div>
+      </div>
+      <div class="hint">换设备、忘了打卡、或者昨天漏了 —— 都能事后补上。</div>
+      <div class="row2 mt3">
+        <button class="btn" onclick="App.openDay(addDays(todayKey(),-1))">补记昨天</button>
+        <button class="btn" onclick="App.openDay(addDays(todayKey(),-2))">补记前天</button>
+      </div>
+      <button class="btn ghost wide mt3" onclick="App.go('calendar')">或者从日历里选一天</button>
     </div>
   </section>
 
@@ -1285,7 +1308,7 @@ details .body b{color:var(--text);font-weight:650}
    1 · 常量与工具
    ════════════════════════════════════════════════════════════════ */
 /* App 版本 —— 每次改完内容把它 +1，设置页会显示，用来确认看到的是不是最新版 */
-const APP_VER = '2026.09.17-29';
+const APP_VER = '2026.09.17-30';
 
 const JIN = 2;
 const DAY = 86400000;
@@ -3438,6 +3461,106 @@ const App = {
     }
   },
 
+  /* ── 补记某一天（日历里点格子进来） ──
+     漏打了卡、或者换了设备，都能事后把那天补上。
+     只改这一天，不动其它记录。 */
+  openDay(k) {
+    const r = DB.get(k) || {};
+    const s = DB.data.settings;
+    const dow = ['周日','周一','周二','周三','周四','周五','周六'][new Date(k + 'T00:00:00').getDay()];
+    const isFuture = diffDays(todayKey(), k) > 0;
+    const score = DB.score(k);
+
+    const mealRows = MEAL_TEMPLATE.map(m =>
+      `<button class="dayChip${r.meals && r.meals[m.id] ? ' on' : ''}" data-day="${m.id}" onclick="App.toggleDay('${k}','${m.id}','meals',this)">${m.name}</button>`).join('');
+    const miscRows = MISC_TEMPLATE.map(m =>
+      `<button class="dayChip${r.misc && r.misc[m.id] ? ' on' : ''}" data-day="${m.id}" onclick="App.toggleDay('${k}','${m.id}','misc',this)">${m.name}</button>`).join('');
+    const extras = Array.isArray(r.extra) ? r.extra : [];
+    const extraSum = extras.reduce((a, x) => a + (Number(x.kcal) || 0), 0);
+
+    this.sheet(`${k} · ${dow}`, `
+      <div class="chead" style="margin-bottom:var(--s3)">
+        <span class="tag ${score >= 80 ? 'ok' : score >= 40 ? 'warn' : ''}">完成度 ${score}</span>
+        ${isFuture ? '<span class="tag">这天还没到</span>' : ''}
+      </div>
+
+      <div class="hsub" style="margin-top:0">吃了哪些</div>
+      <div class="chips">${mealRows}</div>
+
+      <div class="hsub">其他</div>
+      <div class="chips">${miscRows}</div>
+
+      <div class="hsub">数字</div>
+      <div class="kv"><span class="k">体重</span><span class="v">
+        <input id="dayWeight" type="number" step="0.1" inputmode="decimal"
+               placeholder="留空=不记" value="${r.weight != null ? r.weight : ''}">kg</span></div>
+      <div class="kv"><span class="k">喝水</span><span class="v">
+        <input id="dayWater" type="number" inputmode="numeric" min="0" max="8"
+               value="${r.water || 0}">杯</span></div>
+      <div class="kv"><span class="k">步数</span><span class="v">
+        <input id="daySteps" type="number" inputmode="numeric"
+               placeholder="留空=不记" value="${r.steps != null ? r.steps : ''}">步</span></div>
+      <div class="kv"><span class="k">训练</span><span class="v">
+        <button class="sw${r.train ? ' on' : ''}" id="dayTrain" onclick="App.toggleDayTrain()"><i></i></button></span></div>
+
+      ${extraSum ? `<div class="hint mt3">这天多吃了 <b>${extraSum} kcal</b>（记了 ${extras.length} 项）——
+        可以在「进度」页改今天的，历史那天就不再单独编辑了。</div>` : ''}
+
+      <div class="row2 mt4">
+        <button class="btn primary" onclick="App.saveDay('${k}')">保存这天</button>
+        ${DB.get(k) ? `<button class="btn" onclick="App.clearDay('${k}')">清空这天</button>` : ''}
+      </div>
+      <div class="hint mt3">只影响 ${k} 这一天，其它记录不动。</div>
+    `);
+  },
+
+  /* 弹窗里切换某一项（先改内存，点保存才写盘） */
+  toggleDay(k, id, group, btn) {
+    const r = DB.get(k) || {};
+    const mem = this._dayDraft || (this._dayDraft = {});
+    const key = k + '|' + group;
+    mem[key] = mem[key] || Object.assign({}, (r[group] || {}));
+    mem[key][id] = mem[key][id] ? 0 : 1;
+    if (btn) btn.className = 'dayChip' + (mem[key][id] ? ' on' : '');
+  },
+  toggleDayTrain() {
+    this._dayDraft = this._dayDraft || {};
+    const r = this._dayDraft['train'];
+    const next = !(r === true);
+    this._dayDraft['train'] = next;
+    const b = $('#dayTrain');
+    if (b) b.className = 'sw' + (next ? ' on' : '');
+  },
+
+  saveDay(k) {
+    const draft = this._dayDraft || {};
+    const r = DB.rec(k);                       /* 没有就创建 */
+    if (draft[k + '|meals']) r.meals = draft[k + '|meals'];
+    if (draft[k + '|misc']) r.misc = draft[k + '|misc'];
+    if (draft['train'] != null) r.train = draft['train'] ? { done: true, plank: (r.train && r.train.plank) || 30 } : null;
+
+    const w = $('#dayWeight'), wa = $('#dayWater'), st = $('#daySteps');
+    if (w) r.weight = w.value === '' ? null : Number(w.value);
+    if (wa) r.water = clamp(Number(wa.value) || 0, 0, 8);
+    if (st) r.steps = st.value === '' ? null : Number(st.value);
+
+    DB.save(true); Backup.auto();
+    this._dayDraft = null;
+    this.closeSheet();
+    this.renderAll();
+    this.toast(`已保存 ${k} · 完成度 ${DB.score(k)}`);
+  },
+
+  clearDay(k) {
+    if (!DB.data.records[k]) return this.toast('这天本来就没有记录');
+    delete DB.data.records[k];
+    DB.save(true); Backup.auto();
+    this._dayDraft = null;
+    this.closeSheet();
+    this.renderAll();
+    this.toast(`已清空 ${k}`);
+  },
+
   /* ── 日历 ── */
   renderCalendar() {
     const s = DB.data.settings;
@@ -3453,7 +3576,8 @@ const App = {
       else if (sc >= 40) cls += ' part';
       else { cls += ' miss'; miss++; }
       if (today) cls += ' today';
-      html += `<div class="${cls}">${i + 1}</div>`;
+      /* 格子改成按钮：点任意一天就能补/改那天的记录（漏记了可以事后补） */
+      html += `<button class="${cls}" onclick="App.openDay('${k}')" title="${k}">${i + 1}</button>`;
     }
     $('#calGrid').innerHTML = html;
     $('#calDone').textContent = full;
